@@ -1,0 +1,61 @@
+# Local orchestration of the Serenica services. Supabase runs separately via
+# `pnpm db:start` (its own Docker stack); these services connect to it on the
+# host. This compose file is also the shape we hand Juno (ADR-017): a set of
+# portable containers with explicit commands, ports, and env.
+#
+# Note what the runtime-stub does NOT get: any Supabase env. The runtime holds no
+# database credentials (ADR-005, ADR-006). That invariant is visible right here.
+name: serenica
+
+services:
+  runtime-stub:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    command: pnpm --filter @serenica/runtime-stub run start
+    environment:
+      RUNTIME_PORT: '8090'
+    ports:
+      - '8090:8090'
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    command: pnpm --filter @serenica/api run start
+    environment:
+      API_PORT: '8080'
+      RUNTIME_URL: 'http://runtime-stub:8090'
+      SUPABASE_URL: '${SUPABASE_URL:-http://host.docker.internal:54321}'
+      SUPABASE_SERVICE_ROLE_KEY: '${SUPABASE_SERVICE_ROLE_KEY}'
+      SUPABASE_JWT_SECRET: '${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    depends_on:
+      - runtime-stub
+    ports:
+      - '8080:8080'
+
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    command: pnpm --filter @serenica/worker run start
+    environment:
+      WORKER_PORT: '8070'
+    ports:
+      - '8070:8070'
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.web
+    command: pnpm --filter @serenica/web run dev
+    environment:
+      VITE_API_URL: '${VITE_API_URL:-http://localhost:8080}'
+      VITE_SUPABASE_URL: '${VITE_SUPABASE_URL:-http://localhost:54321}'
+      VITE_SUPABASE_ANON_KEY: '${SUPABASE_ANON_KEY}'
+    depends_on:
+      - api
+    ports:
+      - '5173:5173'

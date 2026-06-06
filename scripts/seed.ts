@@ -1,0 +1,86 @@
+import 'dotenv/config';
+import { EXAMPLE_PERSON_CONTRACT } from '@serenica/contract';
+import { createServiceClient } from '@serenica/db';
+
+/**
+ * Seed the walking-skeleton demo: one workspace, one owner user, the example
+ * contract published as the active version, and one existing Person record to
+ * update. Run from the repo root with `pnpm seed` after `pnpm db:start`.
+ */
+
+const url = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!serviceKey) {
+  throw new Error('SUPABASE_SERVICE_ROLE_KEY is required. Copy it from `pnpm db:start` into .env.');
+}
+
+const OWNER_EMAIL = 'owner@demo.serenica.test';
+const OWNER_PASSWORD = 'demo-password-123';
+
+const db = createServiceClient(url, serviceKey);
+
+async function ensureUser(email: string, password: string): Promise<string> {
+  const created = await db.auth.admin.createUser({ email, password, email_confirm: true });
+  if (created.data.user) return created.data.user.id;
+
+  // Already exists: find the id by paging the user list.
+  if (created.error && /already/i.test(created.error.message)) {
+    const { data, error } = await db.auth.admin.listUsers({ perPage: 200 });
+    if (error) throw new Error(`listUsers failed: ${error.message}`);
+    const found = data.users.find((u) => u.email === email);
+    if (found) return found.id;
+  }
+  throw new Error(`could not create or find user ${email}: ${created.error?.message ?? 'unknown'}`);
+}
+
+async function main(): Promise<void> {
+  const ownerId = await ensureUser(OWNER_EMAIL, OWNER_PASSWORD);
+
+  const { data: ws, error: wsErr } = await db
+    .from('workspaces')
+    .insert({ name: 'Demo Realty', confirmation_mode: 'confirm_each' })
+    .select('id')
+    .single();
+  if (wsErr) throw new Error(`create workspace: ${wsErr.message}`);
+  const workspaceId = ws.id as string;
+
+  const { error: memErr } = await db
+    .from('memberships')
+    .insert({ workspace_id: workspaceId, user_id: ownerId, role: 'owner' });
+  if (memErr) throw new Error(`create membership: ${memErr.message}`);
+
+  const { data: cv, error: cvErr } = await db
+    .from('contract_versions')
+    .insert({
+      workspace_id: workspaceId,
+      version: EXAMPLE_PERSON_CONTRACT.version,
+      document: EXAMPLE_PERSON_CONTRACT,
+      is_active: true,
+      published_by: ownerId,
+    })
+    .select('id')
+    .single();
+  if (cvErr) throw new Error(`publish contract: ${cvErr.message}`);
+  const contractVersionId = cv.id as string;
+
+  const { error: recErr } = await db.from('business_records').insert({
+    workspace_id: workspaceId,
+    object_api_name: 'person',
+    contract_version_id: contractVersionId,
+    data: { full_name: 'John Carter', email: 'john@carterdeals.test', status: 'lead' },
+    created_by: ownerId,
+    updated_by: ownerId,
+  });
+  if (recErr) throw new Error(`seed record: ${recErr.message}`);
+
+  console.log('Seed complete.');
+  console.log(`  workspace_id : ${workspaceId}`);
+  console.log(`  login        : ${OWNER_EMAIL} / ${OWNER_PASSWORD}`);
+  console.log('  seeded record: Person "John Carter" (status: lead)');
+  console.log('  try in the web app: "Talked to John about the waterfront deal, he\'s interested."');
+}
+
+main().catch((err) => {
+  console.error(err instanceof Error ? err.message : err);
+  process.exit(1);
+});

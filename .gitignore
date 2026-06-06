@@ -1,0 +1,31 @@
+#private developer notes
+notes
+
+.DS_Store
+
+graphify-out
+proposal
+
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+build/
+*.tsbuildinfo
+
+# env and secrets
+.env
+.env.*
+!.env.example
+
+# supabase local
+supabase/.branches/
+supabase/.temp/
+
+# logs and caches
+*.log
+.vitest/
+coverage/
+.turbo/
