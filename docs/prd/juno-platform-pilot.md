@@ -109,7 +109,7 @@ Small and concrete; this doubles as the deployment half of our runtime de-risk s
 4. Deploy the Hermes product runtime workload (the baked `hermes-runtime` image, `clusterip`).
 5. Run the walking-skeleton thread end to end on Juno: a web message becomes a held proposal, approval writes the record and the audit event in Supabase.
 6. Expose a preview link for the web UI; confirm the API's public URL shape and stability for future Twilio webhooks.
-7. Write down the exact workload configurations and env vars as a repeatable setup note that lands in this repo.
+7. Finalize the repeatable setup note: the image list, per-workload env inventory, and the managed-database bootstrap are already drafted in [deployment-setup.md](deployment-setup.md); the session fills in whatever the cluster changes.
 
 ## Onboarding session agenda (the open questions)
 
