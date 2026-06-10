@@ -1,64 +1,78 @@
 # Workbook Contract Agent spike
 
-The keystone feasibility experiment for ADR-023. It feeds one deliberately messy
-workbook through an LLM that must emit a semantic **contract** (never SQL), then
-scores that contract against a hand-authored golden. It answers two questions
-ADR-023 leaves to a spike:
+The keystone feasibility experiment for ADR-023. It feeds a messy workbook through
+an LLM that must emit a semantic **contract** (never SQL), and measures how close
+it gets and whether it knows what it does not know. It is a throwaway probe in
+`evals/`, decoupled from Hermes, the control plane, and the product (ADR-023 §6);
+the real elicitation agent will live inside Hermes later.
 
-1. **How close does the proposed contract get?** Scored per dimension, with the
-   high-stakes calls (identity, relationships, agent-write flags) called out.
-2. **Does the agent know what it does not know?** It self-flags assumptions and
-   open questions; we measure how much of where it was actually wrong it
-   surfaced. High recall means a human reviewer would catch the misses. A
-   confident, unflagged miss on a high-stakes call is the "plausible-but-wrong
-   contract" ADR-023 §5 warns about.
+Findings so far: [docs/research/workbook-contract-agent-spike.md](../../docs/research/workbook-contract-agent-spike.md).
 
-This is decoupled from all Excel-sync, Graph, and connector work. It needs no
-database, no Docker, and no Microsoft access — only an Anthropic API key.
+## Two ways to run it
 
-## Run it
+**Graded** — run the fixture corpus against hand-authored goldens and score it:
 
 ```bash
-pnpm install                                   # pulls @anthropic-ai/sdk
-ANTHROPIC_API_KEY=sk-... pnpm evals:workbook
+ANTHROPIC_API_KEY=sk-... pnpm evals:workbook        # all fixtures, 3 runs each
+SPIKE_RUNS=1 pnpm evals:workbook                     # quick, 1 run each
 ```
 
-Defaults to `claude-sonnet-4-6` (enough to read the signal cheaply). Optional
-knobs — run the high-fidelity pass on Opus, or change the run count:
+**Exploratory** — run a real `.xlsx` with no golden, and present the proposed
+contract plus its questions for a human to judge:
 
 ```bash
-SPIKE_MODEL=claude-opus-4-8 SPIKE_RUNS=5 ANTHROPIC_API_KEY=sk-... pnpm evals:workbook
+pnpm evals:workbook:explore -- /path/to/workbook.xlsx
 ```
 
-The run prints a scorecard per run, a decision-stability check across runs, an
-aggregate, and a usage + cost block (tokens, latency, estimated spend). Raw
-outputs and `summary.json` land in `out/` (gitignored). A low score is data, not
-a failure — the runner exits non-zero only on a harness error.
+Defaults to `claude-sonnet-4-6`; set `SPIKE_MODEL=claude-opus-4-8` for the
+high-fidelity pass. The graded run prints a per-fixture scorecard, decision
+stability, a usage + cost block, and writes `out/summary.json`.
 
-## What is here
+**Real workbooks contain PII.** The exploratory path writes the detected profile
+and agent outputs only to the gitignored `local/` directory. Committed fixtures
+and goldens are synthetic or fully anonymized. A low score is data, not a failure:
+the graded runner exits non-zero only on a harness error (a bad golden, or no
+successful run).
+
+## The corpus
+
+Each case pairs a detected workbook profile with a golden contract, registered in
+[cases.ts](cases.ts). To add a fixture: drop `<name>.detected.json` in `fixture/`
+and `<name>.contract.json` in `golden/`, then add one row to `cases.ts`. The
+runner validates every golden up front, so a malformed golden fails fast with no
+API spend.
+
+Current fixtures:
+- **contacts-deals** — synthetic real-estate workbook. Easy by construction.
+- **relationship-crm** — anonymized copy of a real client workbook. Reproduces the
+  hard behavior: invalid output on a relationship missing its target, structural
+  instability, over-creation.
+
+## Files
 
 | File | Role |
 |------|------|
-| `fixture/contacts-deals.detected.json` | The messy workbook as a *detected schema* (the mechanical-detection output of ADR-023 §2). The agent's only input. |
-| `golden/contacts-deals.contract.json` | The known-good contract. Authored independently, validates against `parseContract()`. The eval target. |
-| `authoring-schema.ts` | The shape the agent must emit: the contract minus stable IDs and cross-field refinements, plus self-reported uncertainty. Drives constrained decoding. |
+| `cases.ts` | The fixture corpus registry. |
+| `fixture/*.detected.json` | Detected workbook profiles (the agent's input). |
+| `golden/*.contract.json` | Hand-authored answer keys. Each is one defensible reading. |
+| `detect.ts` | Reads any real `.xlsx` (exceljs) into the detected-profile shape. Run standalone: `tsx evals/workbook-contract/detect.ts <path>`. |
+| `authoring-schema.ts` | The shape the agent must emit (contract minus IDs, plus self-reported uncertainty). Drives constrained decoding. |
 | `prompt.ts` | The elicitation/synthesis instructions. The agent never sees the golden. |
-| `agent.ts` | One run: `messages.parse` + `zodOutputFormat`, then deterministic ID assignment, then the real `parseContract()`. |
-| `score.ts` | The per-dimension scorer, plausible-but-wrong list, and uncertainty recall. |
-| `run.ts` | Loops N runs, prints the scorecard, measures stability, writes `out/`. |
+| `agent.ts` | One run: `messages.parse` + `zodOutputFormat`, then ID assignment, then the real `parseContract`. Captures token usage. |
+| `score.ts` | Per-dimension scorer, plausible-but-wrong list, uncertainty recall. |
+| `usage.ts` | Token aggregation and approximate cost estimate. |
+| `run.ts` | Graded runner over the whole corpus. |
+| `explore.ts` | Exploratory runner for a real `.xlsx` (no golden). |
 
 ## How scoring works
 
 Fields are matched by meaning (normalized labels, the workbook source column, and
-a small synonym map), not by exact apiName, because the agent picks its own
-names. Each matched field is then checked on type, enum options, the
-`editableByAgent` trust flag, and the `sensitive` PII flag. Objects are matched
-with a synonym map plus the golden's own aliases. Identity and relationships are
-scored as high-stakes: a wrong identity rule or a relationship modeled as a plain
-text column is flagged CRITICAL. Nothing is reduced to a single blended number;
-the dimensions are meant to be read separately.
+a small synonym map), not by exact apiName, because the agent picks its own names.
+Each matched field is checked on type, enum options, the `editableByAgent` trust
+flag, and the `sensitive` PII flag. Objects are matched with a synonym map plus the
+golden's aliases. Identity and relationships are scored as high-stakes: a wrong
+identity rule or a relationship modeled as a plain column is flagged CRITICAL.
+Nothing is reduced to a single blended number; the dimensions are read separately.
 
-The golden is one defensible reading of the fixture, not the only one. When you
-change the fixture, re-derive the golden by hand first, then make the fixture
-match a realistic mess — never reverse the order, or the golden becomes a
-strawman.
+A golden is one defensible reading of an ambiguous workbook, not the only one. When
+you add a fixture, author the golden by hand first, then keep the fixture honest.
