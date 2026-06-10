@@ -102,6 +102,8 @@ let lastAuthHeader: string | undefined;
 let lastSubmitBody: { input?: string; session_id?: string } = {};
 const runs = new Map<string, { scenario: string; polls: number }>();
 let runCounter = 0;
+const deletedSessions: string[] = [];
+const stoppedRuns: string[] = [];
 
 beforeAll(async () => {
   hermes = http.createServer((req, res) => {
@@ -133,7 +135,21 @@ beforeAll(async () => {
       return;
     }
 
-    const match = req.url?.match(/^\/v1\/runs\/(.+)$/);
+    const sessionDelete = req.url?.match(/^\/api\/sessions\/(.+)$/);
+    if (req.method === 'DELETE' && sessionDelete) {
+      deletedSessions.push(sessionDelete[1]!);
+      json(200, { deleted: true });
+      return;
+    }
+
+    const stop = req.url?.match(/^\/v1\/runs\/(.+)\/stop$/);
+    if (req.method === 'POST' && stop) {
+      stoppedRuns.push(stop[1]!);
+      json(200, { status: 'stopping' });
+      return;
+    }
+
+    const match = req.url?.match(/^\/v1\/runs\/([^/]+)$/);
     if (req.method === 'GET' && match) {
       const run = runs.get(match[1]!);
       if (!run) {
@@ -149,7 +165,7 @@ beforeAll(async () => {
         json(200, { status: 'failed', output: 'tool exploded' });
         return;
       }
-      json(200, { status: 'completed', output: 'all done' });
+      json(200, { status: 'completed', output: 'all done', usage: { input_tokens: 5, output_tokens: 2 } });
       return;
     }
 
@@ -179,11 +195,14 @@ describe('runHermesTask', () => {
     const outcome = await runHermesTask(cfg(), { taskId, text: 'update John to active' });
 
     expect(outcome.output).toBe('all done');
+    expect(outcome.usage).toEqual({ input_tokens: 5, output_tokens: 2 });
     expect(lastAuthHeader).toBe('Bearer test-key');
     expect(lastSubmitBody.session_id).toBe(taskId);
     // The brief carries the taskId the agent must hand to submit_proposal.
     expect(lastSubmitBody.input).toContain(taskId);
     expect(lastSubmitBody.input).toContain('update John to active');
+    // Stateless per task: the session is deleted once the run completes.
+    expect(deletedSessions).toContain(taskId);
   });
 
   it('maps a failed run to runtime_failed with the run output as detail', async () => {
@@ -191,6 +210,7 @@ describe('runHermesTask', () => {
       code: 'runtime_failed',
       detail: 'tool exploded',
     });
+    expect(deletedSessions).toContain('t-fail');
   });
 
   it('maps the concurrency cap (429) to runtime_busy', async () => {
@@ -200,10 +220,12 @@ describe('runHermesTask', () => {
     });
   });
 
-  it('times out a run that never reaches a terminal state', async () => {
+  it('times out a run that never reaches a terminal state, stopping it and ending the session', async () => {
     await expect(
       runHermesTask(cfg({ timeoutMs: 100 }), { taskId: 't-slow', text: 'scenario-slow' }),
     ).rejects.toMatchObject({ code: 'runtime_timeout', status: 504 });
+    expect(stoppedRuns.length).toBeGreaterThan(0);
+    expect(deletedSessions).toContain('t-slow');
   });
 
   it('rejects when the runtime is unreachable', async () => {
