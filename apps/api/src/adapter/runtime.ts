@@ -82,6 +82,8 @@ export interface HermesTask {
 export interface HermesRunOutcome {
   runId: string;
   output: string;
+  /** Token/cost telemetry from the run, when the runtime reports it. */
+  usage?: Record<string, unknown>;
 }
 
 /**
@@ -132,6 +134,35 @@ function asText(value: unknown): string {
 }
 
 /**
+ * Stateless-per-task, enforced: completed runs hold their session (and a slot
+ * against the runtime's concurrent-run cap) until the session is deleted, so
+ * the adapter ends every session it started. This is also the data-retention
+ * control: after cleanup the runtime holds nothing about the task. Best-effort;
+ * a failed delete must not mask the run's own outcome.
+ */
+async function endSession(cfg: HermesRuntimeConfig, sessionId: string): Promise<void> {
+  try {
+    await fetch(`${cfg.url}/api/sessions/${sessionId}`, {
+      method: 'DELETE',
+      headers: authHeaders(cfg),
+    });
+  } catch {
+    // Best-effort: the recycling schedule is the backstop.
+  }
+}
+
+async function stopRun(cfg: HermesRuntimeConfig, runId: string): Promise<void> {
+  try {
+    await fetch(`${cfg.url}/v1/runs/${runId}/stop`, {
+      method: 'POST',
+      headers: authHeaders(cfg),
+    });
+  } catch {
+    // Best-effort.
+  }
+}
+
+/**
  * Submit a task to the Hermes Runs API and poll to a terminal state. Returns
  * only the run's final text; any proposal the agent made already passed the
  * MCP write gate. Failures map to problem codes the surfaces can show.
@@ -177,14 +208,20 @@ export async function runHermesTask(
       throw new ProblemError(502, 'runtime_error', `Agent runtime returned ${poll.status}`, detail);
     }
     const run = (await poll.json().catch(() => null)) as
-      | { status?: unknown; output?: unknown }
+      | { status?: unknown; output?: unknown; usage?: unknown }
       | null;
     const status = typeof run?.status === 'string' ? run.status : 'unknown';
 
     if (status === 'completed') {
-      return { runId, output: asText(run?.output) };
+      await endSession(cfg, task.taskId);
+      const usage =
+        run?.usage && typeof run.usage === 'object'
+          ? (run.usage as Record<string, unknown>)
+          : undefined;
+      return { runId, output: asText(run?.output), usage };
     }
     if (TERMINAL_FAILURES.has(status)) {
+      await endSession(cfg, task.taskId);
       throw new ProblemError(
         502,
         'runtime_failed',
@@ -195,6 +232,8 @@ export async function runHermesTask(
     await new Promise((resolve) => setTimeout(resolve, interval));
   }
 
+  await stopRun(cfg, runId);
+  await endSession(cfg, task.taskId);
   throw new ProblemError(
     504,
     'runtime_timeout',
