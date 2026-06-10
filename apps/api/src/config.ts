@@ -7,6 +7,13 @@ import { z } from 'zod';
  */
 const envSchema = z.object({
   SUPABASE_URL: z.string().url().default('http://127.0.0.1:54321'),
+  /**
+   * Expected `iss` claim on user tokens. Defaults to `${SUPABASE_URL}/auth/v1`.
+   * Needed when the URL the control plane fetches Supabase at differs from the
+   * URL tokens are issued under (e.g. in Docker, where the API reaches Supabase
+   * via host.docker.internal but tokens carry the host's 127.0.0.1 issuer).
+   */
+  SUPABASE_AUTH_ISSUER: z.string().url().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
   SUPABASE_ANON_KEY: z.string().min(1).optional(),
   SUPABASE_JWT_SECRET: z
