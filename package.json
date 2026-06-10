@@ -19,6 +19,7 @@
     "check:rls": "tsx scripts/check-rls.ts",
     "check:secrets": "tsx scripts/check-secrets.ts",
     "evals": "tsx evals/run.ts",
+    "evals:workbook": "tsx evals/workbook-contract/run.ts",
     "seed": "tsx scripts/seed.ts",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
@@ -26,9 +27,12 @@
     "dev": "docker compose -f docker/compose.yaml up --build"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
     "@eslint/js": "^9.17.0",
     "@serenica/contract": "workspace:*",
     "@serenica/db": "workspace:*",
@@ -40,6 +44,7 @@
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.19.1",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "zod": "^3.25.76"
   }
 }

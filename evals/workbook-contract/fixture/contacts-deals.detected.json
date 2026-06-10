@@ -1,0 +1,165 @@
+{
+  "workbookName": "Coastline Realty tracker.xlsx",
+  "note": "Mechanical detection output (ADR-023 §2): sheets, columns, sample values, inferred candidate types. Deliberately messy. The agent reasons over this profile, not raw Excel.",
+  "sheets": [
+    {
+      "name": "Client List",
+      "headerRow": 2,
+      "rowCount": 38,
+      "comment": "Row 1 is a merged title banner 'COASTLINE REALTY - CONTACTS'. Real headers are on row 2.",
+      "columns": [
+        {
+          "header": "Name",
+          "nonEmpty": 38,
+          "distinctCount": 38,
+          "inferredType": "string",
+          "samples": ["John Carter", "Sarah Connor", "M. Ruiz", "the Patels (Dev & Anjali)"]
+        },
+        {
+          "header": "Email",
+          "nonEmpty": 31,
+          "distinctCount": 31,
+          "inferredType": "string",
+          "samples": ["john.carter@gmail.com", "sconnor@outlook.com", "", "dev.patel@work.co; anjali@home.net"]
+        },
+        {
+          "header": "Cell",
+          "nonEmpty": 36,
+          "distinctCount": 36,
+          "inferredType": "string",
+          "samples": ["(415) 555-0142", "415-555-9981", "5105550110", "n/a"]
+        },
+        {
+          "header": "Status",
+          "nonEmpty": 38,
+          "distinctCount": 9,
+          "inferredType": "string",
+          "samples": ["Lead", "lead", "PROSPECT", "Active", "cold", "Prospect ", "active", "Cold lead", "LEAD"]
+        },
+        {
+          "header": "Notes",
+          "nonEmpty": 27,
+          "distinctCount": 27,
+          "inferredType": "string",
+          "samples": [
+            "Met at open house on Elm St, wants 3BR under 600k",
+            "Referred by John. Call back after July.",
+            "",
+            "Investor. Cash. Looking at the Oak Ave duplex."
+          ]
+        },
+        {
+          "header": "Priority",
+          "nonEmpty": 33,
+          "distinctCount": 5,
+          "inferredType": "string",
+          "samples": ["High", "Med", "Low", "high", "A"],
+          "comment": "Internal hotness/priority the agent assigns by feel. Not a value clients supply."
+        }
+      ],
+      "sampleRows": [
+        {
+          "Name": "John Carter",
+          "Email": "john.carter@gmail.com",
+          "Cell": "(415) 555-0142",
+          "Status": "Active",
+          "Notes": "Met at open house on Elm St, wants 3BR under 600k",
+          "Priority": "High"
+        },
+        {
+          "Name": "Sarah Connor",
+          "Email": "sconnor@outlook.com",
+          "Cell": "415-555-9981",
+          "Status": "PROSPECT",
+          "Notes": "Referred by John. Call back after July.",
+          "Priority": "Med"
+        }
+      ]
+    },
+    {
+      "name": "Listings",
+      "headerRow": 1,
+      "rowCount": 14,
+      "comment": "One table. The 'Client' column holds a person's name, not an id.",
+      "columns": [
+        {
+          "header": "Property Address",
+          "nonEmpty": 14,
+          "distinctCount": 14,
+          "inferredType": "string",
+          "samples": ["112 Elm St", "88 Oak Ave #4", "2231 Shoreline Dr"]
+        },
+        {
+          "header": "List Price",
+          "nonEmpty": 14,
+          "distinctCount": 13,
+          "inferredType": "string",
+          "samples": ["$595,000", "1.2M", "750000", "$1,050,000"]
+        },
+        {
+          "header": "Stage",
+          "nonEmpty": 14,
+          "distinctCount": 7,
+          "inferredType": "string",
+          "samples": ["Showing", "Offer", "Under Contract", "under contract", "Closed", "Lost", "offer"]
+        },
+        {
+          "header": "Close Date",
+          "nonEmpty": 6,
+          "distinctCount": 6,
+          "inferredType": "string",
+          "samples": ["3/4/2026", "2026-03-18", "Mar 30 2026", ""]
+        },
+        {
+          "header": "Client",
+          "nonEmpty": 14,
+          "distinctCount": 11,
+          "inferredType": "string",
+          "samples": ["John Carter", "S. Connor", "Patel", "John Carter"],
+          "comment": "Values overlap with the Name column on the Client List sheet."
+        }
+      ],
+      "sampleRows": [
+        {
+          "Property Address": "112 Elm St",
+          "List Price": "$595,000",
+          "Stage": "Offer",
+          "Close Date": "3/4/2026",
+          "Client": "John Carter"
+        }
+      ]
+    },
+    {
+      "name": "Log",
+      "headerRow": 1,
+      "rowCount": 120,
+      "comment": "A running activity log. Could be its own object or folded into per-person interactions. A judgment call, not a clean third entity.",
+      "columns": [
+        {
+          "header": "Date",
+          "nonEmpty": 120,
+          "distinctCount": 84,
+          "inferredType": "string",
+          "samples": ["6/1/2026", "6/2/2026", "2026-06-03"]
+        },
+        {
+          "header": "Who",
+          "nonEmpty": 118,
+          "distinctCount": 33,
+          "inferredType": "string",
+          "samples": ["John Carter", "Sarah Connor", "Patel"]
+        },
+        {
+          "header": "What",
+          "nonEmpty": 120,
+          "distinctCount": 119,
+          "inferredType": "string",
+          "samples": ["Called, left vm", "Sent listings for Elm St", "Toured 88 Oak Ave"]
+        }
+      ],
+      "sampleRows": [
+        { "Date": "6/1/2026", "Who": "John Carter", "What": "Called, left vm" }
+      ]
+    }
+  ]
+}

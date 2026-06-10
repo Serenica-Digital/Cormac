@@ -6,6 +6,9 @@ notes
 graphify-out
 proposal
 
+# private business/venture material (pricing, margins, IP terms) — keep out of git history
+docs/business-plan/
+
 # dependencies
 node_modules/
 .pnpm-store/
@@ -23,6 +26,9 @@ build/
 # supabase local
 supabase/.branches/
 supabase/.temp/
+
+# spike run artifacts (the fixture and golden are committed; model outputs are not)
+evals/workbook-contract/out/
 
 # logs and caches
 *.log
