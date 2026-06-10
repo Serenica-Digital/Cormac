@@ -25,6 +25,8 @@ services:
     command: pnpm --filter @serenica/api run start
     environment:
       API_PORT: '8088'
+      # Flips to hermes when the real runtime joins this file (plan Phase 3).
+      RUNTIME_KIND: 'stub'
       RUNTIME_URL: 'http://runtime-stub:8090'
       # Inside the container, the host's Supabase is reachable only via
       # host.docker.internal; do not inherit the host's 127.0.0.1 URL.

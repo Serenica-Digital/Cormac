@@ -2,12 +2,24 @@ import http from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EXAMPLE_PERSON_CONTRACT } from '@serenica/contract';
 import { ProblemError } from '@serenica/shared';
-import { callRuntime, type RuntimeRequest } from './runtime.js';
+import {
+  buildTaskBrief,
+  callStubRuntime,
+  runHermesTask,
+  type StubRuntimeRequest,
+} from './runtime.js';
 
 /**
- * Proves the adapter's containment guarantee (ADR-006): well-formed runtime
- * output passes; malformed output and error responses are rejected and never
- * returned as a usable proposal. A tiny fake runtime stands in over real HTTP.
+ * Proves the adapter's containment guarantee (ADR-006) for both runtime
+ * implementations, each against a tiny fake server over real HTTP.
+ *
+ * Stub path: well-formed output passes; malformed output and error responses
+ * are rejected and never returned as a usable proposal.
+ *
+ * Hermes path: the Runs API conversation (bearer auth carried, taskId in the
+ * brief and session, poll to terminal) plus every failure lane: failed run,
+ * concurrency cap, timeout, unreachable. No proposal parsing happens here at
+ * all; that is the point (the proposal arrives through the MCP write gate).
  */
 
 let server: http.Server;
@@ -48,31 +60,164 @@ afterAll(() => {
   server.close();
 });
 
-function reqWith(text: string): RuntimeRequest {
+function reqWith(text: string): StubRuntimeRequest {
   return { workspaceId: 'w1', contract: EXAMPLE_PERSON_CONTRACT, text, records: [] };
 }
 
-describe('callRuntime', () => {
+describe('callStubRuntime', () => {
   it('returns a shape-valid proposal', async () => {
-    const proposal = await callRuntime(baseUrl, reqWith('ok'));
+    const proposal = await callStubRuntime(baseUrl, reqWith('ok'));
     expect(proposal.changes).toHaveLength(1);
     expect(proposal.changes[0]!.op).toBe('update');
   });
 
   it('rejects malformed runtime output', async () => {
-    await expect(callRuntime(baseUrl, reqWith('bad-shape'))).rejects.toMatchObject({
+    await expect(callStubRuntime(baseUrl, reqWith('bad-shape'))).rejects.toMatchObject({
       code: 'runtime_invalid_output',
     });
   });
 
   it('rejects a runtime error response', async () => {
-    await expect(callRuntime(baseUrl, reqWith('server-error'))).rejects.toBeInstanceOf(ProblemError);
+    await expect(callStubRuntime(baseUrl, reqWith('server-error'))).rejects.toBeInstanceOf(
+      ProblemError,
+    );
   });
 
   it('rejects when the runtime is unreachable', async () => {
     // Port 1 is not listening.
-    await expect(callRuntime('http://127.0.0.1:1', reqWith('ok'))).rejects.toMatchObject({
+    await expect(callStubRuntime('http://127.0.0.1:1', reqWith('ok'))).rejects.toMatchObject({
       code: 'runtime_unreachable',
     });
+  });
+});
+
+/**
+ * Fake Hermes Runs API. The submitted brief's text selects the scenario; runs
+ * are tracked so the first poll can return `running` before the terminal state,
+ * proving the adapter actually polls.
+ */
+let hermes: http.Server;
+let hermesUrl: string;
+let lastAuthHeader: string | undefined;
+let lastSubmitBody: { input?: string; session_id?: string } = {};
+const runs = new Map<string, { scenario: string; polls: number }>();
+let runCounter = 0;
+
+beforeAll(async () => {
+  hermes = http.createServer((req, res) => {
+    const json = (status: number, payload: unknown) => {
+      res.writeHead(status, { 'content-type': 'application/json' });
+      res.end(JSON.stringify(payload));
+    };
+
+    if (req.method === 'POST' && req.url === '/v1/runs') {
+      let body = '';
+      req.on('data', (chunk) => (body += chunk));
+      req.on('end', () => {
+        lastAuthHeader = req.headers.authorization;
+        lastSubmitBody = JSON.parse(body) as { input?: string; session_id?: string };
+        const input = lastSubmitBody.input ?? '';
+        if (input.includes('scenario-busy')) {
+          json(429, { error: 'too many concurrent runs' });
+          return;
+        }
+        const scenario = input.includes('scenario-fail')
+          ? 'fail'
+          : input.includes('scenario-slow')
+            ? 'slow'
+            : 'ok';
+        const runId = `run-${++runCounter}`;
+        runs.set(runId, { scenario, polls: 0 });
+        json(202, { run_id: runId, status: 'queued' });
+      });
+      return;
+    }
+
+    const match = req.url?.match(/^\/v1\/runs\/(.+)$/);
+    if (req.method === 'GET' && match) {
+      const run = runs.get(match[1]!);
+      if (!run) {
+        json(404, { error: 'no such run' });
+        return;
+      }
+      run.polls += 1;
+      if (run.scenario === 'slow' || run.polls < 2) {
+        json(200, { status: 'running' });
+        return;
+      }
+      if (run.scenario === 'fail') {
+        json(200, { status: 'failed', output: 'tool exploded' });
+        return;
+      }
+      json(200, { status: 'completed', output: 'all done' });
+      return;
+    }
+
+    json(404, { error: 'not found' });
+  });
+  await new Promise<void>((resolve) => hermes.listen(0, '127.0.0.1', resolve));
+  const addr = hermes.address();
+  if (!addr || typeof addr === 'string') throw new Error('no hermes address');
+  hermesUrl = `http://127.0.0.1:${addr.port}`;
+});
+
+afterAll(() => {
+  hermes.close();
+});
+
+const cfg = (overrides?: Partial<Parameters<typeof runHermesTask>[0]>) => ({
+  url: hermesUrl,
+  apiKey: 'test-key',
+  timeoutMs: 2000,
+  pollIntervalMs: 10,
+  ...overrides,
+});
+
+describe('runHermesTask', () => {
+  it('submits with bearer auth and the task brief, polls to completed, returns the output', async () => {
+    const taskId = '6a2f7c1e-0000-4000-8000-000000000042';
+    const outcome = await runHermesTask(cfg(), { taskId, text: 'update John to active' });
+
+    expect(outcome.output).toBe('all done');
+    expect(lastAuthHeader).toBe('Bearer test-key');
+    expect(lastSubmitBody.session_id).toBe(taskId);
+    // The brief carries the taskId the agent must hand to submit_proposal.
+    expect(lastSubmitBody.input).toContain(taskId);
+    expect(lastSubmitBody.input).toContain('update John to active');
+  });
+
+  it('maps a failed run to runtime_failed with the run output as detail', async () => {
+    await expect(runHermesTask(cfg(), { taskId: 't-fail', text: 'scenario-fail' })).rejects.toMatchObject({
+      code: 'runtime_failed',
+      detail: 'tool exploded',
+    });
+  });
+
+  it('maps the concurrency cap (429) to runtime_busy', async () => {
+    await expect(runHermesTask(cfg(), { taskId: 't-busy', text: 'scenario-busy' })).rejects.toMatchObject({
+      code: 'runtime_busy',
+      status: 503,
+    });
+  });
+
+  it('times out a run that never reaches a terminal state', async () => {
+    await expect(
+      runHermesTask(cfg({ timeoutMs: 100 }), { taskId: 't-slow', text: 'scenario-slow' }),
+    ).rejects.toMatchObject({ code: 'runtime_timeout', status: 504 });
+  });
+
+  it('rejects when the runtime is unreachable', async () => {
+    await expect(
+      runHermesTask(cfg({ url: 'http://127.0.0.1:1' }), { taskId: 't', text: 'x' }),
+    ).rejects.toMatchObject({ code: 'runtime_unreachable' });
+  });
+});
+
+describe('buildTaskBrief', () => {
+  it('instructs tool use and the exact submit_proposal taskId', () => {
+    const brief = buildTaskBrief({ taskId: 'abc-123', text: 'hello' });
+    expect(brief).toContain('submit_proposal with taskId "abc-123"');
+    expect(brief).toContain('search_records');
+    expect(brief).toContain('get_active_contract');
   });
 });
