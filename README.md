@@ -1,6 +1,6 @@
-# Serenica CRM Agent
+# Cormac
 
-A multi-tenant, contract-first CRM agent platform. Clients bring the spreadsheets their business runs on; the system lifts each workbook into a governed, versioned semantic contract and operates on it through an agent reachable over web, SMS, email, Excel, and Claude/MCP.
+A multi-tenant, contract-first CRM agent platform, by Serenica Digital. Clients bring the spreadsheets their business runs on; the system lifts each workbook into a governed, versioned semantic contract and operates on it through an agent reachable over web, SMS, email, Excel, and Claude/MCP.
 
 The design lives in [docs/](docs/). Read the ADRs first ([docs/adr/](docs/adr/)); everything else dereferences them. The build sequence is [docs/prd/build-plan.md](docs/prd/build-plan.md).
 

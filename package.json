@@ -2,7 +2,7 @@
   "name": "serenica-crm-agent",
   "version": "0.0.0",
   "private": true,
-  "description": "Serenica CRM Agent: a multi-tenant, contract-first CRM agent platform.",
+  "description": "Cormac: a multi-tenant, contract-first CRM agent platform by Serenica Digital.",
   "type": "module",
   "packageManager": "pnpm@10.10.0",
   "engines": {

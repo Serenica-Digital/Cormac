@@ -12,7 +12,7 @@ The architecture has to make two things true at once: the agent can update the C
 
 ## Decision
 
-The Serenica control plane (a Node/TypeScript API plus workers) is the only thing that writes business records.
+The Cormac control plane (a Node/TypeScript API plus workers) is the only thing that writes business records.
 
 ### 1. Surfaces and the runtime only propose
 

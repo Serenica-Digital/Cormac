@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-These records capture the significant decisions that set the shape of Serenica CRM Agent, and the reasoning behind each one. They are the most important documents in the repository, and they double as the project's brain and its history. The PRD says what we are building; the ADRs say why we are allowed to believe it. They are derived from the founding design conversations, preserved in the private development notes.
+These records capture the significant decisions that set the shape of Cormac, and the reasoning behind each one. They are the most important documents in the repository, and they double as the project's brain and its history. The PRD says what we are building; the ADRs say why we are allowed to believe it. They are derived from the founding design conversations, preserved in the private development notes.
 
 ## How to use them
 

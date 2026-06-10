@@ -19,13 +19,13 @@ The live question list is the onboarding ask list in the newer doc and in [../pr
 
 ## Why This Matters
 
-Direct relevance: 9/10. Serenica CRM Agent needs more than a frontend host: it needs containerized web/API/worker services, webhook handling, a Dockerized Hermes runtime, optional MCP, managed secrets, preview links, and a development workflow that does not force us to become Kubernetes/AWS specialists before the product has proven itself. Juno may be the missing deployment and development layer, especially because the Juno team is offering direct pilot support and is actively exploring Hermes/Claude-style developer workflows.
+Direct relevance: 9/10. Cormac needs more than a frontend host: it needs containerized web/API/worker services, webhook handling, a Dockerized Hermes runtime, optional MCP, managed secrets, preview links, and a development workflow that does not force us to become Kubernetes/AWS specialists before the product has proven itself. Juno may be the missing deployment and development layer, especially because the Juno team is offering direct pilot support and is actively exploring Hermes/Claude-style developer workflows.
 
 The main caveat is that the public Juno documentation is still oriented around enterprise compute orchestration, GPU utilization, air-gapped environments, and Kubernetes infrastructure. The developer-pilot story comes mostly from the June 5 meeting notes, not from fully mature public docs. That makes this a strong opportunity, but not yet a fully de-risked platform decision.
 
 ## One-Paragraph Take
 
-Juno is a strong candidate to be Serenica's preferred prototype orchestration platform, not its product brain. The product should remain a portable monorepo of normal containers, with Supabase/Postgres as the system of record and the Serenica control plane as the only writer. Juno's likely role is to provide browser-based development workspaces, app/runtime workload orchestration, previewable deployments, and a practical place to run both the development assistant (Jarvis) and the productized Hermes runtime. The decision should be validated with a short deployment spike before Juno becomes a hard dependency.
+Juno is a strong candidate to be Cormac's preferred prototype orchestration platform, not its product brain. The product should remain a portable monorepo of normal containers, with Supabase/Postgres as the system of record and the Cormac control plane as the only writer. Juno's likely role is to provide browser-based development workspaces, app/runtime workload orchestration, previewable deployments, and a practical place to run both the development assistant (Jarvis) and the productized Hermes runtime. The decision should be validated with a short deployment spike before Juno becomes a hard dependency.
 
 ## What Juno Publicly Claims
 
@@ -40,7 +40,7 @@ Official sources:
 
 ### Orion
 
-Orion is described as a unified compute plane that orchestrates infrastructure across bare metal, Kubernetes, cloud, hybrid, and edge-style deployments. The public docs emphasize enterprise compute, resource optimization, dynamic allocation, workload portability, and API integration. For Serenica, the relevant claim is not the GPU utilization story; it is the container-native orchestration layer and the idea that workloads can move between deployment environments.
+Orion is described as a unified compute plane that orchestrates infrastructure across bare metal, Kubernetes, cloud, hybrid, and edge-style deployments. The public docs emphasize enterprise compute, resource optimization, dynamic allocation, workload portability, and API integration. For Cormac, the relevant claim is not the GPU utilization story; it is the container-native orchestration layer and the idea that workloads can move between deployment environments.
 
 Source: <https://juno-fx.github.io/Orion-Documentation/latest/>
 
@@ -56,7 +56,7 @@ Source: <https://juno-fx.github.io/Orion-Documentation/latest/installation/quick
 
 The workload docs describe Genesis as the management surface for workload templates and Hubble as the namespace/project portal for deployed Orion projects. Workload templates can define schema fields, environment variables, group/project assignment, and template lifecycle actions like edit, duplicate, upgrade, and deprecation.
 
-This maps directly to Serenica's needs: web, API, worker, Hermes runtime, and future MCP server can each become workload templates or related app workloads. The important design question is whether those services should be separate workload templates from day one or bundled during the first spike.
+This maps directly to Cormac's needs: web, API, worker, Hermes runtime, and future MCP server can each become workload templates or related app workloads. The important design question is whether those services should be separate workload templates from day one or bundled during the first spike.
 
 Source: <https://juno-fx.github.io/Orion-Documentation/latest/genesis/workloads/>
 
@@ -64,7 +64,7 @@ Source: <https://juno-fx.github.io/Orion-Documentation/latest/genesis/workloads/
 
 Terra is Juno's plugin and workload-deployment layer. Public docs describe Terra repositories as Git repositories containing plugins and bundles. Plugins are loaded from a `plugins/` directory and require a `terra.yaml`; bundles group multiple plugins and configurations together.
 
-This is relevant if Serenica eventually needs a custom "Serenica development environment" or "Serenica app stack" plugin: for example, a bundle that launches web, API, worker, Hermes runtime, and maybe a project-scoped development assistant in one repeatable setup.
+This is relevant if Cormac eventually needs a custom "Cormac development environment" or "Cormac app stack" plugin: for example, a bundle that launches web, API, worker, Hermes runtime, and maybe a project-scoped development assistant in one repeatable setup.
 
 Source: <https://juno-fx.github.io/Terra-Official-Plugins/repositories/>
 
@@ -72,7 +72,7 @@ Source: <https://juno-fx.github.io/Terra-Official-Plugins/repositories/>
 
 Helios is described as a containerized workstation image for browser-based developer or user environments. The public docs emphasize flexible, extendable workstations that can run on Juno Orion or standalone.
 
-For Serenica, Helios matters because the developer's daily workflow may move from local VS Code plus terminal into a cloud development workspace with project tools, repo access, and agent assistants.
+For Cormac, Helios matters because the developer's daily workflow may move from local VS Code plus terminal into a cloud development workspace with project tools, repo access, and agent assistants.
 
 Source: <https://juno-fx.github.io/Helios/>
 
@@ -80,7 +80,7 @@ Source: <https://juno-fx.github.io/Helios/>
 
 The Orion auth docs describe Genesis as the primary access point for Juno products, using NextAuth.js and supporting Google, AWS Cognito, basic auth for local development/testing, and AD/LDAP. The docs warn that basic auth is not appropriate for production. Juno's security page claims namespace isolation, mTLS workload-to-workload communication, RBAC and audit logging, secret-management integrations, and air-gapped deployment support.
 
-For Serenica, this is useful but incomplete. Juno's platform controls can help the hosting/security story, but they do not replace Serenica's own application-level auth, tenant isolation, audit trail, contract validation, or control-plane write rules.
+For Cormac, this is useful but incomplete. Juno's platform controls can help the hosting/security story, but they do not replace Cormac's own application-level auth, tenant isolation, audit trail, contract validation, or control-plane write rules.
 
 Sources:
 
@@ -103,29 +103,29 @@ The meeting described a developer-pilot direction that is more specific and more
 - They described shared storage mounts and sandbox Git/Gitea repositories that can later mirror to GitHub.
 - They specifically pushed us to look at Hermes and discussed Hermes as both a development assistant and a runtime-like agent component.
 
-This is the real reason Juno is compelling for Serenica. The public platform explains the infrastructure. The meeting explains the developer workflow and the relationship opportunity.
+This is the real reason Juno is compelling for Cormac. The public platform explains the infrastructure. The meeting explains the developer workflow and the relationship opportunity.
 
-## Fit For Serenica
+## Fit For Cormac
 
 ### Strong Fit
 
-- **Containerized multi-service app.** Serenica already wants a web app, API/control plane, worker, Hermes runtime, and possibly MCP server. Juno is explicitly about deploying and managing workloads.
+- **Containerized multi-service app.** Cormac already wants a web app, API/control plane, worker, Hermes runtime, and possibly MCP server. Juno is explicitly about deploying and managing workloads.
 - **Hermes deployment.** The productized Hermes runtime needs somewhere to run. A Juno workload is a natural home for the runtime as long as the control plane remains the only writer.
 - **Development assistant.** A project-scoped Hermes assistant that reads ADRs, PRD, research docs, and implementation notes fits Juno's agentic development-workspace story.
 - **Client previews.** Juno's pitch around launching app runtime containers and sharing links directly addresses the handoff/demo problem.
 - **AWS path without immediate AWS fluency.** The meeting notes suggest Juno can put us on an AWS development cluster while hiding much of the orchestration complexity.
-- **Security packet support.** Juno's security claims could become part of the hosting/platform section of Serenica's security packet, if Juno can provide evidence.
+- **Security packet support.** Juno's security claims could become part of the hosting/platform section of the Cormac security packet, if Juno can provide evidence.
 
 ### Partial Fit
 
 - **Supabase.** Juno can host workloads that talk to managed Supabase, and the public site lists Supabase/PostgreSQL among integrations. But that does not mean Supabase auth/database management should move into Juno immediately. Managed Supabase remains simpler for v1 unless self-hosting becomes a requirement.
-- **Microsoft/Twilio connectors.** Juno is not where connector business logic should live. It can host the containers that process connector webhooks, but Serenica's control plane should still own verification, policy, writes, and audit.
+- **Microsoft/Twilio connectors.** Juno is not where connector business logic should live. It can host the containers that process connector webhooks, but the Cormac control plane should still own verification, policy, writes, and audit.
 - **Lovable.** Lovable can still produce the web UI, but Juno is where the exported web app and backend services run. Lovable should not become the integration/control surface.
 
 ### Not A Fit
 
 - **Source of truth.** Juno should not own CRM records, schema contracts, proposals, audit events, or tenant state.
-- **Product authorization.** Juno platform auth is about accessing Juno/Orion/Genesis/Hubble. Serenica still needs Supabase Auth and control-plane authorization for product users.
+- **Product authorization.** Juno platform auth is about accessing Juno/Orion/Genesis/Hubble. Cormac still needs Supabase Auth and control-plane authorization for product users.
 - **Agent authority.** Juno can run Hermes, but Juno should not grant Hermes direct write credentials or bypass the control plane.
 
 ## The Two Hermes Roles
@@ -152,7 +152,7 @@ flowchart TB
     mcp["MCP Workload\noptional / future"]
   end
 
-  subgraph serenica["Serenica-Owned Product Logic"]
+  subgraph serenica["Cormac-Owned Product Logic"]
     control["Control Plane\nRBAC, contracts, proposals,\nwrites, audit, connector policy"]
     adapter["Runtime Adapter\ncontext, tools, skills,\nstructured validation"]
   end
@@ -189,7 +189,7 @@ flowchart TB
 
 The first Juno spike should answer whether the platform helps without creating hidden dependency risk.
 
-1. Launch a Juno dev workspace for the Serenica repo.
+1. Launch a Juno dev workspace for the Cormac repo.
 2. Confirm GitHub access and normal `pnpm` development workflow.
 3. Run a basic web workload.
 4. Run a basic Node/TypeScript API workload.
@@ -213,12 +213,12 @@ Kill or pause conditions:
 
 ## Security and Compliance Implications
 
-Juno can strengthen the hosting story if its claims hold up, especially around container isolation, platform audit logs, RBAC, mTLS, and secret-management integration. But Serenica's security packet must distinguish between:
+Juno can strengthen the hosting story if its claims hold up, especially around container isolation, platform audit logs, RBAC, mTLS, and secret-management integration. But the Cormac security packet must distinguish between:
 
 - **Juno/platform controls:** cluster access, workload isolation, platform auth, platform audit logs, secrets injection, networking, backup/restore, incident response.
-- **Serenica/application controls:** Supabase Auth, product RBAC, tenant isolation, contract validation, proposal/approval rules, audit events, connector verification, AI data handling, weekly reports, and user-facing permissions.
+- **Cormac application controls:** Supabase Auth, product RBAC, tenant isolation, contract validation, proposal/approval rules, audit events, connector verification, AI data handling, weekly reports, and user-facing permissions.
 
-Enterprise IT will ask for both. Juno can help with the first category; Serenica still owns the second.
+Enterprise IT will ask for both. Juno can help with the first category; Serenica Digital still owns the second.
 
 Open evidence asks for Juno:
 
