@@ -28,16 +28,16 @@ One Juno project (one namespace) named `serenica`, holding development workloads
 
 | Serenica service | Juno workload | Source or image | Network mode | Notes |
 | --- | --- | --- | --- | --- |
-| Web UI | `runtime-js` workload | repo `apps/web`, build + run command | `ingress-auth` (or `ingress-noauth` for client previews) | The shareable preview link |
-| Control plane API | `runtime-js` workload | repo `apps/api` | `ingress-noauth` | Public webhook routes (Twilio, later Microsoft Graph); verifies provider signatures itself; sole holder of the Supabase service key |
-| Worker | `runtime-js` workload | repo `apps/worker` | `clusterip` | No inbound traffic at all |
+| Web UI | Image workload (template TBD at onboarding) | CI-built image from `docker/` | `ingress-auth` (or `ingress-noauth` for client previews) | The shareable preview link |
+| Control plane API | Image workload | CI-built image from `docker/` | `ingress-noauth` | Public webhook routes (Twilio, later Microsoft Graph); verifies provider signatures itself; sole holder of the Supabase service key |
+| Worker | Image workload | CI-built image from `docker/` | `clusterip` | No inbound traffic at all |
 | Hermes product runtime | Custom workload template | Pinned `nousresearch/hermes-agent` image plus our `serenica-runtime` profile distribution | `clusterip` | Never publicly routable; called only by the control plane; no database credentials; memory off; stateless per task |
 | Jarvis (dev assistant) | Official `hermes-agent` plugin | As shipped | `ingress-auth` | Persistent and project-aware; developer tooling only, never touches client data |
 | Dev workspace | `web-ide` (code-server) plugin | As shipped | `ingress-auth` | Needs Node 22 + pnpm; Docker availability is an onboarding question |
 | Git sandbox | Official `gitea` plugin | As shipped | `ingress-auth` | Agent sandbox repos, mirrored to GitHub on approval |
-| MCP server (later) | `runtime-js` workload | future `apps/mcp-server` | `ingress-noauth` | Deferred; external Claude/MCP tool surface |
+| MCP server (later) | Image workload | future `apps/mcp-server` image | `ingress-noauth` | Deferred; external Claude/MCP tool surface |
 
-The `runtime-js`/`runtime-python` workload plugins and the `network_mode` select (`ingress-auth`, `ingress-noauth`, `clusterip`, `nodeport`) are on the public `556-runtime-environments` branch (PR #557). Whether the pilot cluster carries them is the first onboarding question; they fit our services exactly.
+A note on the build path: the `runtime-js`/`runtime-python` plugins on the public `556-runtime-environments` branch (PR #557) clone a repo and run a build command per workload, which fits single-package repos. Ours is a pnpm monorepo with workspace dependencies and a build order, so the app services deploy as CI-built images from the Dockerfiles already in the repo, and the runtime plugins remain attractive for quick one-off previews. What we want from PR #557 either way is its `network_mode` select (`ingress-auth`, `ingress-noauth`, `clusterip`, `nodeport`); whether the pilot cluster supports those modes for image workloads is the first onboarding question.
 
 ```mermaid
 flowchart TB
@@ -48,9 +48,9 @@ flowchart TB
       jarvis["Jarvis dev assistant\nofficial hermes-agent plugin\ningress-auth, persistent volume"]
     end
     subgraph appw["Application workloads"]
-      web["Web UI\nruntime-js, ingress-auth"]
-      api["Control plane API\nruntime-js, ingress-noauth\nverifies webhooks itself"]
-      worker["Worker\nruntime-js, clusterip"]
+      web["Web UI\nCI-built image, ingress-auth"]
+      api["Control plane API\nCI-built image, ingress-noauth\nverifies webhooks itself"]
+      worker["Worker\nCI-built image, clusterip"]
       hermes["Hermes product runtime\ncustom headless template\npinned image + serenica-runtime distribution\nclusterip, no public route"]
     end
   end
@@ -93,7 +93,7 @@ Small and concrete; this doubles as the deployment half of our runtime de-risk s
 
 1. Create the `serenica` project; launch the dev workspace and confirm the normal `pnpm` workflow and GitHub access.
 2. Register the Terra Source carrying the runtime plugins; confirm `network_mode` options on the pilot cluster.
-3. Launch web, API, and worker from the repo via runtime workloads; wire secrets/env to managed Supabase.
+3. Launch web, API, and worker as CI-built image workloads; wire secrets/env to managed Supabase.
 4. Deploy the Hermes product runtime workload (pinned image, `serenica-runtime` distribution, `clusterip`).
 5. Run the walking-skeleton thread end to end on Juno: a web message becomes a held proposal, approval writes the record and the audit event in Supabase.
 6. Expose a preview link for the web UI; confirm the API's public URL shape and stability for future Twilio webhooks.
