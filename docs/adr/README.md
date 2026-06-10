@@ -47,3 +47,5 @@ Status values: **Proposed**, **Accepted**, **Superseded by ADR-NNN**. `Planned` 
 | [019](019-record-storage-jsonb-hybrid.md) | Record storage is a JSONB-backed hybrid (settles ADR-002) | Accepted | 2026-06-07 |
 | [020](020-token-verification-via-jwks.md) | Token verification against the Supabase JWKS (refines ADR-011) | Accepted | 2026-06-07 |
 | [021](021-runtime-seam-validated-with-stub.md) | Runtime seam committed; real Hermes integration pending | Accepted | 2026-06-07 |
+| [022](022-excel-integration-model.md) | Excel integration model: contract-generated workbooks, author-versus-data roles, validate-at-sync | Accepted | 2026-06-09 |
+| [023](023-workbook-contract-agent-approach.md) | The Workbook Contract Agent is the keystone; approach committed, feasibility deferred to a spike | Accepted (approach) | 2026-06-09 |

@@ -314,6 +314,8 @@ Acceptance criteria:
 
 ## Microsoft and Excel
 
+> The Excel model is set by ADR-022 (the live surface is a contract-generated, contract-constrained workbook; in-sheet rules guide while the Control Plane validates at sync) and ADR-023 (the Workbook Contract Agent that produces the contract). Live Excel is a first-class capability, with manual upload (REQ-041) as the always-on floor that needs no Microsoft consent.
+
 ### REQ-040: Workbook Contract Ingestion
 
 Priority: P0
@@ -386,6 +388,19 @@ Acceptance criteria:
 - Conflict behavior is documented.
 - Sync events are audited.
 - Unsupported workbook situations fail safely with clear error reporting.
+
+### REQ-041D: Contract-Generated Constrained Workbook
+
+Priority: P1 candidate (tied to the live-Excel decision, ADR-022)
+
+The live Excel data surface is a workbook generated from the published contract, with the contract expressed as native Excel rules.
+
+Acceptance criteria:
+
+- The system can generate a workbook from a published contract: one table per object, enum fields as dropdown validation, typed fields as number or date validation, hidden and locked columns for record IDs, field IDs, and contract version, protected headers, and conditional formatting that flags out-of-contract values.
+- In-sheet validation is best-effort guidance, not the authoritative gate. The Control Plane validates every submitted change against the contract and is the only writer (ADR-005, ADR-022).
+- Off-contract rows are reported back with reasons and become flagged proposals, never silent writes or silent drops.
+- The workbook is regenerated when the contract changes rather than hand-edited.
 
 ### REQ-042: Arbitrary Workbook Sync
 

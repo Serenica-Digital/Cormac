@@ -1,8 +1,8 @@
 # ADR-012: Microsoft 365 as an optional tiered connector
 
-**Status:** Accepted
+**Status:** Accepted; ADR-022 adjusts the posture toward live Excel as first-class while keeping the Level 0 upload floor.
 **Date:** 2026-06-06
-**Related:** Keeps the Microsoft login of ADR-011 separate from Graph consent, provides live workbook access for ADR-004 (Excel Level 3), and its permission inventory and publisher-verification path are evidence for ADR-015 (security). The graceful-degradation posture is what makes the SMB market of ADR-016 reachable.
+**Related:** Keeps the Microsoft login of ADR-011 separate from Graph consent, provides live workbook access for ADR-004 (Excel Level 3), and its permission inventory and publisher-verification path are evidence for ADR-015 (security). The graceful-degradation posture is what makes the SMB market of ADR-016 reachable. ADR-022 builds on these connector levels and reprioritizes live Excel, and the two overlapping level ladders (this ADR and ADR-004) are flagged there for reconciliation.
 
 ## Context
 

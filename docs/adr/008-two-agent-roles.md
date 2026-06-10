@@ -1,8 +1,8 @@
 # ADR-008: Two agent roles: Workbook Contract Agent and CRM Operations Agent
 
-**Status:** Accepted
+**Status:** Accepted; the Workbook Contract Agent's approach and feasibility spike are refined in ADR-023.
 **Date:** 2026-06-06
-**Related:** Both roles run on ADR-006 (the Hermes runtime) and operate around ADR-002 (the contract). The Workbook Contract Agent is the upload-wizard door of ADR-007 and authors what ADR-002 governs, while the corrections the Operations Agent produces feed the learning loop of ADR-009.
+**Related:** Both roles run on ADR-006 (the Hermes runtime) and operate around ADR-002 (the contract). The Workbook Contract Agent is the upload-wizard door of ADR-007 and authors what ADR-002 governs, while the corrections the Operations Agent produces feed the learning loop of ADR-009. ADR-023 sharpens what the Workbook Contract Agent must and must not be good at, and ADR-022 is the Excel surface its output generates.
 
 ## Context
 

@@ -127,6 +127,7 @@ flowchart TB
 **Trust rules**
 
 - Surfaces never write directly to business records. The agent runtime never holds database write credentials and never mutates records directly.
+- The live Excel surface is a contract-generated, contract-constrained workbook reached through a connector (an Office add-in or selected-file Graph sync). A saved workbook does not write to the database; the Control Plane validates every submitted change against the contract at sync time before applying it, and in-sheet rules are guidance, not the gate (ADR-022).
 - Writes are applied only by the Control Plane, after it validates the change against the contract, the user's permissions, and risk rules. Ambiguous or uncertain changes route to review even in apply-then-report mode (the agent flags uncertainty; per REQ-020/REQ-021). Whether that becomes a formal confidence score with a threshold is an open design question, not a settled mechanism.
 - Auto-apply (fire-and-forget) is a supported, opt-in product behavior, not a hole in the trust model. For workspaces/users on apply-then-report, the Control Plane auto-applies validated agent-originated changes immediately, audits them, and includes them in the weekly report. Confirm-each mode instead waits for user approval. Either way the runtime only proposes; the Control Plane decides and applies.
 - High-risk actions (schema/contract changes, deletes, bulk updates, permission changes) always require explicit confirmation, regardless of mode.
