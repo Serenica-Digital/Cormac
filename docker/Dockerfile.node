@@ -1,6 +1,7 @@
-# Shared image for the Node services (api, worker, runtime-stub). The compose
-# file overrides the command per service. Services run via tsx; no compile step
-# is needed for the skeleton. Build context is the repo root.
+# Shared image for the Node services (api, worker). The SERVICE build arg picks
+# the workload at publish time (ghcr api/worker images differ only in CMD);
+# the compose file overrides the command per service locally. Services run via
+# tsx; no compile step is needed for the skeleton. Build context is the repo root.
 FROM node:22-slim
 
 WORKDIR /app
@@ -15,5 +16,7 @@ COPY scripts ./scripts
 
 RUN pnpm install --frozen-lockfile
 
-# Default command; compose overrides this per service.
-CMD ["pnpm", "--filter", "@serenica/api", "run", "start"]
+ARG SERVICE=api
+ENV SERVICE=${SERVICE}
+# Shell form so the env var resolves at start; compose overrides this locally.
+CMD pnpm --filter "@serenica/${SERVICE}" run start
