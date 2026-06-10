@@ -113,6 +113,41 @@ export async function insertProposal(
   return must(data as ProposalRow | null, error, 'insertProposal');
 }
 
+export interface SourceMessageRef {
+  id: string;
+  user_id: string | null;
+}
+
+export async function getSourceMessage(
+  db: Db,
+  workspaceId: string,
+  sourceMessageId: string,
+): Promise<SourceMessageRef | null> {
+  const { data, error } = await db
+    .from(TABLES.sourceMessages)
+    .select('id, user_id')
+    .eq('workspace_id', workspaceId)
+    .eq('id', sourceMessageId)
+    .maybeSingle();
+  if (error) throw new Error(`getSourceMessage: ${error.message}`);
+  return (data as SourceMessageRef | null) ?? null;
+}
+
+export async function getProposalBySourceMessage(
+  db: Db,
+  workspaceId: string,
+  sourceMessageId: string,
+): Promise<ProposalRow | null> {
+  const { data, error } = await db
+    .from(TABLES.proposals)
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .eq('source_message_id', sourceMessageId)
+    .maybeSingle();
+  if (error) throw new Error(`getProposalBySourceMessage: ${error.message}`);
+  return (data as ProposalRow | null) ?? null;
+}
+
 export async function getProposal(
   db: Db,
   workspaceId: string,
