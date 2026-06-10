@@ -22,6 +22,15 @@ const envSchema = z.object({
     .default('super-secret-jwt-token-with-at-least-32-characters-long'),
   API_PORT: z.coerce.number().int().positive().default(8088),
   RUNTIME_URL: z.string().url().default('http://127.0.0.1:8090'),
+  /**
+   * MCP tool surface for the agent runtime (ADR-025). The token is the
+   * workspace binding: every tool call authenticated with it is scoped to
+   * MCP_WORKSPACE_ID and nothing else. Static pair for the spike (one
+   * workspace, one runtime container); per-run minted tokens come later.
+   * The /mcp endpoint is disabled unless both are set.
+   */
+  MCP_WORKSPACE_ID: z.string().uuid().optional(),
+  MCP_WORKSPACE_TOKEN: z.string().min(16).optional(),
 });
 
 export type Config = z.infer<typeof envSchema>;

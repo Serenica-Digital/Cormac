@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 import { ProblemError } from '@serenica/shared';
 import { buildAppContext } from './app.js';
 import type { Config } from './config.js';
+import { registerMcpRoutes } from './mcp/routes.js';
 import { registerRoutes } from './routes.js';
 import './types.js';
 
@@ -37,5 +38,6 @@ export async function buildServer(config: Config): Promise<FastifyInstance> {
   });
 
   registerRoutes(fastify);
+  registerMcpRoutes(fastify);
   return fastify;
 }

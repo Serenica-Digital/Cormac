@@ -17,6 +17,13 @@ if (!serviceKey) {
 const OWNER_EMAIL = 'owner@demo.serenica.test';
 const OWNER_PASSWORD = 'demo-password-123';
 
+/**
+ * Stable across reseeds so env that binds to the demo workspace (the runtime's
+ * MCP_WORKSPACE_ID, web bookmarks) survives `pnpm db:reset`. The seed is
+ * idempotent: rerunning updates nothing that already exists.
+ */
+const WORKSPACE_ID = '00000000-0000-4000-8000-000000000001';
+
 const db = createServiceClient(url, serviceKey);
 
 async function ensureUser(email: string, password: string): Promise<string> {
@@ -36,42 +43,72 @@ async function ensureUser(email: string, password: string): Promise<string> {
 async function main(): Promise<void> {
   const ownerId = await ensureUser(OWNER_EMAIL, OWNER_PASSWORD);
 
-  const { data: ws, error: wsErr } = await db
+  const { error: wsErr } = await db
     .from('workspaces')
-    .insert({ name: 'Demo Realty', confirmation_mode: 'confirm_each' })
-    .select('id')
-    .single();
+    .upsert(
+      { id: WORKSPACE_ID, name: 'Demo Realty', confirmation_mode: 'confirm_each' },
+      { onConflict: 'id' },
+    );
   if (wsErr) throw new Error(`create workspace: ${wsErr.message}`);
-  const workspaceId = ws.id as string;
+  const workspaceId = WORKSPACE_ID;
 
-  const { error: memErr } = await db
+  const { data: mem, error: memReadErr } = await db
     .from('memberships')
-    .insert({ workspace_id: workspaceId, user_id: ownerId, role: 'owner' });
-  if (memErr) throw new Error(`create membership: ${memErr.message}`);
+    .select('workspace_id')
+    .eq('workspace_id', workspaceId)
+    .eq('user_id', ownerId)
+    .maybeSingle();
+  if (memReadErr) throw new Error(`read membership: ${memReadErr.message}`);
+  if (!mem) {
+    const { error: memErr } = await db
+      .from('memberships')
+      .insert({ workspace_id: workspaceId, user_id: ownerId, role: 'owner' });
+    if (memErr) throw new Error(`create membership: ${memErr.message}`);
+  }
 
-  const { data: cv, error: cvErr } = await db
+  const { data: activeCv, error: cvReadErr } = await db
     .from('contract_versions')
-    .insert({
-      workspace_id: workspaceId,
-      version: EXAMPLE_PERSON_CONTRACT.version,
-      document: EXAMPLE_PERSON_CONTRACT,
-      is_active: true,
-      published_by: ownerId,
-    })
     .select('id')
-    .single();
-  if (cvErr) throw new Error(`publish contract: ${cvErr.message}`);
-  const contractVersionId = cv.id as string;
+    .eq('workspace_id', workspaceId)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (cvReadErr) throw new Error(`read contract: ${cvReadErr.message}`);
+  let contractVersionId = activeCv?.id as string | undefined;
+  if (!contractVersionId) {
+    const { data: cv, error: cvErr } = await db
+      .from('contract_versions')
+      .insert({
+        workspace_id: workspaceId,
+        version: EXAMPLE_PERSON_CONTRACT.version,
+        document: EXAMPLE_PERSON_CONTRACT,
+        is_active: true,
+        published_by: ownerId,
+      })
+      .select('id')
+      .single();
+    if (cvErr) throw new Error(`publish contract: ${cvErr.message}`);
+    contractVersionId = cv.id as string;
+  }
 
-  const { error: recErr } = await db.from('business_records').insert({
-    workspace_id: workspaceId,
-    object_api_name: 'person',
-    contract_version_id: contractVersionId,
-    data: { full_name: 'John Carter', email: 'john@carterdeals.test', status: 'lead' },
-    created_by: ownerId,
-    updated_by: ownerId,
-  });
-  if (recErr) throw new Error(`seed record: ${recErr.message}`);
+  const { data: existingRec, error: recReadErr } = await db
+    .from('business_records')
+    .select('id')
+    .eq('workspace_id', workspaceId)
+    .eq('object_api_name', 'person')
+    .contains('data', { email: 'john@carterdeals.test' })
+    .maybeSingle();
+  if (recReadErr) throw new Error(`read record: ${recReadErr.message}`);
+  if (!existingRec) {
+    const { error: recErr } = await db.from('business_records').insert({
+      workspace_id: workspaceId,
+      object_api_name: 'person',
+      contract_version_id: contractVersionId,
+      data: { full_name: 'John Carter', email: 'john@carterdeals.test', status: 'lead' },
+      created_by: ownerId,
+      updated_by: ownerId,
+    });
+    if (recErr) throw new Error(`seed record: ${recErr.message}`);
+  }
 
   console.log('Seed complete.');
   console.log(`  workspace_id : ${workspaceId}`);

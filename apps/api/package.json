@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@serenica/contract": "workspace:*",
     "@serenica/db": "workspace:*",
     "@serenica/shared": "workspace:*",

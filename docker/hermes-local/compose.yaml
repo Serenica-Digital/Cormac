@@ -1,0 +1,21 @@
+services:
+  hermes:
+    # Pin to the current release tag before relying on results.
+    # v0.16.0 at the time of writing; check the releases page.
+    image: nousresearch/hermes-agent:latest
+    env_file: .env
+    ports:
+      - "8642:8642"
+    volumes:
+      - hermes-data:/opt/data
+      - ./config.yaml:/opt/data/config.yaml:ro
+    # The image HEALTHCHECK is process-liveness only (issue #9751);
+    # probe the HTTP endpoint instead.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8642/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+
+volumes:
+  hermes-data:
