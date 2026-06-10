@@ -1,6 +1,0 @@
-# Mounted to the runtime's HERMES_HOME. Key names from the 2026-06-10
-# research (verify on first run): persistent memory and the user profile
-# stay off because learning lives as governed data (ADR-009).
-memory:
-  memory_enabled: false
-  user_profile_enabled: false
