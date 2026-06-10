@@ -8,7 +8,7 @@ Blocked on: the legal entity (ADR-001). A DPA is a contract between two legal en
 
 ## What it will contain
 
-- Roles: the client is the data controller; Serenica is the processor.
+- Roles: the client is the data controller; Serenica Digital is the processor.
 - Scope and purpose of processing.
 - The subprocessor list ([subprocessors.md](subprocessors.md)) and the client's right to be informed of changes.
 - Security measures (this packet is the technical annex).

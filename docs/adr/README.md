@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-These records capture the significant decisions that set the shape of Serenica CRM Agent, and the reasoning behind each one. They are the most important documents in the repository, and they double as the project's brain and its history. The PRD says what we are building; the ADRs say why we are allowed to believe it. They are derived from the founding design conversations, preserved in the private development notes.
+These records capture the significant decisions that set the shape of Cormac, and the reasoning behind each one. They are the most important documents in the repository, and they double as the project's brain and its history. The PRD says what we are building; the ADRs say why we are allowed to believe it. They are derived from the founding design conversations, preserved in the private development notes.
 
 ## How to use them
 
@@ -31,7 +31,7 @@ Status values: **Proposed**, **Accepted**, **Superseded by ADR-NNN**. `Planned` 
 | [003](003-supabase-postgres-system-of-record.md) | Supabase/Postgres as the single system of record | Accepted | 2026-06-06 |
 | [004](004-excel-as-contract-and-work-surface.md) | Excel is a contract and work surface, not the operational database | Accepted | 2026-06-06 |
 | [005](005-control-plane-is-the-only-writer.md) | The control plane is the only writer | Accepted | 2026-06-06 |
-| [006](006-adopt-hermes-as-agent-runtime.md) | Adopt Hermes as the agent runtime, behind a swappable adapter | Seam committed (ADR-021); integration pending | 2026-06-06 |
+| [006](006-adopt-hermes-as-agent-runtime.md) | Adopt Hermes as the agent runtime, behind a swappable adapter | Runtime integration committed locally (ADR-026); deployment pending (ADR-017) | 2026-06-06 |
 | [007](007-one-agent-service-many-doors.md) | One agent service, many doors (thick MCP, not raw CRUD) | Accepted | 2026-06-06 |
 | [008](008-two-agent-roles.md) | Two agent roles: Workbook Contract Agent and CRM Operations Agent | Accepted | 2026-06-06 |
 | [009](009-govern-learning-as-data.md) | Govern learning as data; the runtime stays stateless | Accepted | 2026-06-06 |
@@ -50,4 +50,5 @@ Status values: **Proposed**, **Accepted**, **Superseded by ADR-NNN**. `Planned` 
 | [022](022-excel-integration-model.md) | Excel integration model: contract-generated workbooks, author-versus-data roles, validate-at-sync | Accepted | 2026-06-09 |
 | [023](023-workbook-contract-agent-approach.md) | The Workbook Contract Agent is the keystone; approach committed, feasibility deferred to a spike | Accepted (approach) | 2026-06-09 |
 | [024](024-product-naming-structure.md) | Naming structure: Serenica the company; Cormac the product, whole (working name) | Accepted (structure; Cormac uncleared) | 2026-06-10 |
-| [025](025-agents-run-as-agents-proposal-as-tool-call.md) | The agents run as tool-using agents; the proposal is a schema-enforced tool call | Accepted | 2026-06-10 |
+| [025](025-agents-run-as-agents-proposal-as-tool-call.md) | The agents run as tool-using agents; the proposal is a schema-enforced tool call | Accepted (open items 1 and 3 resolved by ADR-026) | 2026-06-10 |
+| [026](026-real-hermes-integration-proven-locally.md) | Real Hermes runs the operations agent; the ADR-025 posture proven locally | Accepted (local half; Juno deployment open under ADR-017) | 2026-06-10 |

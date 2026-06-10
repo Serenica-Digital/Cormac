@@ -1,0 +1,17 @@
+# The Hermes product runtime, baked for deployment (ADR-017, ADR-026): the
+# pinned upstream image plus the versioned profile from docker/hermes-runtime/.
+# Same copy-in shim as the local compose service: the image's config migrator
+# rewrites config.yaml in place, so the profile is staged at /profile and
+# copied into the data volume at start. Secrets (API_SERVER_KEY,
+# ANTHROPIC_API_KEY, MCP_WORKSPACE_TOKEN) and MCP_SERVER_URL are env-injected
+# at deploy; Hermes interpolates ${VAR} placeholders in config.yaml at load,
+# so nothing sensitive enters this image.
+FROM nousresearch/hermes-agent:v2026.6.5
+
+COPY docker/hermes-runtime/config.yaml /profile/config.yaml
+COPY docker/hermes-runtime/SOUL.md /profile/SOUL.md
+COPY docker/hermes-runtime/agent-hooks /profile/agent-hooks
+
+# /init + the image's wrapper routes "gateway run" to `hermes gateway run`
+# (headless API server); the default CMD is an interactive CLI that exits.
+ENTRYPOINT ["/bin/sh", "-c", "cp /profile/config.yaml /opt/data/config.yaml && cp /profile/SOUL.md /opt/data/SOUL.md && mkdir -p /opt/data/agent-hooks && cp /profile/agent-hooks/* /opt/data/agent-hooks/ && chmod 755 /opt/data/agent-hooks/* && chown -R hermes:hermes /opt/data/config.yaml /opt/data/SOUL.md /opt/data/agent-hooks && exec /init /opt/hermes/docker/main-wrapper.sh gateway run"]

@@ -21,7 +21,7 @@ The public vocabulary (Orion, Genesis, Hubble, Terra, Helios) hides a more speci
 | Titan | Licensing/identity bootstrap | Deployment values |
 | Helios | Containerized Linux desktop (XFCE streamed via Selkies/WebRTC), launchable as a workload | Helios repo |
 
-A **project** is a Kubernetes namespace with its own Hubble and workload catalog. A **workload template** is a Terra plugin that registers a parameterized Helm chart; launching one renders a **workload**, by convention a single-replica StatefulSet. A **bundle** groups plugins with shared install parameters; a private git repo can be registered as a custom Terra Source, so a "Serenica stack" bundle is feasible.
+A **project** is a Kubernetes namespace with its own Hubble and workload catalog. A **workload template** is a Terra plugin that registers a parameterized Helm chart; launching one renders a **workload**, by convention a single-replica StatefulSet. A **bundle** groups plugins with shared install parameters; a private git repo can be registered as a custom Terra Source, so a "Cormac stack" bundle is feasible.
 
 ## Confirmed platform constraints
 
@@ -103,9 +103,9 @@ The hooks expansion does not force any redesign (the `pre_tool_call` write-gate 
 
 **For local verification (cheap, this week):** gateway behavior with zero messaging adapters; cron tick with an empty jobs file; whether `state.db` tolerates tmpfs; `env_requires` failure behavior on non-interactive install.
 
-## Mapping draft: Serenica services to Juno constructs
+## Mapping draft: Cormac services to Juno constructs
 
-| Serenica component | Juno construct | Key config | Open question |
+| Cormac component | Juno construct | Key config | Open question |
 | --- | --- | --- | --- |
 | Web UI | Custom workload template (private Terra Source) | Prebuilt image; public or auth-gated ingress for previews | Preview links for non-Juno users |
 | Control plane API | Custom workload template | Public ingress (webhooks); secrets as k8s Secrets; SSE timeout annotation | Stable hostname; per-route auth |
@@ -120,7 +120,7 @@ The hooks expansion does not force any redesign (the `pre_tool_call` write-gate 
 ## How this applies to us
 
 1. **Nothing blocks starting real-Hermes integration locally today.** The headless recipe is documented and verified; the adapter seam is committed (ADR-021); the open questions are all cheap local tests.
-2. **The product runtime on Juno is a custom Terra workload template we author**, in a private Terra Source repo, ideally as part of a Serenica bundle. The official hermes-agent plugin is effectively a ready-made Jarvis.
+2. **The product runtime on Juno is a custom Terra workload template we author**, in a private Terra Source repo, ideally as part of a Cormac bundle. The official hermes-agent plugin is effectively a ready-made Jarvis.
 3. **The pilot doc refresh can now be written in Juno's exact vocabulary** (workload templates, Kuiper, Terra Sources, bundles, projects) with a verified ask list instead of generic questions.
 4. **Two earlier docs are stale on specific points:** the Hermes evaluation's hook caveat (superseded above) and the Juno evaluation's Supabase-plugin mention (no such official plugin). The board item on the Terra Supabase plugin needs re-grounding.
 

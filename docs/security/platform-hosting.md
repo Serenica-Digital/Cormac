@@ -8,9 +8,9 @@ Blocked on: the Juno orchestration pilot and the shared-responsibility details t
 
 ## Intended content
 
-The shared-responsibility split between the orchestration platform (Juno) and Serenica, written so a reviewer sees exactly who controls and evidences what.
+The shared-responsibility split between the orchestration platform (Juno) and Serenica Digital, written so a reviewer sees exactly who controls and evidences what.
 
-| Concern | Platform (Juno) | Serenica |
+| Concern | Platform (Juno) | Serenica Digital |
 | --- | --- | --- |
 | Container orchestration, scaling, routing | provides | defines services, ports, env, health |
 | Network isolation, platform access controls | provides + evidences | configures |

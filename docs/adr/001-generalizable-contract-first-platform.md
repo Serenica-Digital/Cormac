@@ -14,7 +14,7 @@ Over the following two days the framing sharpened from "an AI CRM" into somethin
 
 ## Decision
 
-Build **Serenica CRM Agent** as a generalizable, multi-tenant, contract-first CRM agent platform. The generalizable product is the build.
+Build **Cormac** as a generalizable, multi-tenant, contract-first CRM agent platform. The generalizable product is the build.
 
 1. **Platform-first, not client-first.** The thing being built is the product, for many organizations. The first firm is the first instance of it, not the scope of it.
 2. **The first design partner is a prototype, a reference deployment, and a venture stake, not a customer.** They help shape the product and run on it first. The partnership is premised on the product as a business of its own, so the relationship is not "we configure them a CRM and invoice for it."

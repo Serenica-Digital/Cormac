@@ -34,7 +34,6 @@ describe.skipIf(!ready)('atomic apply_proposal', () => {
   let workspaceId: string;
   let ownerId: string;
   let contractVersionId: string;
-  let sourceMessageId: string;
   let ownerEmail: string;
   let ownerPassword: string;
 
@@ -53,7 +52,18 @@ describe.skipIf(!ready)('atomic apply_proposal', () => {
     return res.data.id as string;
   }
 
-  async function pendingProposal(changes: ChangeInput[]): Promise<string> {
+  // One proposal per source message is enforced by a unique index (migration
+  // 0004), so each proposal gets its own source message, as in production.
+  async function pendingProposal(
+    changes: ChangeInput[],
+  ): Promise<{ proposalId: string; sourceMessageId: string }> {
+    const sm = await service
+      .from('source_messages')
+      .insert({ workspace_id: workspaceId, channel: 'web', user_id: ownerId, content: 'atomic test' })
+      .select('id')
+      .single();
+    if (sm.error) throw new Error(`pendingProposal source message: ${sm.error.message}`);
+    const sourceMessageId = sm.data.id as string;
     const res = await service
       .from('agent_proposals')
       .insert({
@@ -66,7 +76,7 @@ describe.skipIf(!ready)('atomic apply_proposal', () => {
       .select('id')
       .single();
     if (res.error) throw new Error(`pendingProposal: ${res.error.message}`);
-    return res.data.id as string;
+    return { proposalId: res.data.id as string, sourceMessageId };
   }
 
   function callApply(client: Db, proposalId: string, changes: ChangeInput[]) {
@@ -122,18 +132,11 @@ describe.skipIf(!ready)('atomic apply_proposal', () => {
       .select('id')
       .single();
     contractVersionId = cv.data!.id as string;
-
-    const sm = await service
-      .from('source_messages')
-      .insert({ workspace_id: workspaceId, channel: 'web', user_id: ownerId, content: 'atomic test' })
-      .select('id')
-      .single();
-    sourceMessageId = sm.data!.id as string;
   });
 
   it('lands all three writes together on the happy path', async () => {
     const rid = await seedPerson({ full_name: 'Atomic One', status: 'lead' });
-    const pid = await pendingProposal([
+    const { proposalId: pid, sourceMessageId } = await pendingProposal([
       { op: 'update', objectApiName: 'person', recordId: rid, values: { status: 'active' } },
     ]);
 
@@ -162,7 +165,7 @@ describe.skipIf(!ready)('atomic apply_proposal', () => {
 
   it('rolls back ALL writes when a later change fails (all-or-nothing)', async () => {
     const rid = await seedPerson({ full_name: 'Atomic Two', status: 'lead' });
-    const pid = await pendingProposal([
+    const { proposalId: pid } = await pendingProposal([
       { op: 'update', objectApiName: 'person', recordId: rid, values: { status: 'active' } },
     ]);
     const missing = randomUUID(); // a record that does not exist
@@ -189,7 +192,7 @@ describe.skipIf(!ready)('atomic apply_proposal', () => {
     const asUser = createUserClient(url!, anonKey!, signin.data.session!.access_token);
 
     const rid = await seedPerson({ full_name: 'Atomic Three', status: 'lead' });
-    const pid = await pendingProposal([
+    const { proposalId: pid } = await pendingProposal([
       { op: 'update', objectApiName: 'person', recordId: rid, values: { status: 'active' } },
     ]);
 

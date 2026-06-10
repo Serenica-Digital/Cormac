@@ -1,0 +1,38 @@
+# The Hermes product-runtime profile (ADR-025). Mounted (locally) or baked
+# (Juno image) at HERMES_HOME (/opt/data). Values in ${VAR} form are
+# env-interpolated by Hermes at load; secrets never live in this file.
+
+# The operations agent's model (ADR-013): the provider resolves from
+# ANTHROPIC_API_KEY in the container env; no provider config lives here.
+model: claude-sonnet-4-6
+
+# Persistent memory and the user profile stay off: per-tenant learning lives
+# as governed data in the control plane, never in runtime memory (ADR-009).
+memory:
+  memory_enabled: false
+  user_profile_enabled: false
+
+# The agent's only reach into CRM data: the control plane's MCP tool surface.
+# The bearer token IS the workspace binding, and the include list is the
+# operations-agent role allowlist (ADR-025). The control plane executes every
+# one of these tools itself, so the write gate is intrinsic: submit_proposal
+# can only ever HOLD a pending proposal.
+mcp_servers:
+  serenica_control_plane:
+    url: ${MCP_SERVER_URL}
+    headers:
+      Authorization: "Bearer ${MCP_WORKSPACE_TOKEN}"
+    tools:
+      include:
+        - get_active_contract
+        - search_records
+        - get_record
+        - submit_proposal
+
+# Second gate (defense in depth, ADR-025): a pre_tool_call hook vetoes tool
+# calls the operations agent has no business making, independent of the model.
+hooks:
+  pre_tool_call:
+    - matcher: "terminal"
+      command: /opt/data/agent-hooks/deny-terminal.sh
+      timeout: 5
