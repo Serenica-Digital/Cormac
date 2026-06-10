@@ -23,15 +23,17 @@ pnpm install                                   # pulls @anthropic-ai/sdk
 ANTHROPIC_API_KEY=sk-... pnpm evals:workbook
 ```
 
-Optional knobs:
+Defaults to `claude-sonnet-4-6` (enough to read the signal cheaply). Optional
+knobs — run the high-fidelity pass on Opus, or change the run count:
 
 ```bash
-SPIKE_MODEL=claude-sonnet-4-6 SPIKE_RUNS=5 ANTHROPIC_API_KEY=sk-... pnpm evals:workbook
+SPIKE_MODEL=claude-opus-4-8 SPIKE_RUNS=5 ANTHROPIC_API_KEY=sk-... pnpm evals:workbook
 ```
 
-The run prints a scorecard per run, a decision-stability check across runs, and
-an aggregate. Raw outputs land in `out/` (gitignored). A low score is data, not a
-failure — the runner exits non-zero only on a harness error.
+The run prints a scorecard per run, a decision-stability check across runs, an
+aggregate, and a usage + cost block (tokens, latency, estimated spend). Raw
+outputs and `summary.json` land in `out/` (gitignored). A low score is data, not
+a failure — the runner exits non-zero only on a harness error.
 
 ## What is here
 

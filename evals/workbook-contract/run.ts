@@ -3,9 +3,10 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { parseContract } from '@serenica/contract';
-import { runAgent, getModel, type AgentRun } from './agent.js';
+import { runAgent, getModel, type AgentRun, type TokenUsage } from './agent.js';
 import { score, type ScoreReport } from './score.js';
 import type { AuthoringOutput } from './authoring-schema.js';
+import { sumUsage, totalTokens, estimateCostUSD } from './usage.js';
 
 /**
  * Workbook Contract Agent spike runner (ADR-023 feasibility). Feeds one messy
@@ -105,16 +106,26 @@ async function main(): Promise<void> {
 
   const reports: ScoreReport[] = [];
   const signatures: string[] = [];
+  const usages: Array<TokenUsage | null> = [];
+  const elapsedMs: number[] = [];
 
   for (let i = 0; i < N; i++) {
+    const t0 = Date.now();
     const run = await runAgent(detected);
+    const ms = Date.now() - t0;
     const r = score(golden, run.rawOutput, run.contractError);
     reports.push(r);
     signatures.push(stabilitySignature(run.rawOutput));
+    usages.push(run.usage);
+    elapsedMs.push(ms);
     printReport(i, run, r);
+    if (run.usage)
+      console.log(
+        `  usage: in ${run.usage.inputTokens} out ${run.usage.outputTokens}${run.usage.cacheReadTokens ? ` cache-read ${run.usage.cacheReadTokens}` : ''}  (${(ms / 1000).toFixed(1)}s)`,
+      );
     writeFileSync(
       join(outDir, `run-${i + 1}.json`),
-      JSON.stringify({ model: run.model, usage: run.usage, rawOutput: run.rawOutput, contract: run.contract, contractError: run.contractError, score: r }, null, 2),
+      JSON.stringify({ model: run.model, usage: run.usage, elapsedMs: ms, rawOutput: run.rawOutput, contract: run.contract, contractError: run.contractError, score: r }, null, 2),
     );
   }
 
@@ -136,9 +147,31 @@ async function main(): Promise<void> {
   console.log(`uncertainty recall      ${pct(avg((r) => r.uncertainty.recall))}  (critical ${pct(avg((r) => r.uncertainty.criticalRecall))})`);
   console.log(`plausible-but-wrong     ${avg((r) => r.uncertainty.plausibleButWrong.length).toFixed(2)} per run (lower is safer)`);
 
+  // usage + cost analytics
+  const totals = sumUsage(usages);
+  const grandTotal = totalTokens(totals);
+  const { tier, usd } = estimateCostUSD(getModel(), totals);
+  const totalMs = elapsedMs.reduce((a, b) => a + b, 0);
+  const runsWithUsage = usages.filter(Boolean).length || 1;
+  console.log(`\n================ USAGE & COST (${N} runs, model ${getModel()}) ================`);
+  console.log(`tokens   input ${totals.inputTokens}  output ${totals.outputTokens}  cache-read ${totals.cacheReadTokens}  cache-write ${totals.cacheCreationTokens}  total ${grandTotal}`);
+  console.log(`per run  input ${Math.round(totals.inputTokens / runsWithUsage)}  output ${Math.round(totals.outputTokens / runsWithUsage)}  (mean)`);
+  console.log(`latency  mean ${(totalMs / N / 1000).toFixed(1)}s  total ${(totalMs / 1000).toFixed(1)}s`);
+  console.log(`est cost $${usd.toFixed(4)}  (~$${(usd / N).toFixed(4)}/run, ${tier} rates; see usage.ts PRICING — approximate)`);
+
   writeFileSync(
     join(outDir, 'summary.json'),
-    JSON.stringify({ model: getModel(), runs: N, stability: { distinct: distinct.length, signatures }, reports }, null, 2),
+    JSON.stringify(
+      {
+        model: getModel(),
+        runs: N,
+        stability: { distinct: distinct.length, signatures },
+        usage: { perRun: usages, elapsedMs, totals, totalTokens: grandTotal, estCostUSD: Number(usd.toFixed(4)), tier },
+        reports,
+      },
+      null,
+      2,
+    ),
   );
   console.log(`\nwrote ${N} run file(s) + summary.json to ${outDir}`);
 }
