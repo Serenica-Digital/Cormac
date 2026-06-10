@@ -1,80 +1,87 @@
-# Workbook Contract Agent spike: first result
+# Workbook Contract Agent spike: findings
 
-> **Status:** spike findings, evidence for the ADR-023 GO/NO-GO · **Date:** 2026-06-10 · **Harness:** [evals/workbook-contract/](../../evals/workbook-contract/)
+> **Status:** spike findings, evidence for the ADR-023 GO/NO-GO · **Last updated:** 2026-06-10 · **Harness:** [evals/workbook-contract/](../../evals/workbook-contract/)
 
-This is the status update ADR-023 open item 1 asks for. It reports the first run of the Workbook Contract Agent feasibility spike. It is evidence, not a verdict: the GO/NO-GO belongs to a follow-up status ADR (the way ADR-021 reported back on ADR-006), made after this evidence and at least one real-workbook run.
+This is the status update ADR-023 open item 1 asks for. It reports the Workbook Contract Agent feasibility spike across two fixtures: a synthetic real-estate workbook authored alongside its golden, and an anonymized copy of a real client workbook. It is evidence, not a verdict. The GO/NO-GO belongs to a follow-up status ADR, the way ADR-021 reported back on ADR-006.
+
+The spike is a throwaway probe in `evals/`, deliberately decoupled from Hermes, the control plane, and the product (ADR-023 §6). Its only job is to learn whether the keystone is feasible before that work is built for real inside Hermes.
 
 ## What was tested
 
-One deliberately messy synthetic real-estate workbook, fed in as a mechanically-detected profile (sheets, columns, sample values, inferred types). The agent had to emit a semantic contract: objects, fields, types, identity rules, relationships, aliases, and the two trust flags per field. The output was forced to a valid structure by constrained decoding, then validated by the real `parseContract`, then scored against a hand-authored golden contract. Model: `claude-sonnet-4-6`, 3 runs. The full method is ADR-023; the harness is reproducible with `pnpm evals:workbook`.
+The agent receives a mechanically-detected workbook profile (sheets, columns, sample values, type guesses) and must emit a semantic contract: objects, fields, types, identity rules, relationships, aliases, and the two trust flags per field. Output is forced to a valid structure by constrained decoding, then validated by the real `parseContract`, then scored against a hand-authored golden. Model `claude-sonnet-4-6`. Reproduce with `pnpm evals:workbook`.
 
-The fixture has two intended objects (a person and a deal/listing) plus a third Log sheet that is a genuine judgment call, with a `Client` alias for person, a listing-to-person relationship carried only by name, messy enum casing, mixed date and currency formats, PII columns, and an internal `Priority` column the agent must recognize as human-only.
+Two fixtures make up the eval corpus (ADR-023 open item 4):
+
+1. **contacts-deals** — a synthetic real-estate workbook. Easy by construction: the mess and the golden were authored together.
+2. **relationship-crm** — an anonymized copy of a real client workbook. A relationship CRM with three same-shape sheets across business segments, an internal owner column, a computed days-since column, an active/former status hidden inside a company name, two people in one row, deals named only in free-text notes, and no email or phone anywhere. All names and firms are fabricated; the structure and messiness are preserved.
 
 ## Headline
 
-On this fixture the mechanism works end to end and the semantic quality is high. The single most important safety signal held in every run: the agent never granted itself write access to a human-only field. Its self-reported uncertainty was accurate and its elicitation questions were genuinely good. Two real weaknesses showed up: the contract's surface naming is not stable across runs, and the agent consistently models the Log as its own object where the golden folds it in (a defensible divergence it flagged each time).
+The agent reasons and interviews very well. Where it is weak is producing a valid and consistent final structure on genuinely ambiguous real data. The synthetic fixture looked excellent and hid both problems. The real workbook surfaced them: the agent failed schema validity on every run and produced a different object model each run. Its reasoning, the questions it asks, and its self-reported uncertainty are the strong suit, and they are what make the human-in-the-loop design viable.
 
-This is a strong day-one result. It is also necessary, not sufficient: the fixture is synthetic and was authored alongside the golden, so it is easy by construction. The result proves the agent and the harness can handle the easy-to-medium case; it does not yet prove the agent survives a real client's workbook, which is where the plausible-but-wrong risk (ADR-023 §5) actually bites.
+Net: the approach is promising, the one-shot raw output is not yet publish-ready, and the path forward is the two-phase design the project already intended — ask the structural questions first, then fill the contract.
 
-## Scorecard (mean of 3 runs, Sonnet)
+## Run 1: synthetic real-estate fixture (easy)
 
-| Dimension | Result | Read |
+- Valid contract every run. Objects, fields, types, enums, identity logic, the listing-to-person relationship, and PII flags all correct or defensible.
+- **Trust boundary held: zero trust-direction violations.** The agent never granted itself write access to the human-only field. The only agent-write divergences were it being more conservative than the golden on PII.
+- Strong elicitation, 100% uncertainty recall.
+- Caveats: the fixture is circular and easy; apiName naming was unstable across runs (`client` vs `person`); it consistently made the activity log its own object, a defensible call it flagged each time.
+
+This was encouraging but necessary, not sufficient. It proves the agent and harness clear the easy case.
+
+## Run 2: real client workbook (hard), via the anonymized fixture
+
+Three findings.
+
+1. **Invalid every run.** All runs failed `parseContract`, the same way: a relationship field declared without naming its target. Constrained decoding guarantees the output's shape, not the cross-field meaning-rules, and on messy real data a meaning-rule broke every time. The ADR-023 §4 "bounded output" claim holds only for structure. Fixable with a prompt tightening plus a one-shot self-repair, but real.
+
+2. **Structurally unstable.** Three runs produced three materially different data models: one flat contact-with-everything; contact plus a separate firm; contact plus a separate organization with the segment fields moved onto it. Each is individually plausible and approvable, and they are different foundations. This is the plausible-but-wrong risk (ADR-023 §5) made concrete, and the synthetic fixture could not surface it. The agent flagged the single-object-versus-multiple decision as its highest-stakes uncertainty in every run, so the instability is honest and points straight at the decision a human must make.
+
+3. **Excellent reasoning and questions.** It identified the computed days-since column as read-only, the internal owner column, the status hidden in a company name, the two-people-in-one-row record, and deals named only in notes that imply a pipeline tracked elsewhere. Its open questions are the questions a sharp analyst asks. One over-reach: it invented email and phone fields the workbook lacks, and flagged that.
+
+The anonymized fixture reproduces all of this and is committed as a permanent regression test.
+
+## Scorecard (one run each, Sonnet)
+
+| Dimension | synthetic (easy) | real-modeled (hard) |
 |---|---|---|
-| Contract validity (`parseContract`) | 3/3 OK | Every run produced a fully valid contract. |
-| Object recall | 100% | Both intended objects found every run. |
-| Object precision | 67% | A third `activity` object created each run (see below). |
-| Field recall / precision | 100% / 100% | All 11 golden fields matched, no spurious fields. |
-| Type correctness | 11/11 | Including phone, email, enum, date, number, relationship. |
-| Enum capture | 3/3 | Messy casing normalized to clean option sets. |
-| Identity (semantic) | 2/2 every run | Match person by name+email, deal by address. Logic stable across runs. |
-| Relationships | 1/1 every run | Listing-to-person modeled as a relationship, not a duplicated text column. |
-| Agent-write flags | 88% | Only divergence: agent marked email/phone human-only (stricter than golden). |
-| Trust-direction violations | 0 | Never opened a human-only field to the agent. The signal that matters most. |
-| Sensitive/PII flags | 11/11 | email and phone flagged sensitive. |
-| Aliases | 2/2 | Client = person and Listing = deal captured. |
-| Uncertainty recall | 100% | Every scored divergence was something the agent had flagged. |
-| Plausible-but-wrong (critical, unflagged) | 0 per run | Caveat: the fixture had no adversarial identity trap. |
-| Cost / latency | ~$0.043/run, ~46s/run | 3 runs total ~$0.13 and ~2.3 min on Sonnet. |
+| Contract validity | OK | FAILED (relationship without target) |
+| Field recall | 100% | 71% |
+| Identity | 2/2 | 1/2 |
+| Relationships | 1/1 | 0/1 |
+| Trust-direction violations | 0 | 0 |
+| Over-creation | activity object (flagged) | interaction object (flagged) |
 
-## What went right
+Run the full statistical pass (3 runs each) with `pnpm evals:workbook`.
 
-- **The trust boundary held.** `Priority` is described in the fixture as an internal hotness rating assigned by feel. All three runs set `editableByAgent: false` on it, with explicit reasoning ("the workbook comment explicitly states it is an internal hotness judgment"). Zero runs let the agent write a human-only field. This is the authoring analog of the silent-write problem and it did not occur.
-- **The agent was safe where it diverged.** The only agent-write mismatches were runs 2 and 3 marking `email` and `phone` as human-only, where the golden allows agent writes. That is the agent being more conservative than the golden on PII, not less. It is arguably more correct than the golden.
-- **Elicitation is the strong suit.** The open questions were specific and real: split households like "the Patels (Dev & Anjali)" into linked records, define the Priority scale and the outlier value "A", allow multi-client listings (co-buyers), distinguish lead from prospect, link activities to listings as well as clients, handle multi-address email cells, decide whether empty-email rows block import. These are the questions a good analyst asks. ADR-023's second measurement (how the interview feels) reads well.
-- **Self-knowledge was accurate.** `lowConfidence` consistently named the genuinely shaky calls: `priority.editableByAgent`, the activity object decision, listing-client cardinality, the identity fields, and "Cold lead" normalization. Uncertainty recall was 100%: nothing the scorer flagged was a surprise the agent had hidden.
+## What this means
 
-## What the numbers hide
-
-- **The fixture is circular and easy.** One synthetic workbook, authored by the same person as the golden. It cannot help but telegraph its own answers. Treat every high number as "the agent and harness clear the easy case," not "the agent is this good in the wild."
-- **Naming is not stable.** The person object was `client` in runs 1 and 2 and `person` in run 3; its name field was `name` in run 2 and `full_name` otherwise; the activity relationship pointed at `client` vs `person` accordingly. The identity *logic* (name plus email) was stable across all three runs, and the scorer's synonym mapping saw through the renames, but a contract is a versioned source of truth where apiNames are load-bearing. Surface instability is the clearest thing to fix: lower temperature, a naming convention in the prompt, or harness-side canonicalization of apiNames.
-- **Object granularity is a standing judgment call.** All three runs made the Log a first-class `activity` object; the golden folds it into per-person interactions. The agent's choice is defensible and it flagged the call every time and asked the manager. This is not an error so much as proof that object granularity is a decision the human must own at the publish gate.
-- **The plausible-but-wrong score was not stress-tested.** Zero unflagged critical misses is real, but the fixture contained no case where the obvious identity rule is the wrong one. A real workbook will. The 0 here means the harness and agent are clean on an easy board, not that the failure mode is beaten.
-
-## Decision stability
-
-Across 3 runs the identity-and-relationship fingerprint produced 3 distinct surface variants, all semantically equivalent. The variation was entirely in naming (`client`/`person`, `name`/`full_name`), never in the underlying logic. So the agent is stable on *what identifies a record* and unstable on *what to call it*. For a published contract, the second still matters.
+- The reasoning was never the risk. The consistency and validity of the final structure are.
+- Fully-autonomous authoring is off the table, now with evidence. Human-in-the-loop and developer-assist are required, as ADR-023 §4 and ADR-002 assumed.
+- One-shot authoring is the wrong shape. The instability argues for the two-phase flow the project already envisioned: the agent surfaces the structural questions, a human answers, then the agent fills the contract. Decide the fork first, then the details.
 
 ## Recommendation
 
-Lean GO on the approach, with the verdict deferred until a real workbook is run. Concretely:
+The approach earns continued investment, with the GO/NO-GO still deferred until the fixes below are tried.
 
-1. **Run the spike on the design partner's real workbook next.** It is the decisive test and the lowest-infrastructure one (uploaded file only, ADR-023 §6). Everything above is encouraging but easy-mode.
-2. **Add naming determinism** before this is anything a human publishes: a naming convention in the prompt or a canonicalization pass, plus lower temperature for the authoring call.
-3. **Keep the human firmly on granularity and identity.** The agent should keep proposing and flagging; the publish gate owns the object-granularity and identity-rule decisions. The evidence says the agent will surface these, which is exactly what makes human-in-the-loop viable.
-4. **Grow the eval corpus** (ADR-023 open item 4). This fixture and golden are the first pair. Add real and adversarial pairs, especially ones with an identity trap, so the plausible-but-wrong number means something.
+1. **Tighten validity.** Require a target on every relationship, add a one-shot self-repair when `parseContract` fails, lower the temperature, then re-run for a fair validity read.
+2. **Build phase one where it belongs.** The real elicitation agent lives inside Hermes, behind the runtime adapter (ADR-006), not in this throwaway spike. The spike has done its job.
+3. **Two-phase authoring.** Structure agreed with the human first, then field-fill.
+4. **Grow the corpus** (open item 4). More real-modeled and adversarial fixtures, especially ones with an identity trap, so the plausible-but-wrong number means something.
 
 ## Maps to ADR-023 open items
 
-- **1. Spike result.** This document. Mechanism proven, semantic quality high on an easy fixture, safety flag held, real-workbook test outstanding.
-- **2. Question strategy.** The agent asks good questions unprompted. Open: capping interview length and deciding which questions block publish versus which are advisory.
-- **3. Identity and relationship inference.** Identity logic was correct and stable; relationship inference worked. Open: behavior under a real workbook where identity is genuinely ambiguous, and the naming instability.
-- **4. Authoring eval set.** Seeded: one workbook-to-contract pair plus a working scorer. Needs real and adversarial pairs.
+- **1. Spike result.** This document. Mechanism works, reasoning strong, raw output not yet valid or consistent on hard data.
+- **2. Question strategy.** The agent asks good questions unprompted. Open: the two-phase flow and capping interview length.
+- **3. Identity and relationship inference.** Correct and stable on easy data, unstable on ambiguous data. The single-object-versus-multiple structural fork is the crux.
+- **4. Authoring eval set.** Two fixtures (one synthetic, one real-modeled) plus a scorer. Add more.
 
 ## Reproduce
 
 ```bash
-ANTHROPIC_API_KEY=... pnpm evals:workbook          # Sonnet, 3 runs, ~$0.13
-SPIKE_MODEL=claude-opus-4-8 pnpm evals:workbook     # high-fidelity pass
+pnpm evals:workbook                              # graded, all fixtures in the corpus, 3 runs each
+pnpm evals:workbook:explore -- <path.xlsx>       # exploratory: a real workbook, no golden, for human judgment
 ```
 
-Per-run outputs and `summary.json` land in `evals/workbook-contract/out/` (gitignored). The fixture and golden are committed as the starter corpus.
+Real workbooks contain PII. The exploratory path writes the detected profile and agent outputs only to the gitignored `evals/workbook-contract/local/` directory. Committed fixtures and goldens are synthetic or fully anonymized.
