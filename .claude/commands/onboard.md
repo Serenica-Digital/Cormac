@@ -3,7 +3,7 @@ description: Onboard a fresh session: read the decision record, the PRD, the cur
 argument-hint: [optional focus, e.g. "security packet" or "runtime seam"]
 ---
 
-# Serenica CRM Agent: session onboarding
+# Cormac: session onboarding
 
 You are a fresh agent on this project. Before doing any work, build a working model of three things: what the product is, the decisions that shaped it, and where the build stands right now. CLAUDE.md (already in context) gives the vocabulary and the invariants; do not restate it, internalize it. This command tells you what to read and in what order.
 

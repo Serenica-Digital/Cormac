@@ -59,7 +59,7 @@ export function App() {
   return (
     <div style={ui.page}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ fontSize: 22 }}>Serenica CRM Agent</h1>
+        <h1 style={{ fontSize: 22 }}>Cormac</h1>
         <div>
           <span style={{ marginRight: 12, color: '#555' }}>{session.email}</span>
           <button style={ui.button} onClick={() => supabase.auth.signOut()}>
@@ -92,7 +92,7 @@ function Login({ error, onError }: { error: string | null; onError: (e: string |
 
   return (
     <div style={{ ...ui.page, maxWidth: 360 }}>
-      <h1 style={{ fontSize: 22 }}>Serenica CRM Agent</h1>
+      <h1 style={{ fontSize: 22 }}>Cormac</h1>
       {error && <div style={ui.error}>{error}</div>}
       <div style={ui.card}>
         <p style={{ marginTop: 0, color: '#555' }}>Sign in with the seeded demo user.</p>

@@ -4,9 +4,9 @@
 
 ## Why This Matters
 
-Direct relevance: 8/10. The Snowflake Reddit thread and the linked Snowflake-Labs ontology example describe a pattern very close to Serenica's contract-first thesis: business meaning lives in a governed semantic layer, not scattered across prompts, hard-coded app tables, one-off queries, and model memory. The scale is different. Snowflake's example is enterprise analytics and AI reasoning over a knowledge graph. Serenica is an operational CRM agent for small teams. But the core architecture is valuable: keep physical storage, semantic meaning, generated access surfaces, agent reasoning, and governance as separate layers.
+Direct relevance: 8/10. The Snowflake Reddit thread and the linked Snowflake-Labs ontology example describe a pattern very close to Cormac's contract-first thesis: business meaning lives in a governed semantic layer, not scattered across prompts, hard-coded app tables, one-off queries, and model memory. The scale is different. Snowflake's example is enterprise analytics and AI reasoning over a knowledge graph. Cormac is an operational CRM agent for small teams. But the core architecture is valuable: keep physical storage, semantic meaning, generated access surfaces, agent reasoning, and governance as separate layers.
 
-The caution is equally important. A Reddit commenter pushed back that ontology work often becomes overcomplicated and low-value. That is the trap to avoid. Serenica should adopt the control-plane discipline, not the enterprise ceremony.
+The caution is equally important. A Reddit commenter pushed back that ontology work often becomes overcomplicated and low-value. That is the trap to avoid. Cormac should adopt the control-plane discipline, not the enterprise ceremony.
 
 ## Source Thread
 
@@ -18,7 +18,7 @@ The post points to [Snowflake-Labs/ontology-on-snowflake](https://github.com/Sno
 - The claimed answer: compile and regenerate semantics so agents are grounded in business concepts rather than raw schema names.
 - The skeptical counterpoint: ontology is easy to overbuild, and many agents do not need a heavyweight ontology unless the data estate is large and complex.
 
-For Serenica, the right interpretation is: **small product, enterprise-grade semantic discipline.** The product does not need a huge ontology program. It does need a governed contract layer that can generate safe agent context, validation rules, UI structure, import/export mappings, and audit evidence.
+For Cormac, the right interpretation is: **small product, enterprise-grade semantic discipline.** The product does not need a huge ontology program. It does need a governed contract layer that can generate safe agent context, validation rules, UI structure, import/export mappings, and audit evidence.
 
 ## What The Snowflake Example Builds
 
@@ -30,7 +30,7 @@ The Snowflake-Labs repo describes a five-layer architecture:
 4. **Semantic models:** specialized semantic models for concrete knowledge-graph queries, abstract ontology reasoning, and metadata/governance introspection.
 5. **Agent orchestration:** Cortex Agent and graph analytics tools reason over the semantic models and graph services.
 
-That stack is not an official requirement for Serenica. It is a useful reference architecture for separating physical data, semantic meaning, generated interfaces, and agent behavior.
+That stack is not an official requirement for Cormac. It is a useful reference architecture for separating physical data, semantic meaning, generated interfaces, and agent behavior.
 
 Sources:
 
@@ -44,13 +44,13 @@ The enterprise ontology control-plane pattern has six parts.
 
 ### 1. Physical Data Is Not The Business Model
 
-Raw storage is optimized for durability, access, and performance. It is not the user-facing model of the business. In Snowflake's example, `KG_NODE` and `KG_EDGE` are generic physical tables. In Serenica, `business_records` is a JSONB-backed operational store with generated hot columns.
+Raw storage is optimized for durability, access, and performance. It is not the user-facing model of the business. In Snowflake's example, `KG_NODE` and `KG_EDGE` are generic physical tables. In Cormac, `business_records` is a JSONB-backed operational store with generated hot columns.
 
 This is the same move: the database stores durable facts, while the semantic contract explains what those facts mean.
 
 ### 2. The Ontology/Contract Is Governed Metadata
 
-The semantic layer is explicit, versioned metadata. It defines object types, relationships, properties, permissions, aliases, and rules. In Serenica terms, that is the published workspace contract:
+The semantic layer is explicit, versioned metadata. It defines object types, relationships, properties, permissions, aliases, and rules. In Cormac terms, that is the published workspace contract:
 
 - objects
 - fields
@@ -66,7 +66,7 @@ This layer is product IP. It should live in our control plane and Supabase/Postg
 
 ### 3. Interfaces Are Generated From Metadata
 
-Snowflake's example generates abstract views from ontology metadata. The equivalent Serenica move is broader:
+Snowflake's example generates abstract views from ontology metadata. The equivalent Cormac move is broader:
 
 - generated or configured record screens
 - import/export mappings
@@ -81,7 +81,7 @@ The same contract should feed all surfaces. A field should not mean one thing to
 
 ### 4. Agents Reason Over Semantic Interfaces, Not Raw Tables
 
-Snowflake's Cortex Agent uses semantic models and tools. The agent is not supposed to stare at thousands of physical tables and guess business meaning. For Serenica, Hermes should receive a compact, tenant-scoped, contract-derived context:
+Snowflake's Cortex Agent uses semantic models and tools. The agent is not supposed to stare at thousands of physical tables and guess business meaning. For Cormac, Hermes should receive a compact, tenant-scoped, contract-derived context:
 
 - active contract version
 - object definitions
@@ -96,7 +96,7 @@ The agent outputs structured proposals. The control plane validates those propos
 
 ### 5. Governance Is Queryable
 
-The Snowflake example includes a metadata/governance semantic model so agents and users can ask what object types, permissions, and rules exist. Serenica should eventually support the same kind of introspection:
+The Snowflake example includes a metadata/governance semantic model so agents and users can ask what object types, permissions, and rules exist. Cormac should eventually support the same kind of introspection:
 
 - What fields can the agent edit?
 - Which fields are sensitive?
@@ -121,18 +121,18 @@ The strongest idea in the thread is that semantics should be compiled/regenerate
 
 That is exactly why the contract must be first-class data. The contract is the source artifact; everything else is derived.
 
-## Mapping To Serenica
+## Mapping To Cormac
 
-| Snowflake ontology layer | Serenica equivalent | Notes |
+| Snowflake ontology layer | Cormac equivalent | Notes |
 | --- | --- | --- |
-| `KG_NODE` / `KG_EDGE` physical graph storage | `business_records` JSONB store, future relationship edges | Serenica is operational CRM, so records are mutable and audited. |
+| `KG_NODE` / `KG_EDGE` physical graph storage | `business_records` JSONB store, future relationship edges | Cormac is operational CRM, so records are mutable and audited. |
 | Ontology metadata | `schema_contracts`, `schema_objects`, `schema_fields`, relationships, mappings | This is the core product IP. |
 | Generated ontology views | Contract-derived UI, validation, import/export schemas, query helpers | We may not need SQL views early; generated product surfaces matter more. |
 | Semantic models | Agent context packs, future query models, MCP schemas, eval suites | Purpose-built for web/SMS/Excel/agent behavior. |
 | Cortex Agent + graph tools | Hermes runtime behind the control-plane adapter | Runtime reasons; control plane validates and writes. |
 | Snowpark Container Services graph service | Juno-hosted service containers, future graph/matching service | Juno is outside the data platform; Snowflake containers run inside Snowflake. |
 
-## What Serenica Should Borrow
+## What Cormac Should Borrow
 
 - Treat the contract as the semantic control plane.
 - Generate downstream artifacts from the contract.
@@ -141,7 +141,7 @@ That is exactly why the contract must be first-class data. The contract is the s
 - Make governance and permissions introspectable.
 - Add graph/relationship reasoning only when the domain demands it.
 
-## What Serenica Should Not Borrow Yet
+## What Cormac Should Not Borrow Yet
 
 - A full enterprise ontology program.
 - Generic graph abstraction for everything.
@@ -151,7 +151,7 @@ That is exactly why the contract must be first-class data. The contract is the s
 
 ## Design Implications
 
-The current Serenica architecture is pointed in the right direction. The Snowflake ontology thread reinforces these decisions:
+The current Cormac architecture is pointed in the right direction. The Snowflake ontology thread reinforces these decisions:
 
 - ADR-002, contract-first data model, is the right foundation.
 - ADR-019, JSONB-backed hybrid storage, matches the "physical storage is not the ontology" pattern.

@@ -1,5 +1,5 @@
 /**
- * Shared vocabulary for Serenica: workspace roles, the per-workspace confirmation
+ * Shared vocabulary for Cormac: workspace roles, the per-workspace confirmation
  * mode, and a typed error the control plane turns into HTTP problem responses.
  *
  * Roles and permissions are intentionally small for the walking skeleton. The

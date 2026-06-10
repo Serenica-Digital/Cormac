@@ -28,7 +28,7 @@ Treat the security and compliance packet as a first-class product deliverable, m
 
 ### 2. The packet contents
 
-Privacy policy, terms, and DPA template; subprocessor list; data-flow and trust-boundary diagrams; auth and RBAC model; tenant-isolation model; audit-logging model; secrets management; backup and restore (tested); incident response; data retention and deletion; vulnerability and dependency management; Microsoft Graph permission inventory; SMS compliance; an AI data-handling statement; and a platform and hosting section that draws the shared-responsibility split between the orchestration platform and Serenica (what the platform controls and evidences versus what Serenica owns, ADR-017). The packet is written to be readable by a client, not only by us.
+Privacy policy, terms, and DPA template; subprocessor list; data-flow and trust-boundary diagrams; auth and RBAC model; tenant-isolation model; audit-logging model; secrets management; backup and restore (tested); incident response; data retention and deletion; vulnerability and dependency management; Microsoft Graph permission inventory; SMS compliance; an AI data-handling statement; and a platform and hosting section that draws the shared-responsibility split between the orchestration platform and Serenica Digital (what the platform controls and evidences versus what Serenica Digital owns, ADR-017). The packet is written to be readable by a client, not only by us.
 
 ### 3. Agent-runtime isolation is a special workstream
 

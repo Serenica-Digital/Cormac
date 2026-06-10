@@ -1,6 +1,6 @@
-# Serenica CRM Agent
+# Cormac
 
-Serenica CRM Agent is a multi-tenant, contract-first CRM agent platform. Clients bring the spreadsheets their business already runs on. The system lifts each workbook into a governed, versioned semantic contract and operates on it through an agent reachable over web, SMS, email, Excel, and Claude/MCP. The generalizable product is the build. The first design partner is a small real-estate firm.
+Cormac is a multi-tenant, contract-first CRM agent platform, by Serenica Digital. Clients bring the spreadsheets their business already runs on. The system lifts each workbook into a governed, versioned semantic contract and operates on it through an agent reachable over web, SMS, email, Excel, and Claude/MCP. The generalizable product is the build. The first design partner is a small real-estate firm.
 
 Status: early build. The walking skeleton runs end to end against real Postgres and the runtime seam is committed (ADR-021). Real Hermes integration and the Juno deployment are the open fronts. ADR-018 records the repository shape.
 
@@ -18,11 +18,11 @@ When a decision changes, write a new ADR and mark the old one superseded. Do not
 
 ## Vocabulary (use these exactly)
 
-- **Serenica**: the company, the legal entity. Signs contracts, registers the A2P campaign, stands behind the security packet. Formal artifacts say Serenica until the product name clears.
-- **Cormac**: the working name of the product, whole: the multi-tenant platform, the control plane, the client-facing agent, and the SMS persona. "Cormac, by Serenica" is the commercial framing. Working name only; commercial use awaits the ADR-024 clearance bar. "Serenica CRM Agent" in older docs means this product.
+- **Serenica Digital**: the LLC, the legal entity. Signs contracts, registers the A2P campaign, stands behind the security packet. Formal artifacts say Serenica Digital.
+- **Cormac**: the working name of the product, whole: the multi-tenant platform, the control plane, the client-facing agent, and the SMS persona. "Cormac, by Serenica Digital" is the commercial framing. Working name only; commercial use awaits the ADR-024 clearance bar.
 - **the control plane**: our Node/TypeScript backend trust layer. It owns tenant routing, RBAC, contract publishing, the proposal/confirmation/audit pipeline, connector webhooks, and every write. It is the only thing that writes business records.
 - **Hermes / the agent runtime**: NousResearch Hermes Agent, the adopted execution runtime for the product (ADR-006). "Hermes" names only that upstream runtime and its tenant-facing product use. Never call the control plane Hermes.
-- **Jarvis**: a Hermes instance configured as a development assistant, used while building Serenica (it reads the repo and docs and helps with code, planning, and Git). Jarvis is developer tooling, never a product component, and it never touches client data. Same upstream software as the Hermes product runtime, different name, different trust level (ADR-017).
+- **Jarvis**: a Hermes instance configured as a development assistant, used while building Cormac (it reads the repo and docs and helps with code, planning, and Git). Jarvis is developer tooling, never a product component, and it never touches client data. Same upstream software as the Hermes product runtime, different name, different trust level (ADR-017).
 - **Juno**: an external compute-orchestration platform (Orion, Helios, Terra) we are piloting as the prototype's deployment and development layer. It runs our containers. It does not own the product's authority, data, contracts, writes, or compliance, and every service stays portable so Juno is swappable (ADR-017).
 - **the contract**: a client's published, versioned semantic contract: their objects, fields, identity rules, aliases, and Excel mappings. The shared source of truth.
 - **surfaces**: web/PWA, SMS, email, Excel, Claude/MCP. Input and output doors. They never write directly.
