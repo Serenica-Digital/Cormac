@@ -62,7 +62,7 @@ flowchart TB
   subgraph ext["External providers"]
     twilio["Twilio SMS"]
     models["Anthropic API"]
-    graph["Microsoft Graph (later)"]
+    msGraph["Microsoft Graph (later)"]
   end
 
   web --> api
@@ -71,7 +71,7 @@ flowchart TB
   worker --> supa
   worker --> hermes
   twilio --> api
-  graph --> api
+  msGraph --> api
   api --> models
   hermes --> models
   jarvis --> gitea
