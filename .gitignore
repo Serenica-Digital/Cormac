@@ -29,6 +29,8 @@ supabase/.temp/
 
 # spike run artifacts (the fixture and golden are committed; model outputs are not)
 evals/workbook-contract/out/
+# real-workbook inputs and derived profiles/outputs (contain client PII) — never commit
+evals/workbook-contract/local/
 
 # logs and caches
 *.log
