@@ -133,15 +133,15 @@ describe.skipIf(!ready)('MCP tool surface', () => {
   it('search_records matches and redacts sensitive values', async () => {
     const result = await callTool('search_records', { query: 'dana' });
     expect(result.isError).toBeFalsy();
-    const payload = JSON.parse(result.content![0].text) as {
+    const payload = JSON.parse(result.content![0]!.text) as {
       matchCount: number;
       matches: { id: string; display: Record<string, unknown> }[];
     };
     expect(payload.matchCount).toBe(1);
-    expect(payload.matches[0].id).toBe(recordId);
-    expect(payload.matches[0].display.full_name).toBe('Dana Match');
+    expect(payload.matches[0]!.id).toBe(recordId);
+    expect(payload.matches[0]!.display.full_name).toBe('Dana Match');
     // email is marked sensitive in the contract: never in model context (ADR-015).
-    expect(payload.matches[0].display.email).toBeUndefined();
+    expect(payload.matches[0]!.display.email).toBeUndefined();
   });
 
   it('rejects a human-only field write and holds nothing', async () => {
@@ -157,7 +157,7 @@ describe.skipIf(!ready)('MCP tool surface', () => {
       ],
     });
     expect(result.isError).toBe(true);
-    expect(result.content![0].text).toContain('not agent-editable');
+    expect(result.content![0]!.text).toContain('not agent-editable');
 
     const held = await service
       .from('agent_proposals')
@@ -176,7 +176,7 @@ describe.skipIf(!ready)('MCP tool surface', () => {
       uncertain: false,
     });
     expect(result.isError).toBeFalsy();
-    const payload = JSON.parse(result.content![0].text) as { proposalId: string; status: string };
+    const payload = JSON.parse(result.content![0]!.text) as { proposalId: string; status: string };
     expect(payload.status).toBe('pending');
 
     const dup = await callTool('submit_proposal', {
@@ -186,7 +186,7 @@ describe.skipIf(!ready)('MCP tool surface', () => {
       ],
     });
     expect(dup.isError).toBe(true);
-    expect(dup.content![0].text).toContain('already exists');
+    expect(dup.content![0]!.text).toContain('already exists');
   });
 
   it('rejects an unknown taskId', async () => {
@@ -197,6 +197,6 @@ describe.skipIf(!ready)('MCP tool surface', () => {
       ],
     });
     expect(result.isError).toBe(true);
-    expect(result.content![0].text).toContain('Unknown taskId');
+    expect(result.content![0]!.text).toContain('Unknown taskId');
   });
 });
