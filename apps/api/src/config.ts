@@ -7,6 +7,13 @@ import { z } from 'zod';
  */
 const envSchema = z.object({
   SUPABASE_URL: z.string().url().default('http://127.0.0.1:54321'),
+  /**
+   * Expected `iss` claim on user tokens. Defaults to `${SUPABASE_URL}/auth/v1`.
+   * Needed when the URL the control plane fetches Supabase at differs from the
+   * URL tokens are issued under (e.g. in Docker, where the API reaches Supabase
+   * via host.docker.internal but tokens carry the host's 127.0.0.1 issuer).
+   */
+  SUPABASE_AUTH_ISSUER: z.string().url().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
   SUPABASE_ANON_KEY: z.string().min(1).optional(),
   SUPABASE_JWT_SECRET: z
@@ -14,7 +21,26 @@ const envSchema = z.object({
     .min(1)
     .default('super-secret-jwt-token-with-at-least-32-characters-long'),
   API_PORT: z.coerce.number().int().positive().default(8088),
-  RUNTIME_URL: z.string().url().default('http://127.0.0.1:8090'),
+  /**
+   * Which runtime the capture pipeline dispatches to. `hermes` is the product
+   * runtime (Runs API, ADR-006/ADR-025) and the default; `stub` selects the
+   * synchronous runtime-stub contract and exists for test determinism only.
+   */
+  RUNTIME_KIND: z.enum(['hermes', 'stub']).default('hermes'),
+  RUNTIME_URL: z.string().url().default('http://127.0.0.1:8642'),
+  /** Bearer key for the Hermes Runs API (API_SERVER_KEY on the runtime side). */
+  RUNTIME_API_KEY: z.string().min(1).optional(),
+  /** How long capture waits for an agent run to reach a terminal state. */
+  RUNTIME_TIMEOUT_MS: z.coerce.number().int().positive().default(90_000),
+  /**
+   * MCP tool surface for the agent runtime (ADR-025). The token is the
+   * workspace binding: every tool call authenticated with it is scoped to
+   * MCP_WORKSPACE_ID and nothing else. Static pair for the spike (one
+   * workspace, one runtime container); per-run minted tokens come later.
+   * The /mcp endpoint is disabled unless both are set.
+   */
+  MCP_WORKSPACE_ID: z.string().uuid().optional(),
+  MCP_WORKSPACE_TOKEN: z.string().min(16).optional(),
 });
 
 export type Config = z.infer<typeof envSchema>;

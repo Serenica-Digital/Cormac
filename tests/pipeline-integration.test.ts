@@ -44,6 +44,8 @@ describe.skipIf(!ready)('pipeline integration: capture -> confirm -> write -> au
     const addr = server.address();
     if (!addr || typeof addr === 'string') throw new Error('no server address');
     process.env.RUNTIME_URL = `http://127.0.0.1:${addr.port}`;
+    // The stub path is the deterministic test fixture (ADR-021 open item 4).
+    process.env.RUNTIME_KIND = 'stub';
 
     service = createServiceClient(url!, serviceKey!);
     app = buildAppContext(loadConfig());
@@ -89,8 +91,9 @@ describe.skipIf(!ready)('pipeline integration: capture -> confirm -> write -> au
       "Talked to John about the waterfront deal, he's interested.",
     );
     expect(captured.status).toBe('pending');
+    expect(captured.proposalId).toBeTruthy();
 
-    const result = await decideProposal(app, ctx, captured.proposalId, 'approve');
+    const result = await decideProposal(app, ctx, captured.proposalId!, 'approve');
     expect(result.status).toBe('applied');
 
     const updated = await service.from('business_records').select('data').eq('id', johnId).single();

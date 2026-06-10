@@ -6,7 +6,7 @@
 
 ## Context
 
-Serenica CRM Agent needs a real place to run. The architecture has outgrown a purely local or frontend-builder workflow: the product requires a web app, a Node/TypeScript control plane, background workers, connector webhooks, a Dockerized Hermes runtime, possibly an MCP server, and eventually preview and production deployments that can be shown to real clients.
+Cormac needs a real place to run. The architecture has outgrown a purely local or frontend-builder workflow: the product requires a web app, a Node/TypeScript control plane, background workers, connector webhooks, a Dockerized Hermes runtime, possibly an MCP server, and eventually preview and production deployments that can be shown to real clients.
 
 The current preferred direction was AWS, but we have also been offered an early-adopter opportunity with Juno Innovations. In the June 5 Juno meeting, Juno presented its platform as "orchestration as a service" for developer workloads: browser-based workstations, Git/Gitea-style sandbox repositories, one-click workload templates, app runtime containers, shared storage, direct AWS-hosted development-cluster access, and active work on Hermes and Claude Code style agentic development plugins. The meeting framed us as an early pilot user who would start on a Juno AWS development cluster with hands-on onboarding from the Juno team.
 
@@ -22,7 +22,7 @@ Use Juno as the preferred development and deployment orchestration platform for 
 
 Juno should run and manage the product's workloads. It should not own the product's authority, contracts, tenant logic, writes, or compliance model.
 
-| Concern | Juno's role | Serenica's role |
+| Concern | Juno's role | Cormac's role |
 | --- | --- | --- |
 | Developer workstation | Browser IDE, terminal, project-scoped tools, shared storage | Repo structure, docs brain, coding workflow |
 | Workload orchestration | Run containers, expose links, scale, route, manage runtime templates | Define services, build commands, env vars, ports, health checks |
@@ -35,14 +35,14 @@ Juno should run and manage the product's workloads. It should not own the produc
 
 There are two uses of Hermes in this project. Blurring them is the exact confusion this project is prone to, so they carry different names:
 
-- **Jarvis, the development assistant.** A Hermes instance configured as a development tool, named Jarvis following the convention other Juno developers use for a personal dev agent. It is used while building Serenica. It can read the repo, ADRs, PRD, research docs, and notes, and can help with coding, planning, Git, and documentation. Its memory and skill files can become part of the development workflow. Jarvis is developer tooling, not a tenant-facing product component, and it never touches client data.
-- **The Hermes product runtime.** The Hermes runtime invoked by the Serenica control plane to perform tenant-scoped CRM work. It receives tenant context from the control plane, runs stateless per task where possible, emits structured proposals or answers, and never holds canonical database write authority. This is the runtime governed by ADR-006, ADR-008, and ADR-009.
+- **Jarvis, the development assistant.** A Hermes instance configured as a development tool, named Jarvis following the convention other Juno developers use for a personal dev agent. It is used while building Cormac. It can read the repo, ADRs, PRD, research docs, and notes, and can help with coding, planning, Git, and documentation. Its memory and skill files can become part of the development workflow. Jarvis is developer tooling, not a tenant-facing product component, and it never touches client data.
+- **The Hermes product runtime.** The Hermes runtime invoked by the Cormac control plane to perform tenant-scoped CRM work. It receives tenant context from the control plane, runs stateless per task where possible, emits structured proposals or answers, and never holds canonical database write authority. This is the runtime governed by ADR-006, ADR-008, and ADR-009.
 
 Jarvis can be opinionated and persistent because it is a developer tool. The Hermes product runtime must be isolated, validated, auditable, and controlled because it touches client data. Same upstream software, different names, different trust levels, separate workloads and secrets and storage.
 
 ### 3. Keep the product portable
 
-Every Serenica service should be buildable and runnable as a normal container:
+Every Cormac service should be buildable and runnable as a normal container:
 
 - `apps/web`: React/Lovable-exported web UI.
 - `apps/api`: Node/TypeScript control-plane API.
@@ -57,7 +57,7 @@ Juno can be the preferred place to run those services, but the repo should not b
 
 This is not a second, separate spike. It is the Hermes seam spike of ADR-006 run in the deployed Juno environment instead of locally. ADR-006 owns the seam success criteria (structured output validates with Zod, both write-gate paths hold, persistent memory off, injection contained). This ADR adds the platform criteria (the containers run without platform-specific rewrites, secrets work, a preview link is shareable, the configuration is reproducible). Run them as one exercise so the seam and the deployment are proven together:
 
-1. Launch a project-scoped dev environment with browser VS Code or equivalent, GitHub access, and the Serenica repo.
+1. Launch a project-scoped dev environment with browser VS Code or equivalent, GitHub access, and the Cormac repo.
 2. Run a simple web container and API container from the repo.
 3. Connect those containers to the existing Supabase project through environment variables.
 4. Run a Dockerized Hermes workload behind the control-plane adapter.
@@ -74,7 +74,7 @@ The spike should answer whether Juno reduces deployment friction enough to justi
 - Supabase can remain managed for v1 unless there is a specific reason to self-host. Juno-hosted services can talk to managed Supabase. A self-hosted Supabase/Postgres option can be revisited later for client-hosted deployments.
 - The Juno relationship becomes a real architectural dependency for the prototype, but not an irreversible product dependency because the services stay portable.
 - Preferred for the prototype is not committed for production. This decision covers the prototype and the development workflow. Whether Juno hosts production for many small tenants is a separate decision, gated on its pricing fitting the sub-$40 per-seat-equivalent constraint (ADR-016), and it is not decided here. "Preferred orchestration platform" must not be read as "where production runs at scale."
-- The security packet must include a Juno/platform section: hosting model, data residency, network boundaries, secrets handling, backups, access controls, audit logs, and what evidence Juno can provide versus what Serenica must provide.
+- The security packet must include a Juno/platform section: hosting model, data residency, network boundaries, secrets handling, backups, access controls, audit logs, and what evidence Juno can provide versus what Serenica Digital must provide.
 
 ## Alternatives considered
 
@@ -82,7 +82,7 @@ The spike should answer whether Juno reduces deployment friction enough to justi
 
 **Stay local plus managed Supabase plus Vercel-style frontend hosting.** This is simpler for a thin app, but it does not fit the agent runtime, workers, webhooks, MCP surface, Hermes containers, and production-like client previews. It would postpone the exact deployment questions the architecture already needs to answer.
 
-**Let Juno own too much of the product.** Rejected. Juno should orchestrate compute. The product's trust model, database authority, contracts, audit pipeline, pricing, and compliance story must remain Serenica-owned.
+**Let Juno own too much of the product.** Rejected. Juno should orchestrate compute. The product's trust model, database authority, contracts, audit pipeline, pricing, and compliance story must remain Cormac's.
 
 ## Open items
 
@@ -90,5 +90,5 @@ The spike should answer whether Juno reduces deployment friction enough to justi
 2. **Workload model.** Exact containers, build commands, run commands, ports, shared storage, secrets, and environment-variable handling. Includes whether the dev workspace runs its own Supabase stack through the Terra Supabase/Postgres plugin for dev and preview data (the migrations, seed, and isolation test should run identically against it); canonical state stays in managed Supabase either way.
 3. **Hermes separation.** Whether the project assistant Hermes and product runtime Hermes use separate workloads, separate storage, separate skills directories, and separate secrets.
 4. **Hosting economics.** Whether Juno's eventual pricing can fit the sub-$40 per-seat-equivalent constraint from ADR-016.
-5. **Security evidence.** What Juno can provide for platform-level controls and what Serenica must independently document.
+5. **Security evidence.** What Juno can provide for platform-level controls and what Serenica Digital must independently document.
 6. **Portability test.** Whether the same containers can be run locally or on a vanilla AWS/container platform without Juno-specific assumptions.

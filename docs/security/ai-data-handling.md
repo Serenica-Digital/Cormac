@@ -23,7 +23,7 @@ Fields a tenant's contract marks `sensitive` are never placed in the model conte
 
 ## Billing modes and keys
 
-Three modes (ADR-013): platform-bundled (default; Serenica holds the key), BYOK (client's own key), and in-tenant endpoint (later, for higher-trust buyers). BYOK key protection (encrypted at rest, never logged, rotation path) is a `pending` control until the billing connector is built; see [secrets-management.md](secrets-management.md).
+Three modes (ADR-013): platform-bundled (default; Serenica Digital holds the key), BYOK (client's own key), and in-tenant endpoint (later, for higher-trust buyers). BYOK key protection (encrypted at rest, never logged, rotation path) is a `pending` control until the billing connector is built; see [secrets-management.md](secrets-management.md).
 
 ## Why not BYO-AI
 

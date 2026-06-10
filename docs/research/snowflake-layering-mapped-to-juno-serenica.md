@@ -1,12 +1,12 @@
-# Snowflake Layering Mapped To Juno And Serenica
+# Snowflake Layering Mapped To Juno And Cormac
 
 > **Status:** reference · **Last reviewed:** 2026-06-09
 
 ## Why This Matters
 
-Direct relevance: 7/10. Snowflake is not the backend we are choosing for v1, and it is not a direct competitor to Juno. But Snowflake is useful as a mature reference model for separating storage, compute, governance, semantic models, containerized services, and agent orchestration. Mapping Snowflake's layers against Serenica and Juno helps clarify what each platform is and is not.
+Direct relevance: 7/10. Snowflake is not the backend we are choosing for v1, and it is not a direct competitor to Juno. But Snowflake is useful as a mature reference model for separating storage, compute, governance, semantic models, containerized services, and agent orchestration. Mapping Snowflake's layers against Cormac and Juno helps clarify what each platform is and is not.
 
-The short version: **Snowflake is a governed data cloud. Juno is a compute/workload orchestration platform. Serenica is the product/control plane we are building.** They overlap around containers, but their centers of gravity are very different.
+The short version: **Snowflake is a governed data cloud. Juno is a compute/workload orchestration platform. Cormac is the product/control plane we are building.** They overlap around containers, but their centers of gravity are very different.
 
 ## What Snowflake Is
 
@@ -26,7 +26,7 @@ Source: [Snowflake key concepts and architecture](https://docs.snowflake.com/en/
 
 Snowflake stores persistent data in managed cloud storage, reorganizing table data into its optimized internal format. It supports structured data, semi-structured data such as JSON, and unstructured data. Snowflake also supports different table types, including standard Snowflake tables, Iceberg tables, and hybrid tables.
 
-Serenica equivalent:
+Cormac equivalent:
 
 - Supabase/Postgres is the v1 system of record.
 - `business_records` is the mutable operational CRM record store.
@@ -42,7 +42,7 @@ Juno equivalent:
 
 Snowflake uses virtual warehouses as independent compute clusters. A warehouse processes SQL and can run code through Snowpark. Warehouses are separated so one compute workload does not consume another warehouse's resources.
 
-Serenica equivalent:
+Cormac equivalent:
 
 - `apps/api` runs the control plane.
 - `apps/worker` runs async jobs.
@@ -58,7 +58,7 @@ Juno equivalent:
 
 Snowflake's cloud services layer coordinates sign-in, query dispatch, metadata, access control, governance, catalog, infrastructure management, and compliance.
 
-Serenica equivalent:
+Cormac equivalent:
 
 - The control plane is our application governance layer.
 - It owns auth verification, RBAC, tenant routing, contract publishing, proposal/approval, write policy, audit logging, connector policy, and usage.
@@ -69,7 +69,7 @@ Juno equivalent:
 - Genesis/Hubble/Orion manage platform access, workload templates, project/workload launch, infrastructure, and platform-level security controls.
 - Juno governance is infrastructure governance, not product governance.
 
-This is the most important mapping: **Snowflake cloud services are closer to a combined data-platform control plane. Serenica has its own product control plane, and Juno has a platform control plane. Those must not be confused.**
+This is the most important mapping: **Snowflake cloud services are closer to a combined data-platform control plane. Cormac has its own product control plane, and Juno has a platform control plane. Those must not be confused.**
 
 ## Snowflake's AI And Semantic Layers
 
@@ -85,7 +85,7 @@ Sources:
 - [Semantic Views](https://docs.snowflake.com/en/user-guide/views-semantic/overview)
 - [Cortex Agents](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-agents)
 
-Serenica equivalent:
+Cormac equivalent:
 
 - The schema contract is our semantic layer.
 - The Workbook Contract Agent proposes semantic contracts from workbooks.
@@ -113,19 +113,19 @@ This is the closest Snowflake feature to Juno, but it is not the same thing.
 | Data platform | Snowflake-native | Bring your own, such as Supabase/Postgres |
 | Developer workspaces | Not the main product idea | Central to the developer-pilot story via Helios/workloads |
 | App portability | OCI containers, but deployed into Snowflake | OCI/containerized services intended to stay portable |
-| Governance | Snowflake RBAC, network policies, event tables, Snowflake account perimeter | Juno platform controls plus Serenica product controls |
-| Fit for Serenica v1 | Too heavy and data-platform-specific | Strong candidate for running our app services |
+| Governance | Snowflake RBAC, network policies, event tables, Snowflake account perimeter | Juno platform controls plus Cormac product controls |
+| Fit for Cormac v1 | Too heavy and data-platform-specific | Strong candidate for running our app services |
 
 The clean analogy:
 
 - Snowflake SPCS: "Run custom containers inside the Snowflake data cloud."
 - Juno: "Run custom containers and development workspaces as an orchestration platform."
 
-## Mapping Snowflake's Five-Layer Ontology Example To Serenica/Juno
+## Mapping Snowflake's Five-Layer Ontology Example To Cormac/Juno
 
 The Snowflake-Labs ontology repo adds a domain-specific five-layer stack on top of Snowflake:
 
-| Snowflake ontology layer | What it means there | Serenica equivalent | Juno role |
+| Snowflake ontology layer | What it means there | Cormac equivalent | Juno role |
 | --- | --- | --- | --- |
 | Layer 1: physical storage | `KG_NODE`, `KG_EDGE` | `business_records`, future relationship edges, audit/source tables | Runs services; does not own data |
 | Layer 2: ontology metadata | classes, relationships, properties, permissions, inference rules | schema contracts, objects, fields, relationships, mappings, policies | Runs API/worker that manage this |
@@ -133,11 +133,11 @@ The Snowflake-Labs ontology repo adds a domain-specific five-layer stack on top 
 | Layer 4: semantic models | concrete, ontology, and governance models | agent context packs, query models, MCP schemas, evals | Hosts services that consume these |
 | Layer 5: agent orchestration | Cortex Agent + graph analytics | Hermes runtime behind adapter | Runs the runtime container |
 
-The mapping shows that Juno mostly lives below and beside the Serenica product layers. It runs the containers; it does not define the ontology/contract itself.
+The mapping shows that Juno mostly lives below and beside the Cormac product layers. It runs the containers; it does not define the ontology/contract itself.
 
 ## What This Means For Our Architecture
 
-### Serenica Is Closer To A Mini Semantic Data Product Than A CRUD App
+### Cormac Is Closer To A Mini Semantic Data Product Than A CRUD App
 
 The product is not just "CRM tables plus an agent." It has layers:
 
@@ -180,7 +180,7 @@ Snowflake could matter later if the product sells into larger data-heavy organiz
 
 When comparing Juno and Snowflake:
 
-> Snowflake is a governed data cloud where storage, compute, governance, semantic models, and agents can all live near enterprise data. Juno is an orchestration platform for running containerized workloads and developer environments. In Serenica, Supabase/Postgres is the data layer, our control plane is the governance/write layer, Hermes is the agent runtime, and Juno is where the services run.
+> Snowflake is a governed data cloud where storage, compute, governance, semantic models, and agents can all live near enterprise data. Juno is an orchestration platform for running containerized workloads and developer environments. In Cormac, Supabase/Postgres is the data layer, our control plane is the governance/write layer, Hermes is the agent runtime, and Juno is where the services run.
 
 When explaining why the Snowflake ontology thread matters:
 
@@ -190,7 +190,7 @@ When avoiding overclaim:
 
 > We are borrowing the layering pattern, not adopting Snowflake or building a full enterprise ontology platform.
 
-## Open Questions For Serenica
+## Open Questions For Cormac
 
 - Should `schema_relationships` become a first-class edge model earlier than planned?
 - Should the contract compiler generate materialized artifacts, or should artifacts be generated on demand?
