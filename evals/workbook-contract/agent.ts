@@ -13,7 +13,16 @@ import { SYSTEM_PROMPT, buildUserPrompt } from './prompt.js';
  * the cross-field refinements the grammar could not enforce.
  */
 
-const DEFAULT_MODEL = 'claude-opus-4-8';
+// Sonnet by default: capable enough to read the keystone signal without burning
+// top-flight tokens. Set SPIKE_MODEL=claude-opus-4-8 for the high-fidelity pass.
+const DEFAULT_MODEL = 'claude-sonnet-4-6';
+
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreationTokens: number;
+  cacheReadTokens: number;
+}
 
 export interface AgentRun {
   model: string;
@@ -22,7 +31,7 @@ export interface AgentRun {
   contract: Contract | null;
   /** The parseContract error, if the proposed contract did not satisfy the full spec. */
   contractError: string | null;
-  usage: { inputTokens: number; outputTokens: number } | null;
+  usage: TokenUsage | null;
 }
 
 export function getModel(): string {
@@ -52,8 +61,14 @@ export async function runAgent(detected: unknown): Promise<AgentRun> {
 
   const { contract, contractError } = assembleContract(rawOutput);
 
-  const usage = message.usage
-    ? { inputTokens: message.usage.input_tokens, outputTokens: message.usage.output_tokens }
+  const u = message.usage;
+  const usage: TokenUsage | null = u
+    ? {
+        inputTokens: u.input_tokens ?? 0,
+        outputTokens: u.output_tokens ?? 0,
+        cacheCreationTokens: u.cache_creation_input_tokens ?? 0,
+        cacheReadTokens: u.cache_read_input_tokens ?? 0,
+      }
     : null;
 
   return { model, rawOutput, contract, contractError, usage };
