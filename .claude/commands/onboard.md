@@ -1,5 +1,5 @@
 ---
-description: Onboard a fresh session: read the decision record, the PRD, and the current build state, then report back before starting work.
+description: Onboard a fresh session: read the decision record, the PRD, the current build state, and the live work tracker, then report back before starting work.
 argument-hint: [optional focus, e.g. "security packet" or "runtime seam"]
 ---
 
@@ -43,14 +43,19 @@ On demand (do not read now unless the focus calls for it):
 - Run `ls docs/research/`. These are external evaluations (Hermes runtime, Juno platform, Microsoft 365 connector, SMS/A2P compliance, Excel sync, Supabase hardening, vendor risk, Anthropic skills). Each states how the finding applies to us. Read one only when the session's work depends on it.
 - Read `docs/security/README.md`. It is the index of the client-facing compliance packet and explains the chain: claim, then enforced control, then test, then packet doc. `docs/security/control-register.md` is the source of truth for control status. The packet must stay a true summary of enforced controls; if your work adds or changes a control, the register and packet move with it.
 
-## 5. Current build state (always)
+## 5. Current build state and the live work tracker (always)
 
-The docs describe intent; the tree describes reality. Check both:
+The docs describe intent; the tree describes reality; the board describes the live, prioritized queue. Check all three:
 
-- `git log --oneline -15` and `git status`: what landed, what is in flight and uncommitted.
+- **The GitHub project board is the source of truth for what is planned, in flight, and prioritized.** Repo: `Serenica-Digital/serenica-crm-agent` (private). Board: https://github.com/orgs/Serenica-Digital/projects/3. Read priorities off the board; do not reconstruct them from the docs. Each issue body carries its context, a "Done when" line, and the ADR or handoff it traces to. Labels are type (`bug`, `security`, `infra`, `agent`, `contract`, `ui`, `docs`) plus priority (`P0`/`P1`/`P2`), with `needs-verification` marking built-but-unproven work. Pull current state with:
+  - `gh issue list --repo Serenica-Digital/serenica-crm-agent --label P0` for the must-close-before-pilot items.
+  - `gh issue list --repo Serenica-Digital/serenica-crm-agent --state open --milestone "<name>"` for a phase. Milestones: `Pre-pilot hardening`, `Phase 2: runtime and deploy`, `Product engine: authoring and UI`, `Modes & reporting`, `Business & non-code tracks`.
+  - `gh project item-list 3 --owner Serenica-Digital --limit 100` for the board with statuses (Todo, In Progress, Done). The `--limit` matters; the default page size truncates the list.
+- `git log --oneline -15` and `git status`: what landed, what is in flight and uncommitted. Code is done on a feature branch and merged to `main` by PR, so a `fix/...` or `feat/...` branch is an in-flight issue, not stray work.
 - Root `README.md`: package layout, quick start, and the check commands (`pnpm typecheck`, `pnpm lint`, `pnpm test`).
-- `ls docs/notes/handoffs/` and read the newest handoff. Handoffs are the candid, private accounting of what a prior session actually built versus what it claimed, including corners cut. Trust them over green checkmarks.
-- `ls docs/notes/convos/` for the most recent dated conversation notes if you need the latest thinking. `docs/notes/` is gitignored and private; `docs/notes/archive/` is superseded material, never current scope.
+- Be skeptical of green checkmarks. What is actually built versus merely claimed lives in the tracker: `bug` issues record known defects and the `needs-verification` label marks work that compiles but has not been proven against a live system. Trust those over a passing typecheck.
+
+Do not read from or depend on `docs/notes/`. It is the developer's private, gitignored space, the opposite of the formal system, and a clean clone will not contain it. Everything an onboarding agent needs is in the committed docs, the repository tree, and the GitHub tracker.
 
 ## 6. Report back, then stop
 
@@ -59,8 +64,8 @@ Produce a short orientation brief for the user:
 1. The product in two sentences, in the project's own vocabulary.
 2. The invariants you are bound by (one line each).
 3. Where the build stands: current phase against the build plan, what the newest ADRs say is committed versus pending, and what the latest handoff flags as claimed-but-unverified.
-4. Open items most likely to matter this session.
-5. Anything contradictory or stale you noticed between the docs and the tree (flag it, do not silently fix it).
+4. Open items most likely to matter this session, read off the board (the open `P0`s and anything In Progress), not reconstructed from the docs.
+5. Anything contradictory or stale you noticed between the docs, the tree, and the board (flag it, do not silently fix it).
 
 If a focus was given ($ARGUMENTS), additionally read the docs that bear on it and fold that into the brief.
 
