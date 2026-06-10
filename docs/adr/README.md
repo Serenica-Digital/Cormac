@@ -31,7 +31,7 @@ Status values: **Proposed**, **Accepted**, **Superseded by ADR-NNN**. `Planned` 
 | [003](003-supabase-postgres-system-of-record.md) | Supabase/Postgres as the single system of record | Accepted | 2026-06-06 |
 | [004](004-excel-as-contract-and-work-surface.md) | Excel is a contract and work surface, not the operational database | Accepted | 2026-06-06 |
 | [005](005-control-plane-is-the-only-writer.md) | The control plane is the only writer | Accepted | 2026-06-06 |
-| [006](006-adopt-hermes-as-agent-runtime.md) | Adopt Hermes as the agent runtime, behind a swappable adapter | Seam committed (ADR-021); integration pending | 2026-06-06 |
+| [006](006-adopt-hermes-as-agent-runtime.md) | Adopt Hermes as the agent runtime, behind a swappable adapter | Runtime integration committed locally (ADR-026); deployment pending (ADR-017) | 2026-06-06 |
 | [007](007-one-agent-service-many-doors.md) | One agent service, many doors (thick MCP, not raw CRUD) | Accepted | 2026-06-06 |
 | [008](008-two-agent-roles.md) | Two agent roles: Workbook Contract Agent and CRM Operations Agent | Accepted | 2026-06-06 |
 | [009](009-govern-learning-as-data.md) | Govern learning as data; the runtime stays stateless | Accepted | 2026-06-06 |
