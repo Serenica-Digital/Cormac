@@ -1,8 +1,8 @@
 # ADR-004: Excel is a contract and work surface, not the operational database
 
-**Status:** Accepted
+**Status:** Accepted; the live data surface is settled in ADR-022 (contract-generated, contract-constrained workbooks; Excel guides while the control plane validates at sync).
 **Date:** 2026-06-06
-**Related:** Makes the Excel scope concrete for ADR-002 (contract-first data model) and resolves the "bidirectional sync" framing from ADR-001. Excel writes route through ADR-005 (the control plane is the only writer), live workbook access depends on ADR-012 (Microsoft connector), canonical state lives in ADR-003 (Supabase), and the schema-mapping work is one of the two agent roles in ADR-008.
+**Related:** Makes the Excel scope concrete for ADR-002 (contract-first data model) and resolves the "bidirectional sync" framing from ADR-001. Excel writes route through ADR-005 (the control plane is the only writer), live workbook access depends on ADR-012 (Microsoft connector), canonical state lives in ADR-003 (Supabase), and the schema-mapping work is one of the two agent roles in ADR-008. ADR-022 refines the live Excel surface, and ADR-023 covers the authoring agent that produces the contract.
 
 ## Context
 

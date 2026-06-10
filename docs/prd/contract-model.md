@@ -79,7 +79,7 @@ flowchart TB
 
 **Operational use (governed by the contract)**
 
-- **Surfaces**: web, SMS, email, Claude/MCP, and the Excel round-trip. They read and present data through the contract and submit changes as drafts; they never write business records directly. In the Excel round-trip, edits become a diff, then a proposal.
+- **Surfaces**: web, SMS, email, Claude/MCP, and the Excel round-trip. They read and present data through the contract and submit changes as drafts; they never write business records directly. The live Excel surface is a workbook the system generates from the contract, with the contract baked in as native rules (dropdowns for enum fields, typed validation, locked structure, hidden stable IDs), so regular users work in real, live Excel that is clean by construction. Edits become a diff, then a proposal; in-sheet rules guide entry while the Control Plane validates every change against the contract at sync time (ADR-022).
 - **CRM Operations Agent**: reads the active contract to extract entities, match them to existing records, propose updates, and answer questions. It operates inside the world the contract defines.
 - **Proposals, confirmation, audit**: the Control Plane validates proposed changes (Zod against the contract), then applies writes per the workspace confirmation setting (confirm-each, or opt-in apply-then-report fire-and-forget), and records an audit event. The runtime only proposes; the Control Plane is the only thing that writes.
 
@@ -94,7 +94,8 @@ flowchart TB
 - We lift the spreadsheet into a governed contract; we do not bend the database to an arbitrary spreadsheet. Arbitrary bidirectional sync with any existing workbook is out of scope.
 - App-owned operational tables (workspaces, users, roles, source messages, proposals, audit events, and the contract itself) are fixed product structure. Business objects and fields come from the contract.
 - Every object and field has a stable internal ID, independent of Excel labels or row/column positions. Contracts are versioned; records/proposals/audit reference the version that governed them.
-- The spreadsheet is a draft and work surface, never a direct writer. Excel edits become diffs, then proposals, then governed writes.
+- The spreadsheet is a draft and work surface, never a direct writer. The live workbook is generated from the contract and constrained by it; in-sheet validation guides the user, but a plain save does not persist, and the Control Plane validates every change against the contract at sync time before it becomes a governed write (ADR-022). Off-contract rows become flagged proposals, never silent writes.
+- Authoring a contract and doing day-to-day data work are different, differently-trusted steps. Managers and admins author or change the contract (the messy step, agent-assisted, admin-published); regular users only touch the generated, constrained workbook. The messiness of a real spreadsheet is digested once at authoring, so the live data surface stays clean by construction (ADR-022, ADR-023).
 - Learning lives as governed, reviewed data (aliases, rules, eval cases folded into the contract), never as opaque runtime memory. The agent is handed the contract plus relevant history as context per task.
 - Contract changes are admin-gated, reviewed, versioned, and audited — the same gate whether the change originates from a new workbook or from distilled corrections.
 - A schema describes shape; the contract adds the semantics (identity, disambiguation, AI-write permission, lifecycle) the agent needs to act safely. Detection alone is never enough to publish.
