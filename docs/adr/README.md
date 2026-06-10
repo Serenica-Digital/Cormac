@@ -49,3 +49,4 @@ Status values: **Proposed**, **Accepted**, **Superseded by ADR-NNN**. `Planned` 
 | [021](021-runtime-seam-validated-with-stub.md) | Runtime seam committed; real Hermes integration pending | Accepted | 2026-06-07 |
 | [022](022-excel-integration-model.md) | Excel integration model: contract-generated workbooks, author-versus-data roles, validate-at-sync | Accepted | 2026-06-09 |
 | [023](023-workbook-contract-agent-approach.md) | The Workbook Contract Agent is the keystone; approach committed, feasibility deferred to a spike | Accepted (approach) | 2026-06-09 |
+| [024](024-product-naming-structure.md) | Naming structure: Serenica the company and platform, Walden the working product name | Accepted (working name) | 2026-06-10 |

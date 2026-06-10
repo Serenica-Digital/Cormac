@@ -18,7 +18,8 @@ When a decision changes, write a new ADR and mark the old one superseded. Do not
 
 ## Vocabulary (use these exactly)
 
-- **Serenica CRM Agent**: the product. Serenica is the company.
+- **Serenica**: the company, and the brand of the multi-tenant platform (the control plane and trust layer). Formal artifacts say Serenica.
+- **Walden**: the working name of the product, the client-facing agent a workspace's users talk to over web, SMS, and email. Working name only; not yet cleared or committed commercially (ADR-024). "Serenica CRM Agent" in older docs means this product.
 - **the control plane**: our Node/TypeScript backend trust layer. It owns tenant routing, RBAC, contract publishing, the proposal/confirmation/audit pipeline, connector webhooks, and every write. It is the only thing that writes business records.
 - **Hermes / the agent runtime**: NousResearch Hermes Agent, the adopted execution runtime for the product (ADR-006). "Hermes" names only that upstream runtime and its tenant-facing product use. Never call the control plane Hermes.
 - **Jarvis**: a Hermes instance configured as a development assistant, used while building Serenica (it reads the repo and docs and helps with code, planning, and Git). Jarvis is developer tooling, never a product component, and it never touches client data. Same upstream software as the Hermes product runtime, different name, different trust level (ADR-017).
