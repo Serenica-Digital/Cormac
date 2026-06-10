@@ -37,3 +37,10 @@ When a decision changes, write a new ADR and mark the old one superseded. Do not
 ## Working style
 
 Write tight and declarative. No em-dashes. Avoid the "not X, but Y" reversal. No forced analogies. State what is true and what is open, and flag overstatements rather than smoothing them over. Honesty over polish.
+
+## Branching and commits
+
+- `dev` is the work trunk. Commit docs, PRD, config, and routine code straight to `dev`. No branch and no PR for everyday changes; do not stop to ask before an ordinary commit.
+- `main` is the stable branch and stays the default. `dev` merges into `main` at milestone or release points through a PR, which is where CI and a review pass run.
+- Behavior-changing or risky code (anything that could break the app or the trust boundary, such as a write path) takes a short-lived branch off `dev` and a PR back into `dev`.
+- Keep commits scoped and messages declarative. Never sweep unrelated working-tree changes into a commit; commit only what the task touched.
