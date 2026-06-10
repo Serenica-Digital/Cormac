@@ -50,4 +50,5 @@ Status values: **Proposed**, **Accepted**, **Superseded by ADR-NNN**. `Planned` 
 | [022](022-excel-integration-model.md) | Excel integration model: contract-generated workbooks, author-versus-data roles, validate-at-sync | Accepted | 2026-06-09 |
 | [023](023-workbook-contract-agent-approach.md) | The Workbook Contract Agent is the keystone; approach committed, feasibility deferred to a spike | Accepted (approach) | 2026-06-09 |
 | [024](024-product-naming-structure.md) | Naming structure: Serenica the company; Cormac the product, whole (working name) | Accepted (structure; Cormac uncleared) | 2026-06-10 |
-| [025](025-agents-run-as-agents-proposal-as-tool-call.md) | The agents run as tool-using agents; the proposal is a schema-enforced tool call | Accepted | 2026-06-10 |
+| [025](025-agents-run-as-agents-proposal-as-tool-call.md) | The agents run as tool-using agents; the proposal is a schema-enforced tool call | Accepted (open items 1 and 3 resolved by ADR-026) | 2026-06-10 |
+| [026](026-real-hermes-integration-proven-locally.md) | Real Hermes runs the operations agent; the ADR-025 posture proven locally | Accepted (local half; Juno deployment open under ADR-017) | 2026-06-10 |
