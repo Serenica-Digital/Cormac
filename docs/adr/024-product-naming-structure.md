@@ -1,7 +1,7 @@
-# ADR-024: Naming structure: Serenica the company and platform; the product's working name is an open slot
+# ADR-024: Naming structure: Serenica the company; Cormac the product, whole (working name)
 
-**Status:** Accepted (the naming structure and clearance bar; working name: Cormac)
-**Date:** 2026-06-10 (amended twice the same day: the initial working name, Walden, was withdrawn within hours because it collides with the name of the design partner's own venture; Cormac then filled the slot after passing the partner-world check. The structure and bar are unchanged; Cormac's full section 2 clearance is pending)
+**Status:** Accepted (the naming structure and clearance bar; working name: Cormac, naming the whole product)
+**Date:** 2026-06-10 (amended three times the same day. First: the initial working name, Walden, was withdrawn within hours because it collides with the name of the design partner's own venture; Cormac then filled the slot after passing the partner-world check. Third amendment, same evening: the founder collapsed the platform-brand middle layer, so Cormac names the whole product rather than only the client-facing agent, and Serenica is the company. The clearance bar is unchanged; Cormac's full section 2 clearance is pending)
 **Related:** ADR-001 (the product placeholder "Serenica CRM Agent" dates from the founding decision), ADR-016 (market posture; the name ends up in the pitch, the A2P campaign registration, and client conversations), ADR-017 (the precedent for strict naming discipline: Jarvis versus the Hermes product runtime), ADR-015 (the security packet carries the formal name).
 
 ## Context
@@ -16,10 +16,12 @@ The Phoenix Rising finding doubles as market intelligence: a funded company inde
 
 ## Decision
 
-### 1. Three naming layers, one name per thing
+### 1. Two naming layers, one name per thing
 
-- **Serenica** is the company, and the brand of the multi-tenant platform: the control plane, the trust layer, the thing a client's IT department evaluates. Formal artifacts (contracts, the security packet, the A2P registration, invoices) say Serenica until a final product name is cleared.
-- **Cormac** is the working name of the product: the client-facing agent a workspace's users talk to over web, SMS, and email. A working name is used freely in docs, code, and conversation but is not committed commercially; "Serenica CRM Agent" in older docs means this product. The name keeps the pattern the candidate rounds converged on: a real two-syllable human name with CRM inside it (Co-RM-ac), persona-capable over SMS.
+(As amended the same evening: the original decision carved out a third, middle layer, "Serenica the platform brand," distinct from the agent product. The founder removed it: a single-product company does not need a platform brand separate from the product, and selling a small firm "the Cormac agent on the Serenica platform" is double-branding noise. The trust story survives intact as "Cormac's control plane, operated by Serenica.")
+
+- **Serenica** is the company: the legal entity that signs contracts, registers the A2P campaign, issues invoices, and stands behind the security packet. Formal artifacts say Serenica until a final product name is cleared.
+- **Cormac** is the working name of the product, and the product is the whole thing: the multi-tenant platform, the control plane, the client-facing agent, and the SMS persona a user saves in their contacts. "Cormac, by Serenica" is the commercial framing. A working name is used freely in docs, code, and conversation but is not committed commercially; "Serenica CRM Agent" in older docs means this product. The name keeps the pattern the candidate rounds converged on: a real two-syllable human name with CRM inside it (Co-RM-ac), persona-capable over SMS.
 - The internal agent roles keep their descriptive names (the Workbook Contract Agent and the CRM Operations Agent, ADR-008), and the development tooling keeps Jarvis (ADR-017). Role names are never client-facing brands.
 
 ### 2. The bar a final name must clear
@@ -32,7 +34,7 @@ Committed docs keep "Serenica CRM Agent" where it already appears; new writing m
 
 ## Consequences
 
-- CLAUDE.md's vocabulary block is updated to carry the three layers.
+- CLAUDE.md's vocabulary block is updated to carry the two layers.
 - The Carmen evidence is preserved here and in the trademark export in the private notes, so the diligence is not repeated.
 - Naming discipline now has two recorded precedents (ADR-017 and this one): one name per thing, and the name of a thing never migrates informally.
 
@@ -53,4 +55,4 @@ Committed docs keep "Serenica CRM Agent" where it already appears; new writing m
 ## Open items
 
 1. **Cormac's full clearance.** It entered as working name on the partner-world check alone; it graduates to the commercial name only by clearing the full section 2 bar (phonetic-aware USPTO knockout in classes 9/35/42, the AI-assistant namespace scan, domains, an attorney hour).
-2. **Product name versus persona.** Whether the cleared name is both the formal product name and the texting persona (preferred: one name, one thing) or the persona only.
+2. **Product name versus persona.** Resolved by the same-evening amendment: one name for both. Cormac is the product and the persona, the Alexa pattern.
