@@ -1,8 +1,21 @@
 # Juno as the Orchestration Platform: Evaluation and Pilot Fit
 
 Status: research / decision-support
-Date reviewed: June 9, 2026 (spike list amended; first reviewed June 6, 2026)
+Date reviewed: June 10, 2026 (refresh section added; spike list amended June 9; first reviewed June 6, 2026)
 Decision impact: supports ADR-017, "Use Juno as the preferred orchestration platform for the prototype"
+
+## Refresh, 2026-06-10: read this first
+
+A deeper source-verified sweep of the juno-fx repos, manifests, and branches now lives in [juno-hermes-deployment-research.md](juno-hermes-deployment-research.md). It is the current platform record; this doc remains the decision-support evaluation behind ADR-017. Where the two disagree, the newer doc wins. The specific supersessions:
+
+- **The component map is deeper than Orion/Genesis/Hubble/Terra/Helios.** The working parts visible in the Helm charts are Kuiper (workload lifecycle controller), Rhea (Cedar-policy authorization), and Titan (licensing). The deployment charts, plugins, and workstation images are public and actively developed; the management-plane application source (Genesis, Hubble, Kuiper, Rhea, Titan) is not.
+- **The workload model is verified.** Merged plugins deploy prebuilt images as StatefulSets from Helm-chart workload templates. Build-from-repo runtime plugins (`runtime-js`, `runtime-python`, `runtime-go`, `runtime-cpp`) exist on the public `556-runtime-environments` branch (PR #557) with a `network_mode` select whose `clusterip` option gives a workload no public route, which is what the Hermes product runtime needs.
+- **There is no Supabase/Postgres plugin in the official Terra repository** (verified absent from the full plugin listing). The mention below of Supabase among integrations, and spike step 6, are re-grounded accordingly.
+- **Helios is a streamed Linux desktop** (Selkies/XFCE), not a browser IDE, and its stock images carry no Node, pnpm, or Docker. The `web-ide` (code-server) plugin is the closer fit for our dev workspace.
+- **An official `hermes-agent` plugin exists** and matches the Jarvis shape (interactive, persistent, auth-gated); the product runtime needs a custom headless template.
+- **Pricing:** the public free tier caps at 2 concurrent workloads; the pilot itself is free on Juno's AWS dev cluster per the June 5 meeting, with pricing deferred until after discovery.
+
+The live question list is the onboarding ask list in the newer doc and in [../prd/juno-platform-pilot.md](../prd/juno-platform-pilot.md); the Open Questions section below is kept for history.
 
 ## Why This Matters
 
@@ -181,7 +194,7 @@ The first Juno spike should answer whether the platform helps without creating h
 3. Run a basic web workload.
 4. Run a basic Node/TypeScript API workload.
 5. Connect the API workload to managed Supabase through secrets/env vars.
-6. Try the Terra Supabase/Postgres plugin as the dev-workspace database: run the migrations, the seed, and the cross-tenant isolation test against it, and document whether they behave identically to the local CLI stack. Dev and preview data only; canonical state stays in managed Supabase.
+6. Dev-workspace database: the official Terra repository has no Supabase/Postgres plugin (verified 2026-06-10), so this step is re-grounded. Options, in order: develop against a shared managed-Supabase dev project; run the Supabase CLI stack inside the workspace if Docker is available there (an onboarding question); or author a minimal Postgres workload template. Whichever lands, run the migrations, the seed, and the cross-tenant isolation test against it and document the behavior. Dev and preview data only; canonical state stays in managed Supabase.
 7. Run a Dockerized Hermes runtime workload.
 8. Invoke Hermes through a control-plane adapter, not directly from the web UI.
 9. Process one test CRM instruction into a structured proposal.
