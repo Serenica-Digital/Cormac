@@ -47,7 +47,7 @@ The agent is probabilistic. You do not unit-assert it; you evaluate it against a
 ### 6. Non-functional
 
 - Runtime latency budget for the seam (the capture round-trip).
-- Failure injection: runtime down (adapter returns 502, nothing written), partial apply (the atomicity gap in the register), DB errors.
+- Failure injection: runtime down (adapter returns 502, nothing written), mid-way apply failure (atomic rollback, proven by tests/atomic-apply.test.ts), DB errors.
 - The backup/restore drill: restore to a clean environment and confirm RLS and the audit trail survive.
 
 ## Quality gates (what blocks a merge or a pilot)
@@ -72,7 +72,7 @@ This is the ADR-015 checklist rendered as a gate. Status reflects the skeleton t
 | Agent runtime has no write credentials | met (compose) |
 | Agent tools allowlisted by workspace | partial: tool model not built yet |
 | Agent outputs validated before writes | met + tested |
-| Proposal/approval/apply/revert/admin write audit events | partial: revert + admin not built; apply not atomic |
+| Proposal/approval/apply/revert/admin write audit events | partial: revert + admin not built (apply is atomic) |
 | Secrets out of code, not logged | partial: masking helper exists; CI scan added |
 | Backups configured + one restore path documented | pending: drill |
 | Subprocessor list + AI data-handling accurate for pilot | met (drafted) |

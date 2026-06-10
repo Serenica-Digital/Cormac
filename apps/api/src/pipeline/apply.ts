@@ -4,13 +4,10 @@ import { ProblemError } from '@serenica/shared';
 import type { AppContext } from '../app.js';
 import type { RequestContext } from '../types.js';
 import {
-  createRecord,
   getActiveContract,
   getProposal,
-  getRecord,
   insertAuditEvent,
   setProposalDecision,
-  updateRecordData,
 } from '../repo.js';
 
 export type Decision = 'approve' | 'reject';
@@ -80,57 +77,27 @@ export async function decideProposal(
     );
   }
 
-  const applied: AppliedChange[] = [];
-  for (const change of proposal.changes) {
-    if (change.op === 'update') {
-      if (!change.recordId) throw ProblemError.unprocessable('Update change missing recordId');
-      const existing = await getRecord(db, workspaceId, change.recordId);
-      if (!existing) throw new ProblemError(422, 'record_missing', `Record ${change.recordId} not found`);
-      const before = existing.data;
-      const after: Record<string, unknown> = { ...before, ...change.values };
-      const updated = await updateRecordData(db, {
-        workspaceId,
-        recordId: existing.id,
-        data: after,
-        actorId: userId,
-      });
-      await insertAuditEvent(db, {
-        workspaceId,
-        actorType: 'user',
-        actorId: userId,
-        action: 'record_updated',
-        objectApiName: change.objectApiName,
-        recordId: updated.id,
-        before,
-        after,
-        sourceMessageId: proposalRow.source_message_id,
-        proposalId,
-      });
-      applied.push({ op: 'update', objectApiName: change.objectApiName, recordId: updated.id });
-    } else {
-      const created = await createRecord(db, {
-        workspaceId,
-        objectApiName: change.objectApiName,
-        contractVersionId: contractRow.id,
-        data: { ...change.values },
-        actorId: userId,
-      });
-      await insertAuditEvent(db, {
-        workspaceId,
-        actorType: 'user',
-        actorId: userId,
-        action: 'record_created',
-        objectApiName: change.objectApiName,
-        recordId: created.id,
-        before: null,
-        after: created.data,
-        sourceMessageId: proposalRow.source_message_id,
-        proposalId,
-      });
-      applied.push({ op: 'create', objectApiName: change.objectApiName, recordId: created.id });
-    }
+  // Apply atomically in the database (ADR-019). The record writes, the audit
+  // events, and the proposal status flip are one transaction: they all land, or
+  // a failure rolls back every one of them. Authorization already happened
+  // above (token, membership, role); the function only executes the
+  // already-validated writes for this already-authorized workspace, and EXECUTE
+  // on it is granted to the service role only.
+  const { data, error } = await db.rpc('apply_proposal', {
+    p_workspace_id: workspaceId,
+    p_proposal_id: proposalId,
+    p_actor_id: userId,
+    p_contract_version_id: contractRow.id,
+    p_changes: proposal.changes,
+  });
+  if (error) {
+    const status = error.code === 'P0002' ? 422 : 500;
+    throw new ProblemError(
+      status,
+      'apply_failed',
+      'Applying the proposal failed; nothing was written',
+      error.message,
+    );
   }
-
-  await setProposalDecision(db, { workspaceId, proposalId, status: 'applied', decidedBy: userId });
-  return { status: 'applied', applied };
+  return { status: 'applied', applied: (data as AppliedChange[]) ?? [] };
 }
