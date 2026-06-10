@@ -150,12 +150,25 @@ export function buildMcpServer(app: AppContext, workspaceId: string): McpServer 
         );
       }
 
-      const row = await insertProposal(app.db, {
-        workspaceId,
-        sourceMessageId: taskId,
-        payload: parsed.data,
-        createdBy: source.user_id,
-      });
+      let row;
+      try {
+        row = await insertProposal(app.db, {
+          workspaceId,
+          sourceMessageId: taskId,
+          payload: parsed.data,
+          createdBy: source.user_id,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (
+          message.includes('agent_proposals_one_per_source_message') ||
+          message.includes('duplicate key') ||
+          message.includes('23505')
+        ) {
+          return toolError('A proposal already exists for this task.');
+        }
+        throw err;
+      }
       return jsonContent({
         proposalId: row.id,
         status: row.status,

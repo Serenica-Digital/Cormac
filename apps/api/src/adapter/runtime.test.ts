@@ -125,6 +125,8 @@ beforeAll(async () => {
         }
         const scenario = input.includes('scenario-fail')
           ? 'fail'
+          : input.includes('scenario-poll-error')
+            ? 'poll-error'
           : input.includes('scenario-slow')
             ? 'slow'
             : 'ok';
@@ -159,6 +161,10 @@ beforeAll(async () => {
       run.polls += 1;
       if (run.scenario === 'slow' || run.polls < 2) {
         json(200, { status: 'running' });
+        return;
+      }
+      if (run.scenario === 'poll-error') {
+        json(502, { error: 'poll exploded' });
         return;
       }
       if (run.scenario === 'fail') {
@@ -226,6 +232,15 @@ describe('runHermesTask', () => {
     ).rejects.toMatchObject({ code: 'runtime_timeout', status: 504 });
     expect(stoppedRuns.length).toBeGreaterThan(0);
     expect(deletedSessions).toContain('t-slow');
+  });
+
+  it('stops and ends the session when polling an accepted run errors', async () => {
+    const stoppedBefore = stoppedRuns.length;
+    await expect(
+      runHermesTask(cfg(), { taskId: 't-poll-error', text: 'scenario-poll-error' }),
+    ).rejects.toMatchObject({ code: 'runtime_error', status: 502 });
+    expect(stoppedRuns.length).toBeGreaterThan(stoppedBefore);
+    expect(deletedSessions).toContain('t-poll-error');
   });
 
   it('rejects when the runtime is unreachable', async () => {

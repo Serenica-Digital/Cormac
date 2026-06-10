@@ -198,45 +198,51 @@ export async function runHermesTask(
 
   const deadline = Date.now() + cfg.timeoutMs;
   const interval = cfg.pollIntervalMs ?? 1500;
+  let terminal = false;
 
-  while (Date.now() < deadline) {
-    const poll = await fetchOrUnreachable(`${cfg.url}/v1/runs/${runId}`, {
-      headers: authHeaders(cfg),
-    });
-    if (!poll.ok) {
-      const detail = await poll.text().catch(() => '');
-      throw new ProblemError(502, 'runtime_error', `Agent runtime returned ${poll.status}`, detail);
-    }
-    const run = (await poll.json().catch(() => null)) as
-      | { status?: unknown; output?: unknown; usage?: unknown }
-      | null;
-    const status = typeof run?.status === 'string' ? run.status : 'unknown';
+  try {
+    while (Date.now() < deadline) {
+      const poll = await fetchOrUnreachable(`${cfg.url}/v1/runs/${runId}`, {
+        headers: authHeaders(cfg),
+      });
+      if (!poll.ok) {
+        const detail = await poll.text().catch(() => '');
+        throw new ProblemError(502, 'runtime_error', `Agent runtime returned ${poll.status}`, detail);
+      }
+      const run = (await poll.json().catch(() => null)) as
+        | { status?: unknown; output?: unknown; usage?: unknown }
+        | null;
+      const status = typeof run?.status === 'string' ? run.status : 'unknown';
 
-    if (status === 'completed') {
-      await endSession(cfg, task.taskId);
-      const usage =
-        run?.usage && typeof run.usage === 'object'
-          ? (run.usage as Record<string, unknown>)
-          : undefined;
-      return { runId, output: asText(run?.output), usage };
+      if (status === 'completed') {
+        terminal = true;
+        const usage =
+          run?.usage && typeof run.usage === 'object'
+            ? (run.usage as Record<string, unknown>)
+            : undefined;
+        return { runId, output: asText(run?.output), usage };
+      }
+      if (TERMINAL_FAILURES.has(status)) {
+        terminal = true;
+        throw new ProblemError(
+          502,
+          'runtime_failed',
+          `Agent run ended ${status}`,
+          asText(run?.output),
+        );
+      }
+      await new Promise((resolve) => setTimeout(resolve, interval));
     }
-    if (TERMINAL_FAILURES.has(status)) {
-      await endSession(cfg, task.taskId);
-      throw new ProblemError(
-        502,
-        'runtime_failed',
-        `Agent run ended ${status}`,
-        asText(run?.output),
-      );
-    }
-    await new Promise((resolve) => setTimeout(resolve, interval));
+
+    throw new ProblemError(
+      504,
+      'runtime_timeout',
+      `Agent run ${runId} did not finish within ${cfg.timeoutMs}ms`,
+    );
+  } catch (err) {
+    if (!terminal) await stopRun(cfg, runId);
+    throw err;
+  } finally {
+    await endSession(cfg, task.taskId);
   }
-
-  await stopRun(cfg, runId);
-  await endSession(cfg, task.taskId);
-  throw new ProblemError(
-    504,
-    'runtime_timeout',
-    `Agent run ${runId} did not finish within ${cfg.timeoutMs}ms`,
-  );
 }
