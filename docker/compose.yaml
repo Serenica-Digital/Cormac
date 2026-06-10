@@ -26,7 +26,12 @@ services:
     environment:
       API_PORT: '8088'
       RUNTIME_URL: 'http://runtime-stub:8090'
-      SUPABASE_URL: '${SUPABASE_URL:-http://host.docker.internal:54321}'
+      # Inside the container, the host's Supabase is reachable only via
+      # host.docker.internal; do not inherit the host's 127.0.0.1 URL.
+      SUPABASE_URL: 'http://host.docker.internal:54321'
+      # Tokens are issued under the host-side URL, so the issuer check needs the
+      # explicit value (ADR-020; see SUPABASE_AUTH_ISSUER in apps/api config).
+      SUPABASE_AUTH_ISSUER: '${SUPABASE_AUTH_ISSUER:-http://127.0.0.1:54321/auth/v1}'
       SUPABASE_SERVICE_ROLE_KEY: '${SUPABASE_SERVICE_ROLE_KEY}'
       SUPABASE_JWT_SECRET: '${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}'
     extra_hosts:

@@ -21,7 +21,7 @@ export async function authenticate(request: FastifyRequest, _reply: FastifyReply
       token,
       (protectedHeader, tok) =>
         protectedHeader.alg === 'HS256' ? Promise.resolve(hsSecret) : jwks(protectedHeader, tok),
-      { issuer: `${config.SUPABASE_URL}/auth/v1` },
+      { issuer: config.SUPABASE_AUTH_ISSUER ?? `${config.SUPABASE_URL}/auth/v1` },
     );
     if (!payload.sub) throw new Error('token has no subject');
     request.authUserId = payload.sub;
