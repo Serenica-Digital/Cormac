@@ -1,7 +1,7 @@
 # ADR-024: Naming structure: Serenica the company and platform; the product's working name is an open slot
 
-**Status:** Accepted (the naming structure and clearance bar; the product name itself is unfilled)
-**Date:** 2026-06-10 (amended the same day: the initial working name, Walden, was withdrawn within hours because it collides with the name of the design partner's own venture; the structure and bar are unchanged)
+**Status:** Accepted (the naming structure and clearance bar; working name: Cormac)
+**Date:** 2026-06-10 (amended twice the same day: the initial working name, Walden, was withdrawn within hours because it collides with the name of the design partner's own venture; Cormac then filled the slot after passing the partner-world check. The structure and bar are unchanged; Cormac's full section 2 clearance is pending)
 **Related:** ADR-001 (the product placeholder "Serenica CRM Agent" dates from the founding decision), ADR-016 (market posture; the name ends up in the pitch, the A2P campaign registration, and client conversations), ADR-017 (the precedent for strict naming discipline: Jarvis versus the Hermes product runtime), ADR-015 (the security packet carries the formal name).
 
 ## Context
@@ -19,7 +19,7 @@ The Phoenix Rising finding doubles as market intelligence: a funded company inde
 ### 1. Three naming layers, one name per thing
 
 - **Serenica** is the company, and the brand of the multi-tenant platform: the control plane, the trust layer, the thing a client's IT department evaluates. Formal artifacts (contracts, the security packet, the A2P registration, invoices) say Serenica until a final product name is cleared.
-- **The product** (the client-facing agent a workspace's users talk to over web, SMS, and email) keeps the placeholder "Serenica CRM Agent" until a working or final name is adopted. A working name, once chosen, is used freely in docs, code, and conversation but is not committed commercially.
+- **Cormac** is the working name of the product: the client-facing agent a workspace's users talk to over web, SMS, and email. A working name is used freely in docs, code, and conversation but is not committed commercially; "Serenica CRM Agent" in older docs means this product. The name keeps the pattern the candidate rounds converged on: a real two-syllable human name with CRM inside it (Co-RM-ac), persona-capable over SMS.
 - The internal agent roles keep their descriptive names (the Workbook Contract Agent and the CRM Operations Agent, ADR-008), and the development tooling keeps Jarvis (ADR-017). Role names are never client-facing brands.
 
 ### 2. The bar a final name must clear
@@ -52,5 +52,5 @@ Committed docs keep "Serenica CRM Agent" where it already appears; new writing m
 
 ## Open items
 
-1. **A working name, then the final name.** The slot is open; any candidate enters by passing the partner-world check and graduates only by clearing the full section 2 bar.
+1. **Cormac's full clearance.** It entered as working name on the partner-world check alone; it graduates to the commercial name only by clearing the full section 2 bar (phonetic-aware USPTO knockout in classes 9/35/42, the AI-assistant namespace scan, domains, an attorney hour).
 2. **Product name versus persona.** Whether the cleared name is both the formal product name and the texting persona (preferred: one name, one thing) or the persona only.
