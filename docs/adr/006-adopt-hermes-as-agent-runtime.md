@@ -1,8 +1,8 @@
 # ADR-006: Adopt Hermes as the agent runtime, behind a swappable adapter
 
-**Status:** Accepted as direction, pending a de-risk spike that converts it to a committed GO/NO-GO before Phase-2 estimates
+**Status:** Seam committed (ADR-021); real Hermes integration pending. (Was: accepted as direction, pending a de-risk spike.)
 **Date:** 2026-06-06
-**Related:** Sits beneath ADR-005 (the control plane is the only writer) as a contained component. It runs the two roles of ADR-008, stays stateless per ADR-009 (govern learning as data), exposes the provider seam of ADR-013 (Claude-first, BYOK), and is treated as a containment workstream in ADR-015 (security). ADR-017 (Juno) is where this runtime runs in the prototype, and the two share one de-risk spike. The full source-verified evaluation is [docs/research/hermes-agent-runtime-evaluation.md](../research/hermes-agent-runtime-evaluation.md).
+**Related:** Sits beneath ADR-005 (the control plane is the only writer) as a contained component. It runs the two roles of ADR-008, stays stateless per ADR-009 (govern learning as data), exposes the provider seam of ADR-013 (Claude-first, BYOK), and is treated as a containment workstream in ADR-015 (security). ADR-017 (Juno) is where this runtime runs in the prototype, and the two share one de-risk spike. ADR-021 reports the result of that spike: the adapter seam is validated and committed, with real Hermes integration still open. The full source-verified evaluation is [docs/research/hermes-agent-runtime-evaluation.md](../research/hermes-agent-runtime-evaluation.md).
 
 ## Context
 
@@ -66,4 +66,4 @@ Roughly 65% that Hermes is the right choice for the agent layer specifically, an
 1. **Scale tenancy.** Shared warm pool (better economics and latency) versus per-tenant instances (stronger isolation), and how to guarantee zero in-process cross-tenant bleed in a shared pool.
 2. **Structured-output path.** Standardize on the `complete_structured` skill versus instruct-and-parse for the proposal path (shared with ADR-013).
 3. **Recycle cadence**, time-based versus after-N-runs, and whether the leak is patched before it matters.
-4. **The spike result**, which is the GO/NO-GO that converts this status from "accepted as direction" to "committed."
+4. **The spike result.** Reported in ADR-021: the adapter seam is validated and committed (structured output rejected or accepted at the boundary, the full spine running against real Postgres). The real-Hermes half (the in-run write gates, latency, model adherence to structured output, the leak mitigation, and the Juno deploy) remains open.

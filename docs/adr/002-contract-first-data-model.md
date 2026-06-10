@@ -1,8 +1,8 @@
 # ADR-002: Contract-first data model, client spreadsheets define the business objects
 
-**Status:** Accepted (the principle); the physical record-storage representation is deferred to ADR-003 and a prototype
+**Status:** Accepted (the principle); the physical record-storage representation is now settled in ADR-019
 **Date:** 2026-06-06
-**Related:** Follows directly from ADR-001 (platform-first). ADR-003 (Supabase as system of record) owns the physical storage question this ADR raises, ADR-004 (Excel as a contract surface) is how a workbook becomes a contract, ADR-008 (Workbook Contract Agent) is the role that authors it, ADR-009 (govern learning as data) folds corrections back into it, and ADR-014 (Lovable for the UI) inherits the generic-UI burden it creates.
+**Related:** Follows directly from ADR-001 (platform-first). ADR-003 (Supabase as system of record) owns the physical storage question this ADR raises and ADR-019 settles it with prototype evidence, ADR-004 (Excel as a contract surface) is how a workbook becomes a contract, ADR-008 (Workbook Contract Agent) is the role that authors it, ADR-009 (govern learning as data) folds corrections back into it, and ADR-014 (Lovable for the UI) inherits the generic-UI burden it creates.
 
 ## Context
 
@@ -53,7 +53,7 @@ This is the single most consequential technical choice in the product, and it is
 - **A single generic `business_records` store with values in JSONB.** Contract changes are pure data writes with no DDL, which is operationally simple and makes versioning trivial. The cost is weaker native querying and indexing (mitigated by Postgres GIN indexes and generated columns), constraints enforced in application code rather than the database, and RLS that operates on a `workspace_id` column rather than per-object grain.
 - **Hybrid.** A generic JSONB-backed store for the long tail of contract fields, with hot or heavily-queried fields promoted to typed columns (or to typed per-object tables) as access patterns emerge.
 
-**Leaning, to be confirmed by a prototype:** start with the JSONB-backed generic store for v1, validated against the active contract with Zod at the control-plane boundary (ADR-005), because zero-DDL contract changes match a product whose whole premise is that each client defines and evolves their own schema, and because it keeps the contract a piece of data rather than a migration. Promote to typed columns or per-object tables for specific objects once real query and reporting patterns justify the operational cost. This decision is consequential enough that it gets re-opened and recorded as its own ADR the moment the prototype produces evidence, rather than being treated as closed here.
+**Leaning, to be confirmed by a prototype:** start with the JSONB-backed generic store for v1, validated against the active contract with Zod at the control-plane boundary (ADR-005), because zero-DDL contract changes match a product whose whole premise is that each client defines and evolves their own schema, and because it keeps the contract a piece of data rather than a migration. Promote to typed columns or per-object tables for specific objects once real query and reporting patterns justify the operational cost. This decision is consequential enough that it gets re-opened and recorded as its own ADR the moment the prototype produces evidence, rather than being treated as closed here. The prototype has now produced that evidence and this is settled in ADR-019: a JSONB-backed store with the hot fields promoted to generated indexed columns.
 
 ## Consequences
 
@@ -77,6 +77,6 @@ This is the single most consequential technical choice in the product, and it is
 
 ## Open items
 
-1. **The physical storage representation.** Per-object tables, JSONB-backed generic store, or hybrid. Leaning JSONB-first for v1 (above), to be confirmed by a prototype and then promoted to its own ADR with the evidence.
+1. **The physical storage representation.** Resolved in ADR-019: a JSONB-backed hybrid with the hot fields promoted to generated indexed columns, confirmed by the prototype and validated against the active contract at the control-plane boundary.
 2. **How identity rules are expressed.** Whether record identity is a declared deterministic key (for example, normalized email plus organization) or an agent-judged match with a confidence signal, which ties to the unresolved confidence-gate question in ADR-005 and ADR-010.
 3. **Self-service depth in v1.** v1 is developer-assisted (the first contract is configured for the client, seeded from their real workbook) while the engine already behaves as contract-driven. The polished self-service contract editor is a later layer, not a v1 requirement, and ADR-016 treats setup as a productized service rather than self-serve.

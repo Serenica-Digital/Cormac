@@ -66,9 +66,9 @@ This is the ADR-015 checklist rendered as a gate. Status reflects the skeleton t
 | Criterion | Status |
 | --- | --- |
 | Workspace scoping on all tenant data | met (schema) |
-| RLS policies for tenant-scoped tables | met; verify by running isolation test |
-| Cross-tenant access tests exist | met (written); run after DB up |
-| Control plane verifies JWT + workspace role on protected endpoints | met (HS256 caveat) |
+| RLS policies for tenant-scoped tables | met; isolation test passes |
+| Cross-tenant access tests exist | met; passing live |
+| Control plane verifies JWT + workspace role on protected endpoints | met (JWKS, ADR-020) |
 | Agent runtime has no write credentials | met (compose) |
 | Agent tools allowlisted by workspace | partial: tool model not built yet |
 | Agent outputs validated before writes | met + tested |

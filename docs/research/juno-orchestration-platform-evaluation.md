@@ -1,7 +1,7 @@
 # Juno as the Orchestration Platform: Evaluation and Pilot Fit
 
 Status: research / decision-support
-Date reviewed: June 6, 2026
+Date reviewed: June 9, 2026 (spike list amended; first reviewed June 6, 2026)
 Decision impact: supports ADR-017, "Use Juno as the preferred orchestration platform for the prototype"
 
 ## Why This Matters
@@ -181,13 +181,14 @@ The first Juno spike should answer whether the platform helps without creating h
 3. Run a basic web workload.
 4. Run a basic Node/TypeScript API workload.
 5. Connect the API workload to managed Supabase through secrets/env vars.
-6. Run a Dockerized Hermes runtime workload.
-7. Invoke Hermes through a control-plane adapter, not directly from the web UI.
-8. Process one test CRM instruction into a structured proposal.
-9. Store proposal and provenance in Supabase.
-10. Expose preview links for web/API.
-11. Document the workload templates and env vars.
-12. Confirm what platform-level logs, security controls, and secrets mechanisms are available.
+6. Try the Terra Supabase/Postgres plugin as the dev-workspace database: run the migrations, the seed, and the cross-tenant isolation test against it, and document whether they behave identically to the local CLI stack. Dev and preview data only; canonical state stays in managed Supabase.
+7. Run a Dockerized Hermes runtime workload.
+8. Invoke Hermes through a control-plane adapter, not directly from the web UI.
+9. Process one test CRM instruction into a structured proposal.
+10. Store proposal and provenance in Supabase.
+11. Expose preview links for web/API.
+12. Document the workload templates and env vars.
+13. Confirm what platform-level logs, security controls, and secrets mechanisms are available.
 
 Kill or pause conditions:
 
@@ -237,6 +238,7 @@ The right near-term posture is:
 - How should project-scoped Hermes memory/skills be stored and versioned?
 - Can Juno provide stable public webhook URLs for Twilio and future Microsoft Graph events?
 - Which workloads can scale to zero, and which must remain warm?
+- How do volumes and persistence behave across workload restarts for stateful dev workloads such as the Supabase plugin? This is the maturity signal that would ever justify revisiting where production state lives.
 - Can the productized Hermes runtime run isolated per tenant or per workspace when needed?
 - What is Juno's eventual pricing model for an early developer or small SaaS workload?
 - What security/compliance evidence can Juno provide for client-facing review?

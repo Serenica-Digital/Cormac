@@ -13,7 +13,7 @@ const envSchema = z.object({
     .string()
     .min(1)
     .default('super-secret-jwt-token-with-at-least-32-characters-long'),
-  API_PORT: z.coerce.number().int().positive().default(8080),
+  API_PORT: z.coerce.number().int().positive().default(8088),
   RUNTIME_URL: z.string().url().default('http://127.0.0.1:8090'),
 });
 

@@ -1,8 +1,8 @@
 # Tenant Isolation
 
-Status: drafted (tested-after-DB)
+Status: drafted (tested)
 Maps to: control-register rows 1, 2, 11
-Last reviewed: 2026-06-06
+Last reviewed: 2026-06-09
 
 How one client's data is kept from another's, and how that is proven.
 
@@ -27,7 +27,7 @@ A signed-in user's database token can read only their workspace's rows, and can 
 - a workspace B user cannot insert into A,
 - audit events cannot be updated or deleted even by the service role.
 
-This test is the evidence behind the isolation claim. It needs local Supabase to run and runs in CI; it was authored while Docker was down, so its status is `tested-after-DB` until the first green CI run.
+This test is the evidence behind the isolation claim. It needs local Supabase to run and runs in CI; it now passes live against the local stack.
 
 ## CI guard
 

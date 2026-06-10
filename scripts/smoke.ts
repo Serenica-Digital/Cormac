@@ -10,7 +10,7 @@ import { createAnonClient, createServiceClient } from '@serenica/db';
 const url = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const anonKey = process.env.SUPABASE_ANON_KEY ?? '';
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-const API = process.env.VITE_API_URL ?? 'http://127.0.0.1:8080';
+const API = process.env.VITE_API_URL ?? 'http://127.0.0.1:8088';
 
 const EMAIL = 'owner@demo.serenica.test';
 const PASSWORD = 'demo-password-123';

@@ -28,8 +28,8 @@ Status reflects the register. `drafted` = written against real controls; `stub` 
 | [security-overview.md](security-overview.md) | drafted |
 | [architecture-and-trust-boundaries.md](architecture-and-trust-boundaries.md) | drafted |
 | [data-flow.md](data-flow.md) | drafted |
-| [tenant-isolation.md](tenant-isolation.md) | drafted (tested-after-DB) |
-| [auth-rbac.md](auth-rbac.md) | drafted (HS256 caveat) |
+| [tenant-isolation.md](tenant-isolation.md) | drafted (tested) |
+| [auth-rbac.md](auth-rbac.md) | drafted |
 | [audit-logging.md](audit-logging.md) | drafted (atomicity gap noted) |
 | [agent-runtime-security.md](agent-runtime-security.md) | drafted |
 | [ai-data-handling.md](ai-data-handling.md) | drafted |

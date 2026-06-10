@@ -2,7 +2,9 @@
 
 Serenica CRM Agent is a multi-tenant, contract-first CRM agent platform. Clients bring the spreadsheets their business already runs on. The system lifts each workbook into a governed, versioned semantic contract and operates on it through an agent reachable over web, SMS, email, Excel, and Claude/MCP. The generalizable product is the build. The first design partner is a small real-estate firm.
 
-Status: high-level design. No application code yet. We are building the documentation system first.
+Status: early build. The walking skeleton runs end to end against real Postgres and the runtime seam is committed (ADR-021). Real Hermes integration and the Juno deployment are the open fronts. ADR-018 records the repository shape.
+
+At the start of a fresh session, run `/onboard` (defined in [.claude/commands/onboard.md](.claude/commands/onboard.md)). It walks the decision record, the PRD, and the current build state, then reports back before any work starts.
 
 ## Where knowledge lives (the docs/ brain)
 

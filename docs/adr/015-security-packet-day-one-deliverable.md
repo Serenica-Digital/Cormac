@@ -24,6 +24,7 @@ Treat the security and compliance packet as a first-class product deliverable, m
 | Graph permissions are least privilege | A permission inventory and a consent-scope review (ADR-012) |
 | BYOK keys are protected | Encrypted secret storage, no key in logs, a rotation path (ADR-013) |
 | AI calls are controlled | A documented prompt and data boundary and model-provider audit metadata |
+| Sensitive fields are minimized to the model | The runtime context excludes fields the contract marks `sensitive`; logs mask them; the audit trail is intentionally not redacted (extends the per-field flags of ADR-002; [ai-data-handling.md](../security/ai-data-handling.md)) |
 
 ### 2. The packet contents
 

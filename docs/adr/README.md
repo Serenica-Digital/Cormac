@@ -31,7 +31,7 @@ Status values: **Proposed**, **Accepted**, **Superseded by ADR-NNN**. `Planned` 
 | [003](003-supabase-postgres-system-of-record.md) | Supabase/Postgres as the single system of record | Accepted | 2026-06-06 |
 | [004](004-excel-as-contract-and-work-surface.md) | Excel is a contract and work surface, not the operational database | Accepted | 2026-06-06 |
 | [005](005-control-plane-is-the-only-writer.md) | The control plane is the only writer | Accepted | 2026-06-06 |
-| [006](006-adopt-hermes-as-agent-runtime.md) | Adopt Hermes as the agent runtime, behind a swappable adapter | Accepted | 2026-06-06 |
+| [006](006-adopt-hermes-as-agent-runtime.md) | Adopt Hermes as the agent runtime, behind a swappable adapter | Seam committed (ADR-021); integration pending | 2026-06-06 |
 | [007](007-one-agent-service-many-doors.md) | One agent service, many doors (thick MCP, not raw CRUD) | Accepted | 2026-06-06 |
 | [008](008-two-agent-roles.md) | Two agent roles: Workbook Contract Agent and CRM Operations Agent | Accepted | 2026-06-06 |
 | [009](009-govern-learning-as-data.md) | Govern learning as data; the runtime stays stateless | Accepted | 2026-06-06 |
@@ -43,3 +43,7 @@ Status values: **Proposed**, **Accepted**, **Superseded by ADR-NNN**. `Planned` 
 | [015](015-security-packet-day-one-deliverable.md) | Security and compliance packet as a day-one deliverable | Accepted | 2026-06-06 |
 | [016](016-market-posture-and-pricing-constraint.md) | Market posture and the pricing constraint | Accepted | 2026-06-06 |
 | [017](017-juno-as-preferred-orchestration-platform.md) | Use Juno as the preferred orchestration platform for the prototype | Accepted as preferred direction | 2026-06-06 |
+| [018](018-repository-structure-and-runtime-stack.md) | Repository structure and runtime stack | Accepted | 2026-06-07 |
+| [019](019-record-storage-jsonb-hybrid.md) | Record storage is a JSONB-backed hybrid (settles ADR-002) | Accepted | 2026-06-07 |
+| [020](020-token-verification-via-jwks.md) | Token verification against the Supabase JWKS (refines ADR-011) | Accepted | 2026-06-07 |
+| [021](021-runtime-seam-validated-with-stub.md) | Runtime seam committed; real Hermes integration pending | Accepted | 2026-06-07 |

@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-06-06
-**Related:** Uses ADR-003 (Supabase) for the session layer and feeds ADR-005 (the control plane is the only writer), which owns authorization. The Microsoft login path is kept distinct from the Graph consent of ADR-012, and the identity and RBAC model is part of the evidence in ADR-015 (security).
+**Related:** Uses ADR-003 (Supabase) for the session layer and feeds ADR-005 (the control plane is the only writer), which owns authorization. The Microsoft login path is kept distinct from the Graph consent of ADR-012, and the identity and RBAC model is part of the evidence in ADR-015 (security). ADR-020 pins the token-verification mechanism this ADR left unspecified: verification against the Supabase JWKS (asymmetric ES256), with an HS256 fallback.
 
 ## Context
 
@@ -28,7 +28,7 @@ Supabase Auth supports the full provider set (email and password, magic links an
 
 ### 2. The flow
 
-On every protected request the control plane verifies the Supabase JWT, then loads workspace membership, role, and permissions, and decides before it invokes the runtime or writes data (ADR-005). The flow for Microsoft sign-in: the user picks "sign in with Microsoft," Supabase redirects to Entra, Entra verifies identity, Supabase receives the callback and issues the app session, the web app holds that session, and the control plane verifies it and checks workspace authorization.
+On every protected request the control plane verifies the Supabase JWT (against the published JWKS, ADR-020), then loads workspace membership, role, and permissions, and decides before it invokes the runtime or writes data (ADR-005). The flow for Microsoft sign-in: the user picks "sign in with Microsoft," Supabase redirects to Entra, Entra verifies identity, Supabase receives the callback and issues the app session, the web app holds that session, and the control plane verifies it and checks workspace authorization.
 
 ### 3. Login is not Graph consent
 

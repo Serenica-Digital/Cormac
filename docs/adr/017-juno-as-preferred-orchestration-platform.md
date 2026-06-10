@@ -87,7 +87,7 @@ The spike should answer whether Juno reduces deployment friction enough to justi
 ## Open items
 
 1. **Onboarding outcome.** Whether the Juno developer workflow is comfortable enough for daily use after the first supported session.
-2. **Workload model.** Exact containers, build commands, run commands, ports, shared storage, secrets, and environment-variable handling.
+2. **Workload model.** Exact containers, build commands, run commands, ports, shared storage, secrets, and environment-variable handling. Includes whether the dev workspace runs its own Supabase stack through the Terra Supabase/Postgres plugin for dev and preview data (the migrations, seed, and isolation test should run identically against it); canonical state stays in managed Supabase either way.
 3. **Hermes separation.** Whether the project assistant Hermes and product runtime Hermes use separate workloads, separate storage, separate skills directories, and separate secrets.
 4. **Hosting economics.** Whether Juno's eventual pricing can fit the sub-$40 per-seat-equivalent constraint from ADR-016.
 5. **Security evidence.** What Juno can provide for platform-level controls and what Serenica must independently document.

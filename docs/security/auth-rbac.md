@@ -1,16 +1,16 @@
 # Authentication and RBAC
 
-Status: drafted (HS256 caveat)
+Status: drafted
 Maps to: control-register rows 9, 10
-Last reviewed: 2026-06-06
+Last reviewed: 2026-06-09
 
 Who the caller is, and what they may do. Authentication proves identity; authorization decides capability. They are separate, and both are enforced server-side (ADR-011).
 
 ## Authentication
 
-Login providers (Microsoft Entra, Google, email/password, magic link) prove identity. Supabase Auth brokers the session and issues a JWT. The control plane verifies that JWT on every protected endpoint and extracts the user id ([auth.ts](../../apps/api/src/auth.ts) `authenticate`). A missing or invalid token is rejected before any handler runs.
+Login providers (Microsoft Entra, Google, email/password, magic link) prove identity. Supabase Auth brokers the session and issues an asymmetrically-signed (ES256) JWT. The control plane verifies that token against the Supabase JWKS public keys, enforces the issuer, and requires a subject, then extracts the user id ([auth.ts](../../apps/api/src/auth.ts) `authenticate`; ADR-020). A missing or invalid token is rejected before any handler runs.
 
-**Caveat (tracked):** the current verification assumes a symmetric HS256 secret, which is correct for local Supabase. A production project that signs asymmetrically (JWKS) would need the remote-JWKS path, plus `aud`/`iss` checks. This is a known gap in [control-register.md](control-register.md) and must be closed before production.
+Verifying against the published JWKS means the control plane holds no token-signing secret on the asymmetric path; the HS256 shared secret is retained only as a fallback for legacy tokens. Remaining hardening, tracked in [control-register.md](control-register.md): enforce the `aud` claim and confirm the exact hosted issuer string before production.
 
 ## Authorization (RBAC)
 
