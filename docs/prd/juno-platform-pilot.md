@@ -6,9 +6,9 @@
 
 ## Summary
 
-Serenica builds a contract-first CRM agent platform for small, relationship-heavy businesses that run on spreadsheets, Microsoft 365, email, and text. Clients bring their Excel workbooks; the system lifts each into a governed, versioned semantic contract and operates on it through an agent reachable over web, SMS, email, Excel, and Claude/MCP.
+**Cormac** (working name) is Serenica's product: a contract-first CRM agent platform for small, relationship-heavy businesses that run on spreadsheets, Microsoft 365, email, and text. Clients bring their Excel workbooks; Cormac lifts each into a governed, versioned semantic contract and operates on it through an agent reachable over web, SMS, email, Excel, and Claude/MCP.
 
-The pilot goal: build and run this stack on Juno as a real agentic SaaS use case. A multi-service containerized application (web UI, control-plane API, worker, a Dockerized Hermes runtime), managed Supabase/Postgres as the external system of record, and a project-scoped development environment with a dev-assistant agent. Juno is the orchestration and deployment layer; Serenica keeps its application logic, trust model, database authority, and compliance packet in its own repo, and every service stays a portable container.
+The pilot goal: build and run Cormac on Juno as a real agentic SaaS use case. A multi-service containerized application (web UI, control-plane API, worker, a Dockerized Hermes runtime), managed Supabase/Postgres as the external system of record, and a project-scoped development environment with a dev-assistant agent. Juno is the orchestration and deployment layer; Cormac's application logic, trust model, database authority, and compliance packet stay in its own repo, and every service stays a portable container.
 
 ## What exists today (what the pilot deploys)
 
@@ -96,7 +96,7 @@ Trust rules survive the move unchanged: the control plane is the only writer; th
 
 Same upstream software, two trust levels, two workloads, separate secrets and volumes (full reasoning in ADR-017):
 
-- **Jarvis** is the development assistant: persistent, project-aware, reads the repo and docs, helps build Serenica. The official `hermes-agent` plugin already matches this shape (interactive gateway, dashboard, terminal, durable volume) and can likely be used as-is.
+- **Jarvis** is the development assistant: persistent, project-aware, reads the repo and docs, helps build Cormac. The official `hermes-agent` plugin already matches this shape (interactive gateway, dashboard, terminal, durable volume) and can likely be used as-is.
 - **The Hermes product runtime** is the tenant-facing executor: headless API server only, messaging gateways off, persistent memory off, fresh stateless session per task, invoked exclusively by the control-plane adapter. Its tools are MCP endpoints served by the control plane and allowlisted per agent role, so every action passes through our validation and lands as a held proposal, never a direct write. Configuration is versioned in-repo at `docker/hermes-runtime/` and baked into the pinned `hermes-runtime` image; secrets are env-injected at deploy. We recycle these workers on a schedule (a known upstream memory leak), which is one of the onboarding questions below.
 
 ## First pilot milestone
