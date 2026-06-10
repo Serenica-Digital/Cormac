@@ -1,192 +1,127 @@
 # Juno Platform Pilot Plan
 
-**Audience:** Juno Innovations team and Serenica CRM Agent project collaborators
-**Date:** 2026-06-06
-**Status:** Draft for Monday outreach
+> **Status:** canonical · **Last reviewed:** 2026-06-10
+
+**Audience:** the Juno Innovations team and Serenica CRM Agent project collaborators. This is the scope document the June 5 meeting asked for, and the working agenda for the onboarding session. It is written in Juno's own platform vocabulary (projects, workload templates, Terra Sources, plugins, bundles) so the mapping is direct. Platform facts below were verified against the public juno-fx repos and docs on 2026-06-10; items the public record cannot settle are marked as onboarding questions, since the June 5 meeting was clear that the docs trail the platform. The deeper research record is [docs/research/juno-hermes-deployment-research.md](../research/juno-hermes-deployment-research.md).
 
 ## Summary
 
-Serenica CRM Agent is a contract-first CRM agent platform for small, relationship-heavy businesses that already run much of their workflow through spreadsheets, Microsoft 365, email, and text messaging. Clients bring their Excel-style workbooks; Serenica turns those workbooks into governed semantic contracts and lets users interact with the CRM through web, SMS, email, Excel, and Claude/MCP.
+Serenica CRM Agent is a contract-first CRM agent platform for small, relationship-heavy businesses that run on spreadsheets, Microsoft 365, email, and text. Clients bring their Excel workbooks; Serenica lifts each into a governed, versioned semantic contract and operates on it through an agent reachable over web, SMS, email, Excel, and Claude/MCP.
 
-The goal of this pilot is to build Serenica on Juno as a real agentic SaaS use case: a multi-service application with a web UI, a control-plane backend, connector workers, a Dockerized Hermes runtime, Supabase/Postgres as system of record, and project-scoped development agents. Juno would be the preferred orchestration and deployment environment, while Serenica keeps its application logic, trust model, database authority, and compliance packet in its own repo.
+The pilot goal: build and run Serenica on Juno as a real agentic SaaS use case. A multi-service containerized application (web UI, control-plane API, worker, a Dockerized Hermes runtime), managed Supabase/Postgres as the external system of record, and a project-scoped development environment with a dev-assistant agent. Juno is the orchestration and deployment layer; Serenica keeps its application logic, trust model, database authority, and compliance packet in its own repo, and every service stays a portable container.
 
-## Why Juno Is Interesting For This Project
+## What exists today (what the pilot deploys)
 
-This project has already crossed the line where a frontend-only or local-only workflow is enough. The application needs multiple long-running and event-driven services:
+This is not a greenfield. The repo is a pnpm monorepo of normal containers, already running end to end locally:
 
-- A web/PWA interface for records, contract review, integration setup, approvals, audits, and admin.
-- A Node/TypeScript control plane that owns tenant routing, RBAC, connector verification, proposals, approvals, writes, audit logging, and usage tracking.
-- Background workers for inbound SMS/email processing, weekly reports, workbook processing, and future Microsoft Graph events.
-- A Dockerized Hermes runtime used behind a control-plane adapter.
-- A future MCP server so Claude or other MCP clients can call controlled tools.
-- Preview and production links that can be shared with clients without hand-building deployment infrastructure.
+- `apps/web`: minimal React/Vite web surface.
+- `apps/api`: the control plane (Node/TypeScript, Fastify). The trust layer and the only writer of business records. Verifies Supabase JWTs, enforces RBAC, runs the proposal/confirmation/audit pipeline.
+- `apps/worker`: background jobs (stub for now).
+- `services/runtime-stub`: a stand-in implementing the agent runtime's HTTP contract behind a committed adapter seam. The current work increment swaps it for real Hermes (`nousresearch/hermes-agent`), locally first, so the runtime arrives at Juno already proven.
+- `supabase/migrations`: app-owned schema, RLS, append-only audit. Canonical state lives in managed Supabase, outside Juno.
 
-Juno appears well matched to the missing layer: containerized workloads, browser-based development environments, Git-connected project workspaces, runtime templates, scaling, and direct support while the developer-oriented platform workflow is still being shaped.
+The walking skeleton (a natural-language update going capture, propose, validate, confirm, write, audit) runs against real Postgres with CI checks including a cross-tenant isolation test.
 
-## Intended Juno Usage
+## Intended shape on Juno
 
-### 1. Development Environment
+One Juno project (one namespace) named `serenica`, holding development workloads and application workloads side by side.
 
-Use Juno as a cloud development workspace for the Serenica repo:
+| Serenica service | Juno workload | Source or image | Network mode | Notes |
+| --- | --- | --- | --- | --- |
+| Web UI | `runtime-js` workload | repo `apps/web`, build + run command | `ingress-auth` (or `ingress-noauth` for client previews) | The shareable preview link |
+| Control plane API | `runtime-js` workload | repo `apps/api` | `ingress-noauth` | Public webhook routes (Twilio, later Microsoft Graph); verifies provider signatures itself; sole holder of the Supabase service key |
+| Worker | `runtime-js` workload | repo `apps/worker` | `clusterip` | No inbound traffic at all |
+| Hermes product runtime | Custom workload template | Pinned `nousresearch/hermes-agent` image plus our `serenica-runtime` profile distribution | `clusterip` | Never publicly routable; called only by the control plane; no database credentials; memory off; stateless per task |
+| Jarvis (dev assistant) | Official `hermes-agent` plugin | As shipped | `ingress-auth` | Persistent and project-aware; developer tooling only, never touches client data |
+| Dev workspace | `web-ide` (code-server) plugin | As shipped | `ingress-auth` | Needs Node 22 + pnpm; Docker availability is an onboarding question |
+| Git sandbox | Official `gitea` plugin | As shipped | `ingress-auth` | Agent sandbox repos, mirrored to GitHub on approval |
+| MCP server (later) | `runtime-js` workload | future `apps/mcp-server` | `ingress-noauth` | Deferred; external Claude/MCP tool surface |
 
-- Browser-accessible VS Code or equivalent.
-- Terminal access with Node, pnpm, Docker/runtime tools as needed.
-- GitHub access through normal SSH/token/OAuth workflow.
-- Optional internal Git/Gitea-style sandbox before mirroring to GitHub.
-- Shared project storage for source, generated artifacts, and agent-created skill files.
-- A project-scoped development assistant (Jarvis, a Hermes instance configured as a dev tool) for development help.
-
-Jarvis should be able to read the ADRs, PRD, research docs, and architecture notes. Its job is to help build the product, maintain docs, propose tasks, and preserve project memory. It is not the same thing as the productized tenant-facing runtime.
-
-### 2. Application Workloads
-
-Run the application as normal containers managed through Juno workload templates:
-
-| Workload | Purpose | Likely Stack |
-| --- | --- | --- |
-| Web UI | User-facing CRM, contract review, admin, approvals, audit views | React/Vite or Lovable-exported React |
-| Control Plane API | Trust layer and only writer | Node/TypeScript |
-| Worker | Async jobs, reports, connector processing, sync tasks | Node/TypeScript |
-| Hermes Runtime | Agent execution behind adapter | Dockerized Python/Hermes |
-| MCP Server | External Claude/MCP tool surface | Node/TypeScript, possibly same API initially |
-
-Each workload should be configured with normal build commands, run commands, ports, environment variables, and health checks. The desired outcome is that Juno handles the container/orchestration mechanics while the repo remains portable.
-
-### 3. External Services
-
-The first prototype can still use managed services where that reduces complexity:
-
-- **Supabase/Postgres:** system of record for tenants, users, roles, contracts, records, source messages, proposals, audit events, and sync state.
-- **Supabase Auth:** auth/session broker for web users, with Microsoft/Google/email providers as needed.
-- **Twilio:** SMS webhook and outbound messaging.
-- **Microsoft Graph:** optional future connector for OneDrive, SharePoint, Excel, Outlook, and webhooks.
-- **Model APIs:** Claude-first initially, with a provider seam for alternatives.
-
-Juno-hosted workloads should talk to these services through environment variables and secrets. Later, if client-hosted or self-hosted deployments become important, Juno may also become the platform for hosting Postgres/Supabase-style infrastructure.
-
-## The Two Hermes Roles
-
-This pilot has two separate uses of Hermes, and they carry different names so they are never confused.
-
-### Jarvis, the development assistant
-
-Jarvis is the development assistant for building Serenica, a Hermes instance configured as a dev tool. It can be persistent and project-aware. It can read the repo, ADRs, PRD, research docs, transcripts, and implementation notes. It can help write tickets, generate code, explain architecture, maintain documentation, and create project-specific skills.
-
-Jarvis is part of the development workflow. It is scoped to this project and is not client-facing product behavior.
-
-### The Hermes product runtime
-
-This is the Hermes runtime used by Serenica itself. It is invoked by the control plane to process tenant-scoped CRM tasks:
-
-- Parse an inbound SMS or email.
-- Interpret a requested CRM update.
-- Use the published workbook-derived contract.
-- Produce a structured proposal or answer.
-- Return provenance and tool traces.
-
-The productized runtime does not directly write CRM records. The Serenica control plane validates the output, applies confirmation/auto-apply policy, writes through the backend, and records the audit trail.
-
-## Current High-Level Architecture
+The `runtime-js`/`runtime-python` workload plugins and the `network_mode` select (`ingress-auth`, `ingress-noauth`, `clusterip`, `nodeport`) are on the public `556-runtime-environments` branch (PR #557). Whether the pilot cluster carries them is the first onboarding question; they fit our services exactly.
 
 ```mermaid
 flowchart TB
-  subgraph juno["Juno Orchestration Environment"]
-    dev["Project Dev Workspace\nVS Code, terminal, Git, project assistant"]
-    web["Web UI Workload\nReact/Lovable export"]
-    api["Control Plane API\nNode/TypeScript"]
-    worker["Worker Workload\njobs, connectors, reports"]
-    jarvis["Jarvis\ndevelopment assistant"]
-    hermesProduct["Product Hermes Runtime\ntenant-scoped execution"]
-    mcp["MCP Server\nfuture external tool surface"]
+  subgraph project["Juno project: serenica (one namespace)"]
+    subgraph devw["Development workloads"]
+      ide["Dev workspace\nweb-ide plugin (code-server)"]
+      gitea["Git sandbox\ngitea plugin, mirrors to GitHub"]
+      jarvis["Jarvis dev assistant\nofficial hermes-agent plugin\ningress-auth, persistent volume"]
+    end
+    subgraph appw["Application workloads"]
+      web["Web UI\nruntime-js, ingress-auth"]
+      api["Control plane API\nruntime-js, ingress-noauth\nverifies webhooks itself"]
+      worker["Worker\nruntime-js, clusterip"]
+      hermes["Hermes product runtime\ncustom headless template\npinned image + serenica-runtime distribution\nclusterip, no public route"]
+    end
   end
 
-  subgraph serenica["Serenica-Owned Trust Layer"]
-    control["Control Plane Logic\nRBAC, contracts, proposals,\napprovals, writes, audit"]
-    adapter["Agent Runtime Adapter\ncontext, skills, tools,\nstructured output validation"]
+  subgraph managed["Managed services (outside Juno)"]
+    supa["Supabase/Postgres + Auth\nsystem of record"]
   end
 
-  subgraph data["Managed Data Services"]
-    supabase["Supabase/Postgres\nsystem of record"]
-    auth["Supabase Auth\nsession broker"]
-  end
-
-  subgraph external["External Services"]
+  subgraph ext["External providers"]
     twilio["Twilio SMS"]
-    msGraph["Microsoft Graph"]
-    models["Model APIs\nClaude-first"]
-    claude["Claude/MCP Clients"]
+    models["Anthropic API"]
+    graph["Microsoft Graph (later)"]
   end
 
-  dev --> web
-  dev --> api
-  dev --> worker
-  dev --> jarvis
-
-  web --> auth
   web --> api
-  api --> control
-  worker --> control
-  mcp --> control
-
-  control --> supabase
-  control --> adapter
-  adapter --> hermesProduct
-  hermesProduct --> adapter
-
+  api --> hermes
+  api --> supa
+  worker --> supa
+  worker --> hermes
   twilio --> api
-  msGraph --> api
-  claude --> mcp
-  adapter --> models
+  graph --> api
+  api --> models
+  hermes --> models
+  jarvis --> gitea
+  ide --> gitea
 ```
 
-## First Pilot Milestone
+Trust rules survive the move unchanged: the control plane is the only writer; the product runtime has no public route and no database credentials; surfaces and webhooks all enter through the control plane, which verifies them in-app rather than relying on platform auth.
 
-The first Juno milestone should be small and concrete:
+## The two Hermes roles
 
-1. Launch a Juno development workspace for the Serenica repo.
-2. Run the web UI workload from the repo.
-3. Run the control-plane API workload from the repo.
-4. Connect the API to managed Supabase through environment variables.
-5. Run a Dockerized Hermes runtime workload.
-6. Send one test CRM instruction through the API to Hermes.
-7. Receive a structured proposal back from Hermes.
-8. Store that proposal and its provenance in Supabase.
-9. Expose a preview link for the web UI and API.
-10. Document the exact workload templates and env vars used.
+Same upstream software, two trust levels, two workloads, separate secrets and volumes (full reasoning in ADR-017):
 
-This does not need to prove the whole product. It needs to prove the platform shape: multiple containers, managed secrets, Supabase connectivity, Hermes runtime invocation, and previewable deployment.
+- **Jarvis** is the development assistant: persistent, project-aware, reads the repo and docs, helps build Serenica. The official `hermes-agent` plugin already matches this shape (interactive gateway, dashboard, terminal, durable volume) and can likely be used as-is.
+- **The Hermes product runtime** is the tenant-facing executor: headless API server only, messaging gateways off, persistent memory off, fresh stateless session per task, invoked exclusively by the control-plane adapter, output treated as untrusted and schema-validated at our boundary. Configuration is versioned as a Hermes profile distribution (`serenica-runtime`), installed non-interactively at container start, with the image version pinned. We recycle these workers on a schedule (a known upstream memory leak), which is one of the onboarding questions below.
 
-## Questions For Juno
+## First pilot milestone
 
-1. What is the recommended workflow for a repo with multiple services: web, API, worker, Hermes runtime, and MCP server?
-2. Should each service be a separate workload template, or should some be bundled during early development?
-3. How should secrets be managed for Supabase, Twilio, Microsoft Graph, Anthropic, and GitHub?
-4. What is the cleanest way to separate Jarvis (the project-scoped development assistant) from the productized tenant-facing Hermes runtime?
-5. Can product workloads scale to zero? If so, which workloads should not scale to zero because of latency or webhook reliability?
-6. What platform-level audit logs, access controls, network controls, backups, and security evidence can Juno provide for Serenica's client security packet?
-7. What would the eventual pricing/cost model look like for a small-client SaaS trying to stay under roughly $40 per seat-equivalent?
-8. How portable are the resulting workload definitions if Serenica later needs to run outside Juno?
+Small and concrete; this doubles as the deployment half of our runtime de-risk spike (ADR-017).
 
-## Success Criteria
+1. Create the `serenica` project; launch the dev workspace and confirm the normal `pnpm` workflow and GitHub access.
+2. Register the Terra Source carrying the runtime plugins; confirm `network_mode` options on the pilot cluster.
+3. Launch web, API, and worker from the repo via runtime workloads; wire secrets/env to managed Supabase.
+4. Deploy the Hermes product runtime workload (pinned image, `serenica-runtime` distribution, `clusterip`).
+5. Run the walking-skeleton thread end to end on Juno: a web message becomes a held proposal, approval writes the record and the audit event in Supabase.
+6. Expose a preview link for the web UI; confirm the API's public URL shape and stability for future Twilio webhooks.
+7. Write down the exact workload configurations and env vars as a repeatable setup note that lands in this repo.
 
-The pilot is successful if Juno makes the real architecture easier to build without hiding the important boundaries:
+## Onboarding session agenda (the open questions)
 
-- The developer can work productively in the Juno development environment.
-- The repo remains a normal portable codebase.
-- Web/API/worker/Hermes workloads can run from the same repo.
-- The control plane remains the only writer.
-- Supabase remains the system of record unless deliberately changed.
-- The Hermes product runtime stays separate from Jarvis, the development assistant.
-- The deployment story becomes easier to explain to clients and easier to support.
-- Juno can contribute evidence to the security packet rather than creating an unexplained black box.
+1. **Runtime plugins:** is the `556-runtime-environments` branch (PR #557) deployable on the pilot cluster, and is `network_mode: clusterip` the supported pattern for a workload with no public route?
+2. **Autoscaling and scale-to-zero:** the June 5 demo described traffic-based horizontal scaling, scale-to-zero, and auto-update on code change for runtime workloads. How do these work, and which workload types do they apply to?
+3. **Secrets:** what is the actual mechanism on the pilot cluster for injecting secrets (Supabase service key, Anthropic key, Twilio, GitHub) into specific workloads, and who can read them back?
+4. **Webhook URL stability:** is the cluster hostname stable across platform updates, so a Twilio webhook URL set once keeps working?
+5. **Per-route auth:** auth appears to be per-workload. Is there a way to gate some routes of one workload behind platform auth while leaving webhook paths public, or do we split workloads (our current plan)?
+6. **Scheduled restarts:** any platform pattern for recycling a workload on a schedule or after N requests? We need this for the Hermes runtime regardless of the upstream fix timeline.
+7. **Dev workspace Docker:** can the workspace run Docker (socket mount or DinD)? The Supabase CLI's local stack needs it; if not, we develop against a shared dev database instead.
+8. **Shared storage:** what backs the shared mounts on the pilot cluster (EFS/NFS), and can multiple workloads mount one workspace volume?
+9. **Observability and audit:** what logs, metrics, and platform audit records can we access, and what can be exported? Relevant to our client-facing security packet.
+10. **Security evidence in writing:** our product ships with a compliance packet, and its platform-hosting section needs written statements we can cite: the workload-to-workload encryption model (the security page says mTLS; we want the concrete mechanism), namespace isolation, backup/restore, and any certification roadmap.
+11. **Pricing shape, later:** deferred by agreement until after discovery. Flagging the constraint early: the product targets small firms and needs hosting economics compatible with a sub-$40 per-seat-equivalent price.
 
-## Near-Term Ask
+## Success criteria
 
-For Monday, the useful next step is a supported onboarding session focused on this exact use case:
+- The developer works productively in the Juno workspace, and the repo remains a normal portable codebase.
+- Web, API, worker, and the Hermes runtime all run from this repo as workloads, with secrets managed sanely.
+- The control plane remains the only writer; the product runtime has no public route and no database credentials; managed Supabase remains the system of record.
+- Jarvis and the product runtime stay cleanly separated.
+- Preview links work for client review, and the webhook URL story holds for SMS.
+- The setup is reproducible from a written note, and Juno can contribute written evidence to the security packet rather than being a black box in it.
 
-- Create or connect the Serenica repo.
-- Launch the developer workspace.
-- Define the first web/API/Hermes workloads.
-- Confirm how secrets and environment variables should be handled.
-- Identify what Juno plugin or workload template work would make this easier.
-- Produce a repeatable setup note that becomes part of the project docs.
+## Near-term ask
+
+A supported onboarding session focused on this exact stack: create the project, launch the workspace, register the runtime-plugin Source, define the first workloads (web, API, Hermes runtime), settle the secrets mechanism, and walk the milestone list above as far as the session allows. We bring a working system and a written agenda; the output we want is a repeatable configuration and a list of anything the platform needs that we can feed back as pilot users.
