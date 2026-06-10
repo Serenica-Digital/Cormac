@@ -87,7 +87,7 @@ SUPABASE_URL='https://<project>.supabase.co' SUPABASE_SERVICE_ROLE_KEY='...' pnp
 SUPABASE_URL='https://<project>.supabase.co' SUPABASE_SERVICE_ROLE_KEY='...' SUPABASE_ANON_KEY='...' pnpm check:remote
 ```
 
-**Open item (ADR-020):** local Supabase verifies user tokens with the shared `SUPABASE_JWT_SECRET` (HS256). Confirm the managed project's signing configuration when the dev project is created and wire JWKS verification if it signs RS256/ES256; the `SUPABASE_AUTH_ISSUER` decoupling already landed.
+**Open item (ADR-020):** the control plane already verifies current Supabase user tokens against the published JWKS, with an HS256 fallback for older/local projects. When the managed dev project is created, confirm the hosted issuer string and signing behavior, then set `SUPABASE_AUTH_ISSUER` only if the token `iss` differs from `${SUPABASE_URL}/auth/v1`.
 
 ## Local reference
 
