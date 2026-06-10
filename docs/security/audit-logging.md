@@ -1,8 +1,8 @@
 # Audit Logging
 
-Status: drafted (atomicity gap noted)
+Status: drafted
 Maps to: control-register rows 7, 8
-Last reviewed: 2026-06-06
+Last reviewed: 2026-06-09
 
 The audit trail is both a compliance artifact and a user-trust feature: it is the safety net that makes a low-friction write loop tolerable (ADR-010), and the evidence an IT reviewer asks for.
 
@@ -21,9 +21,11 @@ Every applied change writes an `audit_events` row ([apply.ts](../../apps/api/src
 
 Both need local Supabase and run in CI.
 
-## Known gap: atomicity
+## Atomicity
 
-Today the record write, the audit insert, and the proposal-status flip are separate database calls, and multi-change proposals loop. A mid-way failure can leave a write without its audit row, or a partially-applied proposal. For an audit-trail product this is a real weakness, tracked in [control-register.md](control-register.md). The fix is to move apply into a single Postgres function (RPC) so write-and-audit are one transaction. Until then, claim 7 is `partial` in practice.
+The record write, the audit insert, and the proposal-status flip happen in one database transaction: `apply.ts` applies an approved proposal through the `apply_proposal` Postgres function ([0003_apply_proposal_fn.sql](../../supabase/migrations/0003_apply_proposal_fn.sql)). They all land together, or a failure rolls back every one, so a write can never be left without its audit row and a multi-change proposal can never be half-applied. Authorization stays in the control plane (token, membership, role) before the call; the function only executes the already-authorized writes, and `EXECUTE` on it is granted to the service role only.
+
+Proven against live Postgres by `tests/atomic-apply.test.ts`: a forced mid-way failure (a two-change apply whose second change is doomed) leaves zero of the three writes, and an `authenticated` user cannot execute the function.
 
 ## Retention and client-facing detail
 

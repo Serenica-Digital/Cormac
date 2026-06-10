@@ -22,7 +22,7 @@ This register is the source of truth for status. The packet docs describe contro
 | 4 | The agent writes only agent-editable fields | `validateProposalAgainstContract` ([validate.ts](../../packages/contract/src/validate.ts)) | [validate.test.ts](../../packages/contract/src/validate.test.ts) | [agent-runtime-security.md](agent-runtime-security.md) | enforced+tested |
 | 5 | Malformed runtime output is rejected, never written | adapter `callRuntime` ([adapter/runtime.ts](../../apps/api/src/adapter/runtime.ts)) | [runtime.test.ts](../../apps/api/src/adapter/runtime.test.ts) | [agent-runtime-security.md](agent-runtime-security.md) | enforced+tested |
 | 6 | Sensitive field values never reach the model | `buildContextDisplay` ([redact.ts](../../packages/contract/src/redact.ts)) used in [repo.ts](../../apps/api/src/repo.ts) | [redact.test.ts](../../packages/contract/src/redact.test.ts) | [ai-data-handling.md](ai-data-handling.md), [data-classification-and-handling.md](data-classification-and-handling.md) | enforced+tested |
-| 7 | Writes are auditable, before/after + source link | [apply.ts](../../apps/api/src/pipeline/apply.ts) writes an audit event per change | tests/pipeline-integration.test.ts | [audit-logging.md](audit-logging.md) | enforced+tested; atomicity gap (below) |
+| 7 | Writes are auditable, before/after + source link, atomically | [apply.ts](../../apps/api/src/pipeline/apply.ts) applies via the `apply_proposal` Postgres function: record write + audit + status flip are one transaction ([0003](../../supabase/migrations/0003_apply_proposal_fn.sql)) | tests/pipeline-integration.test.ts, tests/atomic-apply.test.ts | [audit-logging.md](audit-logging.md) | enforced+tested |
 | 8 | Audit is append-only | `prevent_mutation` trigger ([0001_init.sql](../../supabase/migrations/0001_init.sql)) | isolation append-only case | [audit-logging.md](audit-logging.md) | enforced+tested |
 | 9 | Identity verified on every protected endpoint | `authenticate` verifies the token against the Supabase JWKS, enforcing the issuer ([auth.ts](../../apps/api/src/auth.ts), ADR-020) | tests/rbac-matrix.test.ts | [auth-rbac.md](auth-rbac.md) | enforced+tested |
 | 10 | Authorization (RBAC) on every protected endpoint | `requireCapability` + capability map ([auth.ts](../../apps/api/src/auth.ts), [shared](../../packages/shared/src/index.ts)) | tests/rbac-matrix.test.ts | [auth-rbac.md](auth-rbac.md) | enforced+tested |
@@ -37,9 +37,8 @@ This register is the source of truth for status. The packet docs describe contro
 
 ## Known control gaps (weaken specific claims until fixed)
 
-From the skeleton handoff, listed here rather than hidden because they qualify claims above. The earlier JWT-HS256 gap was closed by ADR-020 (JWKS verification).
+From the skeleton handoff, listed here rather than hidden because they qualify claims above. Two earlier gaps are now closed: the JWT-HS256 gap by ADR-020 (JWKS), and the non-atomic apply by migration 0003 (the `apply_proposal` transaction, proven by `tests/atomic-apply.test.ts`).
 
-- **Apply is not atomic (tracked, priority).** Record write, audit insert, and proposal-status flip are separate calls, so a mid-way failure can leave a write without its audit row or a half-applied multi-change proposal. This weakens claim #7 under failure, which is why #7 carries an `atomicity gap` tag. Fix: move apply into a Postgres function (RPC) so write-and-audit are one transaction.
 - **Workspace deletion is blocked by the append-only trigger.** `audit_events` cascades on workspace delete, but the `before delete` trigger raises on any delete, so the cascade aborts. This breaks deletion and offboarding (affects [data-retention-deletion.md](data-retention-deletion.md)). Needs a deliberate deletion path (soft-delete or a SECURITY DEFINER purge the trigger exempts).
 
 ## How to use this register

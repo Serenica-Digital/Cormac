@@ -30,7 +30,7 @@ Status reflects the register. `drafted` = written against real controls; `stub` 
 | [data-flow.md](data-flow.md) | drafted |
 | [tenant-isolation.md](tenant-isolation.md) | drafted (tested) |
 | [auth-rbac.md](auth-rbac.md) | drafted |
-| [audit-logging.md](audit-logging.md) | drafted (atomicity gap noted) |
+| [audit-logging.md](audit-logging.md) | drafted |
 | [agent-runtime-security.md](agent-runtime-security.md) | drafted |
 | [ai-data-handling.md](ai-data-handling.md) | drafted |
 | [data-classification-and-handling.md](data-classification-and-handling.md) | drafted |
