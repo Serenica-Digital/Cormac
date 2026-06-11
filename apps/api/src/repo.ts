@@ -113,6 +113,28 @@ export async function insertProposal(
   return must(data as ProposalRow | null, error, 'insertProposal');
 }
 
+/**
+ * Persist the run's identity and usage telemetry on its source message (#39).
+ * The runtime session is deleted after every run, so this row is the only
+ * surviving record of what the task cost (ADR-013 billing, ADR-026 baseline).
+ */
+export async function recordRunOutcome(
+  db: Db,
+  input: {
+    workspaceId: string;
+    sourceMessageId: string;
+    runId: string;
+    usage?: Record<string, unknown>;
+  },
+): Promise<void> {
+  const { error } = await db
+    .from(TABLES.sourceMessages)
+    .update({ runtime_run_id: input.runId, runtime_usage: input.usage ?? null })
+    .eq('workspace_id', input.workspaceId)
+    .eq('id', input.sourceMessageId);
+  if (error) throw new Error(`recordRunOutcome: ${error.message}`);
+}
+
 export interface SourceMessageRef {
   id: string;
   user_id: string | null;
