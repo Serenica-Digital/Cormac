@@ -5,6 +5,7 @@ import { createServiceClient, type Db } from '@serenica/db';
 import { EXAMPLE_PERSON_CONTRACT } from '@serenica/contract';
 import { buildServer } from '../apps/api/src/server.js';
 import { loadConfig } from '../apps/api/src/config.js';
+import { TestResources } from './helpers.js';
 
 /**
  * The MCP tool surface (ADR-025): the runtime's tools are control-plane
@@ -32,6 +33,7 @@ describe.skipIf(!ready)('MCP tool surface', () => {
   let workspaceId: string;
   let recordId: string;
   let taskId: string;
+  const resources = new TestResources();
 
   async function rpc(method: string, params?: unknown, token: string = MCP_TOKEN) {
     const res = await fetch(`${baseUrl}/mcp`, {
@@ -60,7 +62,7 @@ describe.skipIf(!ready)('MCP tool surface', () => {
       .insert({ name: `mcp-${randomUUID()}` })
       .select('id')
       .single();
-    workspaceId = ws.data!.id as string;
+    workspaceId = resources.workspace(ws.data!.id as string);
 
     await service.from('contract_versions').insert({
       workspace_id: workspaceId,
@@ -109,6 +111,7 @@ describe.skipIf(!ready)('MCP tool surface', () => {
 
   afterAll(async () => {
     await server?.close();
+    await resources.cleanup(service);
   });
 
   it('rejects a missing or wrong bearer token', async () => {
