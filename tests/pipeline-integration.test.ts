@@ -11,6 +11,7 @@ import { captureUpdate } from '../apps/api/src/pipeline/capture.js';
 import { decideProposal } from '../apps/api/src/pipeline/apply.js';
 import type { AppContext } from '../apps/api/src/app.js';
 import type { RequestContext } from '../apps/api/src/types.js';
+import { TestResources } from './helpers.js';
 
 /**
  * The spine, end to end against a real DB: capture -> validate -> confirm ->
@@ -28,6 +29,7 @@ describe.skipIf(!ready)('pipeline integration: capture -> confirm -> write -> au
   let app: AppContext;
   let ctx: RequestContext;
   let johnId: string;
+  const resources = new TestResources();
 
   beforeAll(async () => {
     // A local fake runtime that runs the real stub logic.
@@ -51,13 +53,13 @@ describe.skipIf(!ready)('pipeline integration: capture -> confirm -> write -> au
     app = buildAppContext(loadConfig());
 
     const ws = await service.from('workspaces').insert({ name: `pipe-${randomUUID()}` }).select('id').single();
-    const workspaceId = ws.data!.id as string;
+    const workspaceId = resources.workspace(ws.data!.id as string);
     const user = await service.auth.admin.createUser({
       email: `pipe-${randomUUID()}@test.local`,
       password: `pw-${randomUUID()}`,
       email_confirm: true,
     });
-    const userId = user.data.user!.id;
+    const userId = resources.user(user.data.user!.id);
     await service.from('memberships').insert({ workspace_id: workspaceId, user_id: userId, role: 'owner' });
 
     const cv = await service
@@ -80,8 +82,9 @@ describe.skipIf(!ready)('pipeline integration: capture -> confirm -> write -> au
     ctx = { userId, workspaceId, role: 'owner' };
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     server.close();
+    await resources.cleanup(service);
   });
 
   it('captures, holds, approves, writes the record, and audits with before/after', async () => {

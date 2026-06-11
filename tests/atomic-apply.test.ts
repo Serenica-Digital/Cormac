@@ -1,8 +1,9 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EXAMPLE_PERSON_CONTRACT } from '@serenica/contract';
 import { createAnonClient, createServiceClient, createUserClient, type Db } from '@serenica/db';
+import { TestResources } from './helpers.js';
 
 /**
  * Proves the atomic-apply fix against live Postgres (control-register claim #7).
@@ -36,6 +37,7 @@ describe.skipIf(!ready)('atomic apply_proposal', () => {
   let contractVersionId: string;
   let ownerEmail: string;
   let ownerPassword: string;
+  const resources = new TestResources();
 
   async function seedPerson(data: Record<string, unknown>): Promise<string> {
     const res = await service
@@ -114,7 +116,7 @@ describe.skipIf(!ready)('atomic apply_proposal', () => {
     service = createServiceClient(url!, serviceKey!);
 
     const ws = await service.from('workspaces').insert({ name: `atomic-${randomUUID()}` }).select('id').single();
-    workspaceId = ws.data!.id as string;
+    workspaceId = resources.workspace(ws.data!.id as string);
 
     ownerEmail = `atomic-${randomUUID()}@test.local`;
     ownerPassword = `pw-${randomUUID()}`;
@@ -123,7 +125,7 @@ describe.skipIf(!ready)('atomic apply_proposal', () => {
       password: ownerPassword,
       email_confirm: true,
     });
-    ownerId = user.data.user!.id;
+    ownerId = resources.user(user.data.user!.id);
     await service.from('memberships').insert({ workspace_id: workspaceId, user_id: ownerId, role: 'owner' });
 
     const cv = await service
@@ -132,6 +134,10 @@ describe.skipIf(!ready)('atomic apply_proposal', () => {
       .select('id')
       .single();
     contractVersionId = cv.data!.id as string;
+  });
+
+  afterAll(async () => {
+    await resources.cleanup(service);
   });
 
   it('lands all three writes together on the happy path', async () => {

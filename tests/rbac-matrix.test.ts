@@ -5,6 +5,7 @@ import { createAnonClient, createServiceClient, type Db } from '@serenica/db';
 import type { Role } from '@serenica/shared';
 import { buildServer } from '../apps/api/src/server.js';
 import { loadConfig } from '../apps/api/src/config.js';
+import { TestResources } from './helpers.js';
 
 /**
  * The RBAC matrix (control-register rows 9, 10): every protected endpoint, for
@@ -25,6 +26,7 @@ describe.skipIf(!ready)('RBAC matrix', () => {
   let workspaceId: string;
   const token: Record<string, string> = {};
   let nonMemberToken: string;
+  const resources = new TestResources();
 
   async function signIn(email: string, password: string): Promise<string> {
     const anon = createAnonClient(url!, anonKey!);
@@ -37,7 +39,7 @@ describe.skipIf(!ready)('RBAC matrix', () => {
     const email = `${role}-${randomUUID()}@rbac.test`;
     const password = `pw-${randomUUID()}`;
     const created = await service.auth.admin.createUser({ email, password, email_confirm: true });
-    const id = created.data.user!.id;
+    const id = resources.user(created.data.user!.id);
     if (role !== 'none') {
       await service.from('memberships').insert({ workspace_id: workspaceId, user_id: id, role });
     }
@@ -47,7 +49,7 @@ describe.skipIf(!ready)('RBAC matrix', () => {
   beforeAll(async () => {
     service = createServiceClient(url!, serviceKey!);
     const ws = await service.from('workspaces').insert({ name: `rbac-${randomUUID()}` }).select('id').single();
-    workspaceId = ws.data!.id as string;
+    workspaceId = resources.workspace(ws.data!.id as string);
     for (const role of ROLES) token[role] = (await makeUser(role)).token;
     nonMemberToken = (await makeUser('none')).token;
     server = await buildServer(loadConfig());
@@ -55,6 +57,7 @@ describe.skipIf(!ready)('RBAC matrix', () => {
 
   afterAll(async () => {
     await server.close();
+    await resources.cleanup(service);
   });
 
   const base = () => `/api/workspaces/${workspaceId}`;
