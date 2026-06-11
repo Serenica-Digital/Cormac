@@ -1,6 +1,6 @@
 # ADR-003: Supabase/Postgres as the single system of record
 
-**Status:** Accepted
+**Status:** Accepted (the record-storage representation it deferred is settled by ADR-019)
 **Date:** 2026-06-06
 **Related:** Provides the storage for ADR-002 (the contract and records) and owns the physical record-representation question ADR-002 raises. ADR-005 (the control plane is the only writer) writes here with the service role, ADR-011 (auth) uses Supabase Auth as the session broker, ADR-014 (Lovable for the UI) reads here under RLS, and ADR-015 (security) depends on the RLS, secrets, and audit discipline this decision commits to.
 
@@ -45,6 +45,6 @@ ADR-002 raised it and stated the leaning: a JSONB-backed generic `business_recor
 
 ## Open items
 
-1. **Record storage representation.** The JSONB-first-then-promote leaning from ADR-002, to be confirmed by a prototype and recorded as its own ADR with the evidence (querying, indexing, RLS grain, and contract-change ergonomics).
+1. **Record storage representation.** The JSONB-first-then-promote leaning from ADR-002, to be confirmed by a prototype and recorded as its own ADR with the evidence (querying, indexing, RLS grain, and contract-change ergonomics). *Resolved by ADR-019: a JSONB-backed hybrid with hot fields promoted to generated indexed columns, confirmed by the prototype.*
 2. **Database-level tenancy.** One shared multi-tenant project for the pilot, with separate projects or databases for high-trust and managed-single-tenant clients as a later tier (ADR-016). The cutover point and the migration story are unresolved.
 3. **Backups and restore evidence.** The tested backup and restore procedure that the security packet needs (ADR-015).

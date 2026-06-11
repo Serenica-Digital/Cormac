@@ -20,7 +20,8 @@ packages/
   db       Supabase client factory + typed table helpers
   shared   shared types and roles
 services/
-  runtime-stub   stands in for the Dockerized Python Hermes runtime locally
+  runtime-stub   deterministic test fixture for the runtime seam (tests only;
+                 the running stack uses real Hermes via docker/compose.yaml)
 supabase/
   migrations     app-owned schema, RLS, append-only audit
 docker/    Dockerfiles + local compose
