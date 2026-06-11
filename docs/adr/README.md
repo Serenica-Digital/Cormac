@@ -52,3 +52,4 @@ Status values: **Proposed**, **Accepted**, **Superseded by ADR-NNN**. `Planned` 
 | [024](024-product-naming-structure.md) | Naming structure: Serenica the company; Cormac the product, whole (working name) | Accepted (structure; Cormac uncleared) | 2026-06-10 |
 | [025](025-agents-run-as-agents-proposal-as-tool-call.md) | The agents run as tool-using agents; the proposal is a schema-enforced tool call | Accepted (open items 1 and 3 resolved by ADR-026) | 2026-06-10 |
 | [026](026-real-hermes-integration-proven-locally.md) | Real Hermes runs the operations agent; the ADR-025 posture proven locally | Accepted (local half; Juno deployment open under ADR-017) | 2026-06-10 |
+| [027](027-workspace-knowledge-layer.md) | The workspace knowledge layer: governed strata, compiled into a cached prefix | Accepted | 2026-06-11 |
