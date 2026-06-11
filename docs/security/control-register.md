@@ -38,14 +38,15 @@ This register is the source of truth for status. The packet docs describe contro
 | 20 | Runtime tools are workspace-scoped and allowlisted | Every MCP tool query filters `workspace_id`; the profile allowlist serves exactly the four operations-agent tools ([mcp/server.ts](../../apps/api/src/mcp/server.ts), [config.yaml](../../docker/hermes-runtime/config.yaml)) | mcp-tools tool-list and redaction cases | [agent-runtime-security.md](agent-runtime-security.md) | enforced+tested |
 | 21 | The agent's only write path is a gated proposal tool | `submit_proposal` validates shape (Zod) and contract (agent-editable fields), holds `pending` only, one per source message (migration 0004); applies only via the human decision pipeline | mcp-tools write-gate, duplicate, and unknown-task cases | [agent-runtime-security.md](agent-runtime-security.md) | enforced+tested |
 | 22 | The runtime cannot execute terminal commands | Tool allowlist excludes `terminal`; `pre_tool_call` deny hook vetoes it as a second layer ([deny-terminal.sh](../../docker/hermes-runtime/agent-hooks/deny-terminal.sh)) | manual: ADR-026 spike (live veto observed); CI test filed (#44) | [agent-runtime-security.md](agent-runtime-security.md) | enforced (manual evidence) |
+| 23 | Workspace deletion is a deliberate, service-role-only path | `purge_workspace` SECURITY DEFINER fn; transaction-local flag is the only thing the append-only trigger honors, DELETEs only ([0005](../../supabase/migrations/0005_workspace_purge.sql)) | [tests/workspace-purge.test.ts](../../tests/workspace-purge.test.ts) | [data-retention-deletion.md](data-retention-deletion.md) | enforced+tested |
 
 ## Known control gaps (weaken specific claims until fixed)
 
 From the skeleton handoff and the 2026-06-10 audit pass, listed here rather than hidden because they qualify claims above. Two earlier gaps are now closed: the JWT-HS256 gap by ADR-020 (JWKS), and the non-atomic apply by migration 0003 (the `apply_proposal` transaction, proven by `tests/atomic-apply.test.ts`).
 
-- **Workspace deletion is blocked by the append-only trigger.** `audit_events` cascades on workspace delete, but the `before delete` trigger raises on any delete, so the cascade aborts. This breaks deletion and offboarding (affects [data-retention-deletion.md](data-retention-deletion.md)). Needs a deliberate deletion path (soft-delete or a SECURITY DEFINER purge the trigger exempts). Fix in flight (#2).
-- **CORS is allow-all** (`origin: true` in the api server; #3), **JWT audience is not verified** (issuer-only check in `auth.ts`; #4), and **error responses pass internal detail through** (Zod issue dumps and exception detail; #6). All three are small code changes, fix in flight.
 - **The agent's own actions write no audit events.** `actor_type='agent'` exists in the schema and is never used; proposal submission is invisible in the audit log (#42). Weakens the audit-completeness reading of row 7 until fixed.
+
+Closed 2026-06-10 (PR #45): workspace deletion (now row 23), CORS allow-all (allowlist, `CORS_ORIGINS`), JWT audience (aud=authenticated enforced), and error-detail leakage (5xx detail logged server-side only). Each closure cites its test in the PR.
 
 ## How to use this register
 
