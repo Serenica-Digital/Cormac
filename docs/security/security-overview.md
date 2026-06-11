@@ -1,8 +1,8 @@
 # Security Overview
 
 Status: drafted
-Maps to: control-register rows 1-13
-Last reviewed: 2026-06-06
+Maps to: control-register rows 1-23
+Last reviewed: 2026-06-10
 
 A plain-language summary of how the platform protects client data. The detail and the proof live in the linked documents and in [control-register.md](control-register.md).
 
@@ -20,7 +20,7 @@ A multi-tenant CRM agent. Each client brings the spreadsheets their business run
 
 ## Why this passes scrutiny
 
-The hard question about an AI that proposes writes is how it is prevented from making them unsafely. The answer is structural, not hopeful: the runtime literally cannot write (no credentials), its output is validated against the contract before anything is held, and the field-level `editableByAgent` and `sensitive` flags are enforced in code. See [agent-runtime-security.md](agent-runtime-security.md).
+The hard question about an AI that proposes writes is how it is prevented from making them unsafely. The answer is structural, not hopeful: the runtime literally cannot write (no credentials), its only reach into CRM data is a small set of tools the control plane serves and tenant-binds, and the one proposing tool validates every change against the contract before anything is held. The field-level `editableByAgent` and `sensitive` flags are enforced in code, and the containment has been demonstrated live at three independent layers (ADR-026). See [agent-runtime-security.md](agent-runtime-security.md).
 
 ## Scope and posture
 
