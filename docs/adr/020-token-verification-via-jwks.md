@@ -1,6 +1,6 @@
 # ADR-020: The control plane verifies user tokens against the Supabase JWKS
 
-**Status:** Accepted (refines the verification mechanism ADR-011 left unspecified)
+**Status:** Accepted (refines the verification mechanism ADR-011 left unspecified; open items 3 and 4 resolved 2026-06-10: the audience check is enforced and tested, and the hosted issuer is confirmed as the default `${SUPABASE_URL}/auth/v1`, ES256 via JWKS)
 **Date:** 2026-06-07
 **Related:** Refines ADR-011 (Supabase broker, control-plane authorization), which said the control plane "verifies the Supabase JWT" on every protected request without pinning how. It is the first gate in the only-writer path of ADR-005, a concrete control evidenced in [docs/security/auth-rbac.md](../security/auth-rbac.md) (ADR-015), and it is built in `apps/api` per ADR-018.
 
@@ -59,5 +59,5 @@ Verification enforces `issuer = ${SUPABASE_URL}/auth/v1` and rejects any token w
 
 1. **Rotation behavior under load.** Confirm the JWKS cache window and refetch-on-unknown-`kid` behavior holds up when keys rotate during traffic, and whether to tune the cooldown.
 2. **Algorithm allowlist.** Whether to explicitly allowlist accepted algorithms (`ES256`, `HS256`) rather than branch on `alg`, to remove any algorithm-confusion surface.
-3. **Audience check.** Supabase sets `aud = authenticated`; decide whether to enforce it in addition to issuer.
-4. **Hosted issuer exactness.** Confirm the issuer string for hosted Supabase, including custom domains, so the issuer check is exact in production rather than only against the local `127.0.0.1` issuer.
+3. **Audience check.** Supabase sets `aud = authenticated`; decide whether to enforce it in addition to issuer. *Resolved 2026-06-10: enforced in `authenticate` and tested (a correctly-signed wrong-audience token is rejected before any database access).*
+4. **Hosted issuer exactness.** Confirm the issuer string for hosted Supabase, including custom domains, so the issuer check is exact in production rather than only against the local `127.0.0.1` issuer. *Resolved 2026-06-10 against the managed dev project: tokens carry `iss = ${SUPABASE_URL}/auth/v1` exactly (no override needed), signed ES256 with a `kid` matching the published JWKS. A custom domain would change the issuer and reopen this.*
