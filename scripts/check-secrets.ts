@@ -36,10 +36,34 @@ for (const file of tracked) {
     }
   }
 
-  // 3. No private keys in tracked source.
-  if (/\.(ts|tsx|js|jsx|json|ya?ml|md|sql|env)$/.test(file) || base.startsWith('.env')) {
-    if (/-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/.test(readText(file))) {
+  // 3. No private keys or provider secrets in tracked source. The value
+  // patterns require real key-length tails, so docs placeholders like
+  // "sk-ant-..." or "sb_secret_<paste>" do not trip them.
+  if (/\.(ts|tsx|js|jsx|json|ya?ml|md|sql|env|sh)$/.test(file) || base.startsWith('.env')) {
+    const text = readText(file);
+    if (/-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/.test(text)) {
       problems.push(`private key material in ${file}`);
+    }
+    const providerKeys: [string, RegExp][] = [
+      ['Anthropic API key', /sk-ant-[A-Za-z0-9_-]{24,}/],
+      ['Supabase secret key', /sb_secret_[A-Za-z0-9_-]{16,}/],
+      ['GitHub token', /(?:ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{36,})/],
+    ];
+    for (const [label, pattern] of providerKeys) {
+      if (pattern.test(text)) problems.push(`${label} in ${file}`);
+    }
+    // Connection strings with a real embedded password (placeholders like
+    // "...", "<password>", "${VAR}" and the local dev password are exempt).
+    const conn = text.match(/postgres(?:ql)?:\/\/\w+:([^@\s'"]+)@/g) ?? [];
+    for (const m of conn) {
+      const password = /:\/\/\w+:([^@\s'"]+)@/.exec(m)?.[1] ?? '';
+      const placeholder =
+        password.includes('...') ||
+        password.includes('<') ||
+        password.includes('${') ||
+        password.includes('[') ||
+        password === 'postgres';
+      if (!placeholder) problems.push(`connection string with embedded password in ${file}`);
     }
   }
 }
