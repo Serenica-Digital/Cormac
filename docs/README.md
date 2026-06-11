@@ -43,7 +43,7 @@ Status vocabulary: `canonical` (current source of truth), `draft` (in progress),
 ## Index
 
 ### adr/ — decisions
-See [adr/README.md](adr/README.md) for the full catalog (ADR-001 through ADR-026). Start there.
+See [adr/README.md](adr/README.md) for the full catalog (ADR-001 through ADR-027). Start there.
 
 ### prd/ — what we're building
 - [architecture.md](prd/architecture.md) — the trust topology and component responsibilities.
