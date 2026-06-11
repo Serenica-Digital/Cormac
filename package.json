@@ -18,6 +18,7 @@
     "test:watch": "vitest",
     "check:rls": "tsx scripts/check-rls.ts",
     "check:secrets": "tsx scripts/check-secrets.ts",
+    "check:migrations": "tsx scripts/check-migrations.ts",
     "evals": "tsx evals/run.ts",
     "evals:workbook": "tsx evals/workbook-contract/run.ts",
     "evals:workbook:explore": "tsx evals/workbook-contract/explore.ts",
@@ -28,7 +29,8 @@
     "db:push:remote": "sh -c 'test -n \"$SUPABASE_DB_URL\" || { echo \"Set SUPABASE_DB_URL to the managed project db url\" >&2; exit 1; }; supabase db push --db-url \"$SUPABASE_DB_URL\"'",
     "check:remote": "vitest run tests/isolation.test.ts",
     "dev": "docker compose -f docker/compose.yaml --env-file .env up --build",
-    "dev:down": "docker compose -f docker/compose.yaml --env-file .env down"
+    "dev:down": "docker compose -f docker/compose.yaml --env-file .env down",
+    "up": "pnpm db:start && pnpm check:migrations && pnpm seed && pnpm dev"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
