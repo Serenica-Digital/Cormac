@@ -1,8 +1,8 @@
 # Audit Logging
 
 Status: drafted
-Maps to: control-register rows 7, 8
-Last reviewed: 2026-06-09
+Maps to: control-register rows 7, 8, 23
+Last reviewed: 2026-06-10
 
 The audit trail is both a compliance artifact and a user-trust feature: it is the safety net that makes a low-friction write loop tolerable (ADR-010), and the evidence an IT reviewer asks for.
 
@@ -10,9 +10,11 @@ The audit trail is both a compliance artifact and a user-trust feature: it is th
 
 Every applied change writes an `audit_events` row ([apply.ts](../../apps/api/src/pipeline/apply.ts)) with: workspace, actor type and id, action, object and record, before and after values, a link to the source message that caused it, and a link to the proposal. Rejections are also recorded.
 
-## Append-only
+## Append-only, with one sanctioned exception
 
 `audit_events` cannot be updated or deleted. A `before update or delete` trigger raises on any such attempt ([0001_init.sql](../../supabase/migrations/0001_init.sql)), so the guarantee holds even against the service role, not just against users. The isolation test asserts this.
+
+The one exception is deliberate: full workspace deletion via `purge_workspace` ([0005_workspace_purge.sql](../../supabase/migrations/0005_workspace_purge.sql)), the service-role-only offboarding path, removes the purged workspace's audit rows along with everything else (register row 23, [data-retention-deletion.md](data-retention-deletion.md)). The exemption is a transaction-local flag only that function sets, applies to deletes only, and is itself tested: outside the purge, deletes still fail, and updates fail unconditionally everywhere ([tests/workspace-purge.test.ts](../../tests/workspace-purge.test.ts)).
 
 ## What is proven
 

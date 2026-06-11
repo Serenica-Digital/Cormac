@@ -2,15 +2,15 @@
 
 Status: drafted
 Maps to: control-register rows 9, 10
-Last reviewed: 2026-06-09
+Last reviewed: 2026-06-10
 
 Who the caller is, and what they may do. Authentication proves identity; authorization decides capability. They are separate, and both are enforced server-side (ADR-011).
 
 ## Authentication
 
-Login providers (Microsoft Entra, Google, email/password, magic link) prove identity. Supabase Auth brokers the session and issues an asymmetrically-signed (ES256) JWT. The control plane verifies that token against the Supabase JWKS public keys, enforces the issuer, and requires a subject, then extracts the user id ([auth.ts](../../apps/api/src/auth.ts) `authenticate`; ADR-020). A missing or invalid token is rejected before any handler runs.
+Login providers (Microsoft Entra, Google, email/password, magic link) prove identity. Supabase Auth brokers the session and issues an asymmetrically-signed (ES256) JWT. The control plane verifies that token against the Supabase JWKS public keys, enforces the issuer and the audience (`aud = authenticated`), and requires a subject, then extracts the user id ([auth.ts](../../apps/api/src/auth.ts) `authenticate`; ADR-020). A missing or invalid token is rejected before any handler runs; a correctly-signed token with the wrong audience is rejected before any database access.
 
-Verifying against the published JWKS means the control plane holds no token-signing secret on the asymmetric path; the HS256 shared secret is retained only as a fallback for legacy tokens. Remaining hardening, tracked in [control-register.md](control-register.md): enforce the `aud` claim and confirm the exact hosted issuer string before production.
+Verifying against the published JWKS means the control plane holds no token-signing secret on the asymmetric path; the HS256 shared secret is retained only as a fallback for legacy and local-stack tokens. The hosted dev project's behavior is confirmed, not assumed: it signs ES256 with a `kid` matching its published JWKS, and its issuer is exactly `${SUPABASE_URL}/auth/v1`, so no issuer override and no JWT secret are provisioned on deployment.
 
 ## Authorization (RBAC)
 
