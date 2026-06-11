@@ -21,7 +21,11 @@ export async function authenticate(request: FastifyRequest, _reply: FastifyReply
       token,
       (protectedHeader, tok) =>
         protectedHeader.alg === 'HS256' ? Promise.resolve(hsSecret) : jwks(protectedHeader, tok),
-      { issuer: config.SUPABASE_AUTH_ISSUER ?? `${config.SUPABASE_URL}/auth/v1` },
+      {
+        issuer: config.SUPABASE_AUTH_ISSUER ?? `${config.SUPABASE_URL}/auth/v1`,
+        // Supabase user tokens always carry aud=authenticated (ADR-020, #4).
+        audience: 'authenticated',
+      },
     );
     if (!payload.sub) throw new Error('token has no subject');
     request.authUserId = payload.sub;

@@ -14,6 +14,8 @@ const proposalStatuses: ProposalStatus[] = ['pending', 'applied', 'rejected'];
 
 export function registerRoutes(app: FastifyInstance): void {
   app.get('/api/health', async () => ({ status: 'ok' }));
+  // Root alias for platform probes (compose healthchecks, Juno ingress).
+  app.get('/health', async () => ({ status: 'ok' }));
 
   // Capture: natural language in -> source message + held proposal out (ADR-007, ADR-010).
   app.post(

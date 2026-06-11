@@ -1,8 +1,9 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EXAMPLE_PERSON_CONTRACT } from '@serenica/contract';
 import { createAnonClient, createServiceClient, createUserClient, type Db } from '@serenica/db';
+import { TestResources } from './helpers.js';
 
 /**
  * The first-class isolation test (ADR-003, ADR-015). It proves two things at the
@@ -25,6 +26,7 @@ describe.skipIf(!ready)('cross-tenant isolation and append-only audit', () => {
   let userB: Db;
   let workspaceA: string;
   let recordAId: string;
+  const resources = new TestResources();
 
   beforeAll(async () => {
     service = createServiceClient(url!, serviceKey!);
@@ -33,8 +35,8 @@ describe.skipIf(!ready)('cross-tenant isolation and append-only audit', () => {
     const wsA = await service.from('workspaces').insert({ name: `A-${randomUUID()}` }).select('id').single();
     const wsB = await service.from('workspaces').insert({ name: `B-${randomUUID()}` }).select('id').single();
     if (wsA.error || wsB.error) throw new Error('failed to create workspaces');
-    workspaceA = wsA.data.id as string;
-    const workspaceB = wsB.data.id as string;
+    workspaceA = resources.workspace(wsA.data.id as string);
+    const workspaceB = resources.workspace(wsB.data.id as string);
 
     // A user who belongs only to workspace B.
     const emailB = `b-${randomUUID()}@isolation.test`;
@@ -45,6 +47,7 @@ describe.skipIf(!ready)('cross-tenant isolation and append-only audit', () => {
       email_confirm: true,
     });
     if (!created.data.user) throw new Error(`createUser failed: ${created.error?.message}`);
+    resources.user(created.data.user.id);
     await service
       .from('memberships')
       .insert({ workspace_id: workspaceB, user_id: created.data.user.id, role: 'owner' });
@@ -79,6 +82,10 @@ describe.skipIf(!ready)('cross-tenant isolation and append-only audit', () => {
     const signin = await anon.auth.signInWithPassword({ email: emailB, password: passwordB });
     if (!signin.data.session) throw new Error(`sign-in failed: ${signin.error?.message}`);
     userB = createUserClient(url!, anonKey!, signin.data.session.access_token);
+  });
+
+  afterAll(async () => {
+    await resources.cleanup(service);
   });
 
   it('lets the service role read workspace A (sanity)', async () => {
