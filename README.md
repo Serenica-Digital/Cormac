@@ -32,17 +32,27 @@ Requires Node 22+, pnpm 10+, and Docker.
 
 ```sh
 pnpm install
-cp .env.example .env          # then paste keys printed by db:start
+cp .env.example .env          # then fill it: see the comments per key
 pnpm db:start                 # local Supabase (Docker); prints anon/service keys
-pnpm dev                      # brings up api, runtime-stub, web via compose
+pnpm seed                     # demo workspace, owner login, contract, one record
+pnpm dev                      # brings up api, hermes runtime, worker, web via compose
 ```
+
+Or all four steps after install: `pnpm up`.
+
+Day-to-day gotcha: `pnpm db:start` reuses the running local database and does
+NOT apply migrations added since it started. `pnpm check:migrations` detects
+this drift (CI always runs fresh, so undetected drift fails there first);
+`pnpm db:reset` fixes it.
 
 ## Checks
 
 ```sh
 pnpm typecheck
 pnpm lint
-pnpm test
+pnpm test                     # leaves the local db as it found it (afterAll purge)
+pnpm check:migrations         # local db schema matches supabase/migrations
+pnpm check:secrets            # no keys or tracked .env in the repo
 ```
 
 `pnpm test` includes the cross-tenant RLS isolation test, which proves one workspace cannot read or write another's rows.

@@ -10,6 +10,7 @@ import {
   insertProposal,
   insertSourceMessage,
   listRecordSummaries,
+  recordRunOutcome,
 } from '../repo.js';
 
 export interface CaptureResult {
@@ -70,6 +71,15 @@ export async function captureUpdate(
     },
     { taskId: sourceMessageId, text },
   );
+
+  // Telemetry survives the session the adapter just deleted (#39). Persisted
+  // whatever the proposal outcome; a decline still cost tokens.
+  await recordRunOutcome(db, {
+    workspaceId,
+    sourceMessageId,
+    runId: outcome.runId,
+    usage: outcome.usage,
+  });
 
   const proposalRow = await getProposalBySourceMessage(db, workspaceId, sourceMessageId);
   if (!proposalRow) {

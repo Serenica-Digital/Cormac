@@ -28,6 +28,7 @@ Secret = belongs in a Kubernetes Secret (or whatever mechanism the pilot cluster
 | Var | Secret | Example / source | Purpose |
 | --- | --- | --- | --- |
 | `API_PORT` | no | `8088` | Listen port |
+| `CORS_ORIGINS` | no | the web workload's public URL | Comma-separated CORS allowlist; defaults to the local web origins, so it MUST be set on deploy |
 | `SUPABASE_URL` | no | `https://<project>.supabase.co` | System of record |
 | `SUPABASE_SERVICE_ROLE_KEY` | **yes** | Supabase project settings | The one key that bypasses RLS; only the api ever holds it (ADR-003, ADR-005). Hosted projects issue new-format keys (`sb_secret_...`); verified working for all bootstrap paths including auth-admin |
 | `SUPABASE_JWT_SECRET` | **yes** | Supabase project settings | HS256 fallback for local/legacy projects only; the hosted dev project signs ES256 against its JWKS (ADR-020, confirmed below), so this stays unset on Juno |
