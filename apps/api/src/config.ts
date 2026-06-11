@@ -22,6 +22,12 @@ const envSchema = z.object({
     .default('super-secret-jwt-token-with-at-least-32-characters-long'),
   API_PORT: z.coerce.number().int().positive().default(8088),
   /**
+   * CORS allowlist, comma-separated origins. Defaults to the local web surface.
+   * Any origin not on the list gets no CORS headers and is blocked by the
+   * browser (control-register known gap #3).
+   */
+  CORS_ORIGINS: z.string().default('http://127.0.0.1:5174,http://localhost:5174'),
+  /**
    * Which runtime the capture pipeline dispatches to. `hermes` is the product
    * runtime (Runs API, ADR-006/ADR-025) and the default; `stub` selects the
    * synchronous runtime-stub contract and exists for test determinism only.
