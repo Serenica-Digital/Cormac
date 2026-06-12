@@ -33,4 +33,4 @@ The founder ran a USPTO knockout search on 2026-06-12 in the relevant classes (0
 
 1. Full clearance and trademark filing before the AppSource listing (rides with #53).
 2. Rename `serenica.allow_audit_purge` in the next migration that touches the purge path.
-3. The Supabase dev project and the GitHub repo still carry `serenica-crm-agent` names; rename at convenience (the repo rename auto-redirects), or leave, since neither is client-facing.
+3. The Supabase dev project and the GitHub repo still carry `serenica-crm-agent` names; rename at convenience (the repo rename auto-redirects), or leave, since neither is client-facing. (Resolved same day: the repo is now `Serenica-Digital/Cormac`; the Supabase project rename is a dashboard action in the founder's hands.)
