@@ -1,57 +1,84 @@
 # Build Plan
 
-> **Status:** canonical · **Last reviewed:** 2026-06-06
+> **Status:** canonical · **Last reviewed:** 2026-06-12
 
-Companion to [architecture.md](architecture.md) and [contract-model.md](contract-model.md). Those two describe *what* we are building (the trust topology and the data-and-contract view). This one describes *how and in what order* we build it. The why for every choice lives in the ADRs; this doc only records the sequence and points back.
+Companion to [architecture.md](architecture.md) and [contract-model.md](contract-model.md). Those two describe *what* we are building; this one describes *how and in what order*. The why for every choice lives in the ADRs; this doc records the sequence and points back. The board (Project #3) is the live tracker; its milestones mirror the eight below, and issue numbers here are pointers into it.
 
-The governing idea: do not start with features. Stand up a thin foundation with the trust boundary real from the first row, then drive one **walking skeleton**, a single message going all the way through *capture -> propose -> validate -> confirm -> write -> audit*. That one thread doubles as the Hermes-seam spike (ADR-006) and the Juno-deploy spike (ADR-017), so proving it de-risks the three shakiest assumptions (the runtime seam, container deploy, JSONB storage) with nothing thrown away. Every surface and feature after that bolts onto a spine that already works.
+## Where the build stands
 
-## Phase 0: Foundation, with the trust boundary real from row zero
+The original plan here (foundation, then a walking skeleton as the spike) completed and converted its bets:
 
-The point of Phase 0 is that the invariants in [CLAUDE.md](../../CLAUDE.md) are physical, not aspirational, before any business data exists.
+- **Phase 0 and the walking skeleton are done and verified.** Capture → propose → validate → confirm → write → audit runs end to end against real Postgres, with the cross-tenant isolation suite, purge, and atomic apply in place.
+- **The runtime seam is real, not stubbed (ADR-025/026).** Hermes (pinned image) runs the operations agent as a tool-user against the control plane's MCP tool server; a proposal is a schema-enforced tool call. The old "MCP server" deferral is dead: the MCP surface is now the spine.
+- **The knowledge layer shipped (ADR-027).** Glossary in the contract, typed learned knowledge behind a gate, and the compiled context prefix delivered through run instructions. Measured: 5 tool calls/21s/$0.045 per task down to 2-3 calls/8-15s/~$0.03, cross-run cache reuse proven.
+- **The surface strategy pivoted (ADR-028).** The Excel task pane add-in is the primary client surface; the web app is the admin/trust/fallback door. The research phase ran ([../research/microsoft-ecosystem-integration.md](../research/microsoft-ecosystem-integration.md)); the pane build is gated on its spike and a GO/NO-GO ADR.
 
-- **Repo and monorepo.** `git init`, then a pnpm workspace: `apps/web`, `apps/api` (the control plane), `apps/worker`, and shared `packages/contract`, `packages/db`, `packages/shared`. Supabase migrations are versioned in the same repo (ADR-014).
-- **Schema and RLS.** App-owned operational tables only. Contract-defined business objects are data, never tables (ADR-002). Every tenant row carries a `workspace_id`; every tenant table has an RLS policy; `audit_events` is append-only with before/after values and a source link (ADR-003, ADR-005, ADR-015).
-- **Records storage.** `business_records` is JSONB-first with generated/indexed columns for the hot fields, validated against the active contract before insert. This is the hybrid leaning of ADR-002/003, and building it here folds the storage question into real work instead of a throwaway spike.
-- **Control plane.** A Node/TypeScript (Fastify) API that verifies the Supabase JWT, loads workspace and role, and enforces RBAC before any runtime call or write (ADR-011). It owns the one command/proposal pipeline every surface routes through (ADR-007). It holds the service role key server-side only; the runtime never gets database write credentials (ADR-005, ADR-006).
-- **CI and containers.** A CI workflow that typechecks, lints, tests, and builds, with a cross-tenant isolation test as a first-class test. Dockerfiles per service plus a local compose, then the containers running on a Juno dev workspace against managed Supabase (ADR-017, [juno-platform-pilot.md](juno-platform-pilot.md)).
+What v1 means: **the pilot live on the design partner's real business.** Everything below is sequenced toward that.
 
-## Phase 1: The web walking skeleton (the slice that is the spike)
+## The eight milestones to v1
 
-One workspace, one user, one hand-authored published contract (a minimal Person object: a couple of fields and one identity rule). Then the thinnest end-to-end thread:
+Ordering logic: the two highest-risk unknowns (the pane platform, the authoring agent) go first and run in parallel; user-facing assembly builds on them; deployment precedes SMS because the webhook needs a public endpoint; pilot readiness is last and is v1.
 
-1. A minimal web text box posts natural language to the control plane.
-2. The control plane writes a `source_message` and calls the Hermes runtime through the Agent Runtime Adapter with tenant context, the contract, and the text.
-3. Hermes returns a structured proposal. The adapter validates it with Zod against the contract. Invalid output is rejected, never written (ADR-006).
-4. Confirm-each policy holds the proposal in `agent_proposals`. The review queue shows before/after. On approve, the control plane writes the `business_record` and an `audit_event` with the source link (ADR-005, ADR-010).
+### M1: Pane proof and GO/NO-GO
 
-Start in confirm-each mode. apply-then-report and the weekly report come later (ADR-010). The GO/NO-GO this slice produces (does the seam yield Zod-valid proposals reliably, do the write gates hold, is latency acceptable, do the containers deploy cleanly) is what converts ADR-006 and ADR-017 from "accepted as direction" to "committed."
+The ADR-028 spike checklist against a sideloaded XML-manifest pane: streaming through WebView2/WKWebView, the Lane A sign-in (NAA token exchanged for a Supabase session) and the dialog fallback, `context.sync` latency on a realistic workbook, range highlighting, onChanged reliability. Plus the pane architecture design and the identity-linking schema design (load-bearing for pane auth). Closes #52 and folds #31/#32/#33. Ends with the follow-up ADR: GO/NO-GO and the re-scoped pane issue set.
 
-## What each phase gates
+*Done when every spike item has a measured answer and the follow-up ADR is committed.*
 
-- The **walking skeleton** gates everything. Until the spine is proven, no surface is worth building, because every surface assumes it.
-- The **Hermes seam** (inside the skeleton) gates the agent build. Phase-2 estimates depend on its GO/NO-GO (ADR-006).
-- The **generic contract-driven UI** is the shakiest technical assumption and is deliberately not on the skeleton's path. The skeleton uses minimal hand-built screens. Whether Lovable can render table/detail/relationship/form views from a contract is a pressure-test taken after the spine works, not assumed (ADR-014).
-- The **weekly report** gates apply-then-report mode. Confirm-each is safe without it; apply-then-report is not (ADR-010).
-- **Eval cases** gate a workspace switching to apply-then-report. A starter set of entity-matching and disambiguation cases must pass first (ADR-009).
+### M2: Authoring engine, host-agnostic (parallel with M1)
 
-## Non-code tracks to start on day one
+The agent side of #17: multi-turn conversation state (#37), the consultative interview loop with the ask-user protocol, the identity-rules decision (#18), eval-harness extension over both existing fixtures (#28's spike artifacts). No UI; harness only. Plain-language question register is part of the eval bar, not a polish item.
 
-These run on their own clock, so start them at the same time as Phase 0 rather than after.
+*Done when a partner-shaped workbook goes interview → draft contract → publish in the harness, evals green.*
 
-- **A2P 10DLC registration.** US carriers require brand and campaign registration before they carry application SMS, and approval can take days to weeks. Start it now so SMS can go live right after the spine (ADR-010, requirements REQ-032/062).
-- **Partnership, IP, and design-partner terms.** ADR-001 ranks this the highest blocking external risk and says settle it before heavy build. It is a business decision, not an engineering gate, but it is named here so it does not get lost.
+### M3: The pane ships, operations first
 
-## Explicitly deferred (do not build in this pass)
+The task pane built to M1's design: both auth lanes, streaming chat capture, review queue with proposal diffs, the Office.js tool bridge (read/highlight; approved-write execution as a surface action). Minimal web record views land alongside (#19); clarifying-question UX on the operations path (#38). Sideloaded, dev workspace.
 
-Each is named in the ADRs as later scope: the Microsoft Graph connector (ADR-012), the Excel add-in and any arbitrary bidirectional sync (ADR-004), the MCP server (ADR-007), apply-then-report as the default (ADR-010), self-service contract authoring (ADR-002, ADR-016), and multi-provider model selection (ADR-013).
+*Done when daily CRM capture happens inside Excel and the terminal demo is retired.*
+
+### M4: The authoring interview moves into the pane
+
+M2's engine mounted in M3's pane against the live open workbook: column highlighting while it asks, draft-contract review, publish gate. The keystone onboarding moment (ADR-023). Issues for this milestone are cut by M1's follow-up ADR.
+
+*Done when someone who is not the developer onboards a workbook they brought, unassisted.*
+
+### M5: Deployed and multi-user
+
+The Juno spike (#15) becomes a hosted dev/staging environment, and the hardening backlog that waited on it lands: run-stream release (#51), atomic-apply live verification (#1), ops tooling (#40), audit legibility (#42, #43), event logging/redaction (#41), deny-hook CI (#44), runtime ops (#14), the Terra Postgres question (#16), an RBAC multi-user pass, backups.
+
+*Done when a second human logs into a hosted URL and the isolation and audit suites pass against that environment.*
+
+### M6: The SMS door
+
+Twilio webhook connector on the hosted endpoint, sender claims on the identity spine (arrival trust, propose-only), confirmation round-trips. A2P registration (#24) is calendar-bound and starts during M1 so approval never gates this milestone.
+
+*Done when a text from a phone files a proposal that appears in the pane's review queue.*
+
+### M7: Modes, reporting, agent quality
+
+apply-then-report and the weekly report (#21), the eval gate that authorizes switching a workspace to it (#22), contract-aware search (#36), reporting read model (#23), record identity/dedup enforcement (#7), the learning loop's report surface (#35). This is the original product motivation: low-friction daily updating, safety net instead of approval fatigue.
+
+*Done when the demo workspace runs apply-then-report for a week and the digest is accurate.*
+
+### M8: Pilot readiness (v1)
+
+Security packet reconciled against everything built (pane, SMS, learning rows); the partner's M365 SKU and reseller verified plus a centralized-deployment dry run; partnership, IP, and design-partner terms settled (#25, the longest-standing P0 and a business decision); the pricing-tier decision; the pilot onboarding runbook. The publisher track (DUNS, Partner Center, verification) started back in M1 lands whenever it lands; it does not gate the pilot.
+
+*Done when the partner's live business runs on it. That is v1.*
+
+## Tracks that run on their own clock
+
+Start these during M1; they are calendar-bound, not effort-bound:
+
+- **A2P 10DLC registration** (#24): carrier approval takes days to weeks; gates M6.
+- **Publisher track**: DUNS number, Partner Center enrollment, business verification (6-10 weeks end to end for a new LLC, per the research). Gates the AppSource listing, which is post-v1; gates nothing in M1-M8.
+- **Partnership and design-partner terms** (#25): a business decision, named here so it is never lost; gates M8.
+
+## Explicitly post-v1
+
+The generated contract-constrained workbook and validate-at-sync engine (#29, #30; the pane subsumes their interactive UX for the pilot), email ingestion, the external Claude/MCP door, the Graph permission ladder beyond stage 0, the Outlook host, the AppSource listing itself, relationships as first-class edges (#20).
 
 ## The verification bar
 
-The skeleton is done when:
-
-- **Spine:** a text through the web box produces a `source_message`, then a held `agent_proposal`, then on approval a `business_record` and an `audit_event` with correct before/after and source link.
-- **Containment:** the runtime has no Supabase write credentials and cannot write even if asked; invalid runtime output is rejected by Zod, not written.
-- **Isolation:** the cross-tenant test proves workspace B cannot read or write workspace A's rows under RLS.
-- **Deploy:** all containers run on Juno against managed Supabase, a preview link serves the web box and the API, and the exact workload templates and env vars are written down.
-- **CI:** typecheck, lint, tests (including the isolation test), and build all pass.
+Unchanged in spirit from the skeleton days: every milestone's done-when is demonstrated against a live system, not claimed from green checkmarks. Cost and latency are part of acceptance for agent-facing work (the ADR-026/027 precedent: measured numbers on the tracking issue). Trust-boundary changes take a branch and a PR into dev; the isolation and purge suites are the floor for every milestone that touches the schema.
