@@ -3,6 +3,7 @@ import { safeParseProposal, validateProposalAgainstContract } from '@serenica/co
 import { ProblemError } from '@serenica/shared';
 import type { AppContext } from '../app.js';
 import { callStubRuntime, runHermesTask } from '../adapter/runtime.js';
+import { compileWorkspaceContext } from './context.js';
 import type { RequestContext } from '../types.js';
 import {
   getActiveContract,
@@ -63,13 +64,17 @@ export async function captureUpdate(
     return captureViaStub(app, ctx, contract, sourceMessageId, text);
   }
 
+  // Compile the workspace context once per capture and deliver it as the run's
+  // cached prefix, so the agent does not fetch the contract per run (ADR-027).
+  const context = await compileWorkspaceContext(app, workspaceId, contract);
+
   const outcome = await runHermesTask(
     {
       url: config.RUNTIME_URL,
       apiKey: config.RUNTIME_API_KEY,
       timeoutMs: config.RUNTIME_TIMEOUT_MS,
     },
-    { taskId: sourceMessageId, text },
+    { taskId: sourceMessageId, text, context },
   );
 
   // Telemetry survives the session the adapter just deleted (#39). Persisted
