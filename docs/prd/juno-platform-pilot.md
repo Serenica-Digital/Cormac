@@ -1,6 +1,6 @@
 # Juno Platform Pilot Plan
 
-> **Status:** canonical · **Last reviewed:** 2026-06-10
+> **Status:** canonical · **Last reviewed:** 2026-06-12
 
 **Audience:** the Juno Innovations team and Serenica Digital project collaborators. This is the scope document the June 5 meeting asked for, and the working agenda for the onboarding session. It is written in Juno's own platform vocabulary (projects, workload templates, Terra Sources, plugins, bundles) so the mapping is direct. Platform facts below were verified against the public juno-fx repos and docs on 2026-06-10; items the public record cannot settle are marked as onboarding questions, since the June 5 meeting was clear that the docs trail the platform. The deeper research record is [docs/research/juno-hermes-deployment-research.md](../research/juno-hermes-deployment-research.md).
 
@@ -10,6 +10,22 @@
 
 The pilot goal: build and run Cormac on Juno as a real agentic SaaS use case. A multi-service containerized application (web UI, control-plane API, worker, a Dockerized Hermes runtime), managed Supabase/Postgres as the external system of record, and a project-scoped development environment with a dev-assistant agent. Juno is the orchestration and deployment layer; Cormac's application logic, trust model, database authority, and compliance packet stay in its own repo, and every service stays a portable container.
 
+## The vocabulary for the room
+
+The mapping between how this repo already works and how Juno talks about it. The short version: `docker/compose.yaml` is the rehearsal, Juno is the venue, and the images are identical in both.
+
+| Term in the room | What it means | What it maps to in this repo |
+| --- | --- | --- |
+| Image | A frozen, shippable snapshot of one program and everything it needs to run. Built by CI, pushed to a registry (GHCR for us). Contains no secrets. | The four published images in [deployment-setup.md](deployment-setup.md) (api, worker, web, hermes-runtime), plus the planned addin image |
+| Container | A running copy of an image, isolated from everything else on the machine. Start one, stop one, throw it away; the image is unchanged. | What `pnpm dev` / compose starts locally; what Juno starts in the cluster |
+| Workload | Juno's unit of management: one container plus its resources (CPU/memory), networking, and env vars. | One compose service. The translation is one-to-one |
+| Workload template / plugin (Terra) | A reusable recipe for launching a workload, parameterized (image, env, ports, resources). | The official plugins we use as-is for dev tools; one custom template for the Hermes runtime |
+| Project / namespace | The isolation boundary that groups workloads; nothing outside it can reach `clusterip` services inside it. | The one `serenica` project |
+| `ingress-auth` / `ingress-noauth` / `clusterip` | Who can reach a workload: public behind Juno's login / public and open (the app does its own auth) / internal to the namespace only. | web is `ingress-auth`, api is `ingress-noauth` (webhooks verify themselves), worker and hermes-runtime are `clusterip` |
+| Cluster DNS | Workloads address each other by service name inside the namespace. | `http://api:8088` works identically in compose and on Juno |
+| Secret | A sensitive env value injected into a workload at deploy, never baked into an image or a template default. | The pre-session checklist in [deployment-setup.md](deployment-setup.md) |
+| Volume / mount | Persistent disk attached to a workload, surviving restarts. | Jarvis's memory volume. The app workloads are deliberately stateless; state lives in managed Supabase |
+
 ## What exists today (what the pilot deploys)
 
 This is not a greenfield. The repo is a pnpm monorepo of normal containers, already running end to end locally:
@@ -17,7 +33,7 @@ This is not a greenfield. The repo is a pnpm monorepo of normal containers, alre
 - `apps/web`: minimal React/Vite web surface.
 - `apps/api`: the control plane (Node/TypeScript, Fastify). The trust layer and the only writer of business records. Verifies Supabase JWTs, enforces RBAC, runs the proposal/confirmation/audit pipeline, and serves the agent runtime's tool surface over MCP at `/mcp` (workspace-scoped bearer token; the runtime's only reach into data).
 - `apps/worker`: a minimal long-running job container (health endpoint today; the weekly change report and inbound connector processors land here).
-- The agent runtime: real Hermes (`nousresearch/hermes-agent`, pinned version), configured by a profile versioned in `docker/hermes-runtime/`: headless API server only, messaging gateways off, memory off, tools allowlisted to the control plane's MCP endpoints, no database credentials. The current work increment lands this in the local stack, so the runtime arrives at Juno already proven. (`services/runtime-stub` remains in the repo as a test fixture only; it no longer runs in the stack.)
+- The agent runtime: real Hermes (`nousresearch/hermes-agent`, pinned version), configured by a profile versioned in `docker/hermes-runtime/`: headless API server only, messaging gateways off, memory off, tools allowlisted to the control plane's MCP endpoints, no database credentials. Landed and proven locally (ADR-026), then optimized: the control plane compiles each tenant's context into a cached prompt prefix, and a typical agent task now runs 2-3 tool calls, 8-15 seconds, about three cents (ADR-027). The runtime arrives at Juno already measured, which matters for the capacity and pricing conversation. (`services/runtime-stub` remains in the repo as a test fixture only; it no longer runs in the stack.)
 - `docker/`: the Dockerfiles for every service, the Hermes profile, and `compose.yaml`, which runs the whole stack locally.
 - `supabase/migrations`: app-owned schema, RLS, append-only audit. Canonical state lives in managed Supabase, outside Juno.
 
@@ -53,43 +69,81 @@ The eventual external Claude/MCP connector is a later surface on the control pla
 A note on the build path: the `runtime-js`/`runtime-python` plugins on the public `556-runtime-environments` branch (PR #557) clone a repo and run a build command per workload, which fits single-package repos. Ours is a pnpm monorepo with workspace dependencies and a build order, so the app services deploy as CI-built images from the Dockerfiles already in the repo, and the runtime plugins remain attractive for quick one-off previews. What we want from PR #557 either way is its `network_mode` select (`ingress-auth`, `ingress-noauth`, `clusterip`, `nodeport`); whether the pilot cluster supports those modes for image workloads is the first onboarding question.
 
 ```mermaid
-flowchart TB
-  subgraph project["Juno project: serenica (one namespace)"]
-    subgraph devw["Development workloads"]
-      ide["Dev workspace\nweb-ide plugin (code-server)"]
-      gitea["Git sandbox\ngitea plugin, mirrors to GitHub"]
-      jarvis["Jarvis dev assistant\nofficial hermes-agent plugin\ningress-auth, persistent volume"]
+flowchart LR
+  subgraph people["People"]
+    direction TB
+    clients["Client users\nbrowser · Excel pane · texts"]
+    developer["The developer"]
+  end
+
+  twilio["Twilio\nSMS provider"]
+
+  subgraph juno["Juno project: serenica — one namespace, every box one container workload"]
+    direction TB
+    subgraph appw["Application workloads — CI-built images from this repo"]
+      direction TB
+      web["web\nReact UI\ningress-auth"]
+      pane["addin — planned\nExcel pane static assets\ningress-noauth, custom domain\ngated on ADR-028 GO/NO-GO"]
+      api["api — control plane\nthe only writer\ningress-noauth, verifies\nwebhooks itself, serves /mcp"]
+      worker["worker\njobs, no inbound traffic\nclusterip"]
+      hermes["hermes-runtime\npinned image + baked profile\nclusterip, no public route,\nno database credentials"]
     end
-    subgraph appw["Application workloads"]
-      web["Web UI\nCI-built image, ingress-auth"]
-      api["Control plane API\nCI-built image, ingress-noauth\nverifies webhooks itself"]
-      worker["Worker\nCI-built image, clusterip"]
-      hermes["Hermes product runtime\ncustom headless template\npinned image + baked profile (docker/hermes-runtime)\nclusterip, no public route"]
+    subgraph devw["Development workloads — official plugins, used as shipped"]
+      direction TB
+      ide["Dev workspace\nweb-ide plugin\ncode-server"]
+      jarvis["Jarvis dev assistant\nhermes-agent plugin\npersistent volume"]
+      gitea["Git sandbox\ngitea plugin\nmirrors to GitHub"]
     end
   end
 
-  subgraph managed["Managed services (outside Juno)"]
-    supa["Supabase/Postgres + Auth\nsystem of record"]
+  subgraph managed["Managed services — outside Juno"]
+    direction TB
+    supa["Supabase\nPostgres + Auth\nsystem of record"]
+    anthropic["Anthropic API\nmodel provider"]
   end
 
-  subgraph ext["External providers"]
-    twilio["Twilio SMS"]
-    models["Anthropic API"]
-    msGraph["Microsoft Graph (later)"]
-  end
+  clients --> web
+  clients --> pane
+  clients -->|"text message"| twilio
+  twilio -->|"signed webhook"| api
+  developer --> ide
+  developer --> jarvis
 
   web --> api
-  api --> hermes
+  pane --> api
+  api -->|"task + context"| hermes
+  hermes -->|"MCP tool calls"| api
+  ide --> gitea
+  jarvis --> gitea
+
   api --> supa
   worker --> supa
-  worker --> hermes
-  twilio --> api
-  msGraph --> api
-  api --> models
-  hermes --> models
-  jarvis --> gitea
-  ide --> gitea
+  hermes --> anthropic
+
+  classDef surface fill:#fff3cd,stroke:#b58900,color:#222;
+  classDef plannedSurface fill:#fff3cd,stroke:#b58900,color:#222,stroke-dasharray:6 4;
+  classDef trust fill:#d1e7dd,stroke:#146c43,color:#111;
+  classDef runtime fill:#e7f1ff,stroke:#0d6efd,color:#111;
+  classDef data fill:#f8d7da,stroke:#842029,color:#111;
+  classDef third fill:#e2e3e5,stroke:#41464b,color:#111;
+  classDef devtool fill:#ede7f6,stroke:#5e35b1,color:#111;
+
+  class web surface;
+  class pane plannedSurface;
+  class api,worker trust;
+  class hermes runtime;
+  class supa data;
+  class anthropic,twilio,developer,clients third;
+  class ide,jarvis,gitea devtool;
+
+  style people fill:#ffffff,stroke:#adb5bd;
+  style juno fill:#ffffff,stroke:#495057,stroke-width:2px;
+  style appw fill:#f8f9fa,stroke:#adb5bd;
+  style devw fill:#f8f9fa,stroke:#adb5bd;
+  style managed fill:#ffffff,stroke:#adb5bd;
 ```
+
+Color language matches [architecture.md](architecture.md): yellow = client surfaces, green = our trust layer, blue = the agent runtime, red = the system of record, gray = external parties, purple = development tooling that never touches client data. Dashed border = planned, not yet built. Reading it left to right: people reach the surfaces, surfaces talk only to the api, the api is the only path to the runtime and the only writer to Supabase, and the runtime's only reaches are its tool calls back into the api and the model provider.
 
 Trust rules survive the move unchanged: the control plane is the only writer; the product runtime has no public route and no database credentials; surfaces and webhooks all enter through the control plane, which verifies them in-app rather than relying on platform auth.
 
