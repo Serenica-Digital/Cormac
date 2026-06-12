@@ -99,7 +99,7 @@ describe('callStubRuntime', () => {
 let hermes: http.Server;
 let hermesUrl: string;
 let lastAuthHeader: string | undefined;
-let lastSubmitBody: { input?: string; session_id?: string } = {};
+let lastSubmitBody: { input?: string; session_id?: string; instructions?: string } = {};
 const runs = new Map<string, { scenario: string; polls: number }>();
 let runCounter = 0;
 const deletedSessions: string[] = [];
@@ -207,8 +207,22 @@ describe('runHermesTask', () => {
     // The brief carries the taskId the agent must hand to submit_proposal.
     expect(lastSubmitBody.input).toContain(taskId);
     expect(lastSubmitBody.input).toContain('update John to active');
+    // No context compiled here, so no system prefix is sent.
+    expect(lastSubmitBody.instructions).toBeUndefined();
     // Stateless per task: the session is deleted once the run completes.
     expect(deletedSessions).toContain(taskId);
+  });
+
+  it('threads the compiled context as instructions when present, and omits it otherwise', async () => {
+    await runHermesTask(cfg(), {
+      taskId: '6a2f7c1e-0000-4000-8000-000000000043',
+      text: 'hi',
+      context: 'WORKSPACE CONTEXT (authoritative).',
+    });
+    expect(lastSubmitBody.instructions).toBe('WORKSPACE CONTEXT (authoritative).');
+
+    await runHermesTask(cfg(), { taskId: '6a2f7c1e-0000-4000-8000-000000000044', text: 'hi' });
+    expect('instructions' in lastSubmitBody).toBe(false);
   });
 
   it('maps a failed run to runtime_failed with the run output as detail', async () => {

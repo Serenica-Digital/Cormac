@@ -6,6 +6,13 @@
 # ANTHROPIC_API_KEY in the container env; no provider config lives here.
 model: claude-sonnet-4-6
 
+# Prompt caching TTL (#46, ADR-027 section 3). The workspace context prefix is
+# byte-stable between publishes; a 1-hour TTL keeps it warm across the design
+# partner's sporadic cadence, where a 5-minute window would cold-miss between
+# messages. Revisit with real volume.
+prompt_caching:
+  cache_ttl: "1h"
+
 # Persistent memory and the user profile stay off: per-tenant learning lives
 # as governed data in the control plane, never in runtime memory (ADR-009).
 memory:
