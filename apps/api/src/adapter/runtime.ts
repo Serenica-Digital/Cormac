@@ -77,6 +77,13 @@ export interface HermesTask {
   /** The source_message id; doubles as the run's session id and the proposal correlation key. */
   taskId: string;
   text: string;
+  /**
+   * The compiled workspace-context prefix (ADR-027 section 3): contract,
+   * glossary, and active learned knowledge, delivered as the run's cached system
+   * prefix so the agent need not fetch the contract per run. Hermes path only;
+   * the stub receives the contract directly. Absent when not compiled.
+   */
+  context?: string;
 }
 
 export interface HermesRunOutcome {
@@ -88,9 +95,10 @@ export interface HermesRunOutcome {
 
 /**
  * The operational brief sent as the run input. The agent's persona and policy
- * live in the Hermes profile (docker/hermes-runtime); this carries only the
- * task: the inbound text and the taskId that submit_proposal requires, which
- * is what ties the run back to its source message.
+ * live in the Hermes profile (docker/hermes-runtime), and the workspace contract
+ * and knowledge arrive in the cached context prefix (ADR-027); this carries only
+ * the task: the inbound text and the taskId that submit_proposal requires, which
+ * ties the run back to its source message.
  */
 export function buildTaskBrief(task: HermesTask): string {
   return [
@@ -101,11 +109,12 @@ export function buildTaskBrief(task: HermesTask): string {
     task.text,
     '"""',
     '',
-    'Use your tools: read the active contract with get_active_contract, find the',
-    'records this update refers to with search_records and get_record, then submit',
-    `the changes you propose by calling submit_proposal with taskId "${task.taskId}".`,
-    'Submit at most one proposal. If you are unsure about a match or a value,',
-    'submit your best proposal with uncertain set to true and explain in notes.',
+    'The workspace contract and knowledge are already provided in your context.',
+    'Find the records this update refers to with search_records and get_record, then',
+    `submit the changes you propose by calling submit_proposal with taskId "${task.taskId}".`,
+    'Call get_active_contract only to re-read a detail you are unsure of, not as a',
+    'first step. Submit at most one proposal. If you are unsure about a match or a',
+    'value, submit your best proposal with uncertain set to true and explain in notes.',
     'If the update should change nothing, do not call submit_proposal; reply with',
     'a short explanation instead.',
   ].join('\n');
@@ -131,6 +140,40 @@ function asText(value: unknown): string {
   if (typeof value === 'string') return value;
   if (value == null) return '';
   return JSON.stringify(value);
+}
+
+/**
+ * The Runs API usage payload omits cache tokens (#46). They live on the session
+ * detail, so the adapter reads it once the run is terminal and before the
+ * session is deleted, to instrument cache hits (ADR-027 section 3). Best-effort:
+ * a failed read returns nothing and never fails the run.
+ */
+async function readSessionUsage(
+  cfg: HermesRuntimeConfig,
+  sessionId: string,
+): Promise<Record<string, unknown>> {
+  try {
+    const res = await fetch(`${cfg.url}/api/sessions/${sessionId}`, { headers: authHeaders(cfg) });
+    if (!res.ok) return {};
+    const body = (await res.json().catch(() => null)) as {
+      session?: Record<string, unknown>;
+    } | null;
+    const session = body?.session;
+    if (!session || typeof session !== 'object') return {};
+    const out: Record<string, unknown> = {};
+    for (const key of [
+      'cache_read_tokens',
+      'cache_write_tokens',
+      'tool_call_count',
+      'api_call_count',
+      'estimated_cost_usd',
+    ]) {
+      if (session[key] != null) out[key] = session[key];
+    }
+    return out;
+  } catch {
+    return {};
+  }
 }
 
 /**
@@ -174,7 +217,13 @@ export async function runHermesTask(
   const submit = await fetchOrUnreachable(`${cfg.url}/v1/runs`, {
     method: 'POST',
     headers: authHeaders(cfg),
-    body: JSON.stringify({ input: buildTaskBrief(task), session_id: task.taskId }),
+    // `instructions` becomes the run's ephemeral system prefix, inside the cached
+    // system block (#46). JSON.stringify drops it when context is undefined.
+    body: JSON.stringify({
+      input: buildTaskBrief(task),
+      session_id: task.taskId,
+      instructions: task.context,
+    }),
   });
 
   if (submit.status === 429) {
@@ -210,17 +259,24 @@ export async function runHermesTask(
         throw new ProblemError(502, 'runtime_error', `Agent runtime returned ${poll.status}`, detail);
       }
       const run = (await poll.json().catch(() => null)) as
-        | { status?: unknown; output?: unknown; usage?: unknown }
+        | { status?: unknown; output?: unknown; usage?: unknown; session_id?: unknown }
         | null;
       const status = typeof run?.status === 'string' ? run.status : 'unknown';
 
       if (status === 'completed') {
         terminal = true;
-        const usage =
+        const base =
           run?.usage && typeof run.usage === 'object'
-            ? (run.usage as Record<string, unknown>)
-            : undefined;
-        return { runId, output: asText(run?.output), usage };
+            ? { ...(run.usage as Record<string, unknown>) }
+            : {};
+        // Enrich with cache tokens from the session before the finally deletes it.
+        const sessionId = typeof run?.session_id === 'string' ? run.session_id : task.taskId;
+        const usage = { ...base, ...(await readSessionUsage(cfg, sessionId)) };
+        return {
+          runId,
+          output: asText(run?.output),
+          usage: Object.keys(usage).length > 0 ? usage : undefined,
+        };
       }
       if (TERMINAL_FAILURES.has(status)) {
         terminal = true;
