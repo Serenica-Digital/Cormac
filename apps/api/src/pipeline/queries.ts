@@ -1,5 +1,5 @@
-import { parseProposal } from '@serenica/contract';
-import type { ProposalStatus } from '@serenica/db';
+import { parseProposal } from '@cormac/contract';
+import type { ProposalStatus } from '@cormac/db';
 import type { AppContext } from '../app.js';
 import { getRecord, listProposals } from '../repo.js';
 

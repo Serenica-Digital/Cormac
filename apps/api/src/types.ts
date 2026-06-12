@@ -1,5 +1,5 @@
 import 'fastify';
-import type { Role } from '@serenica/shared';
+import type { Role } from '@cormac/shared';
 import type { AppContext } from './app.js';
 
 /** The authenticated, workspace-scoped context every protected handler runs in. */

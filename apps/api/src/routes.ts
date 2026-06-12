@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { ProblemError } from '@serenica/shared';
-import { parseContract, type Contract } from '@serenica/contract';
-import type { LearnedStatus, ProposalStatus } from '@serenica/db';
+import { ProblemError } from '@cormac/shared';
+import { parseContract, type Contract } from '@cormac/contract';
+import type { LearnedStatus, ProposalStatus } from '@cormac/db';
 import { authenticate, requireCapability, requireCtx } from './auth.js';
 import { captureUpdate } from './pipeline/capture.js';
 import { decideProposal } from './pipeline/apply.js';

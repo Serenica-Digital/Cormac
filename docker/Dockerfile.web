@@ -12,4 +12,4 @@ COPY scripts ./scripts
 
 RUN pnpm install --frozen-lockfile
 
-CMD ["pnpm", "--filter", "@serenica/web", "run", "dev"]
+CMD ["pnpm", "--filter", "@cormac/web", "run", "dev"]

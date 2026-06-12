@@ -1,4 +1,4 @@
-import { createServiceClient, type Db } from '@serenica/db';
+import { createServiceClient, type Db } from '@cormac/db';
 import { createRemoteJWKSet } from 'jose';
 import type { Config } from './config.js';
 

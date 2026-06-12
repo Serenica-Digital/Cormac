@@ -1,5 +1,5 @@
-import { safeParseProposal, type Contract, type Proposal } from '@serenica/contract';
-import { ProblemError } from '@serenica/shared';
+import { safeParseProposal, type Contract, type Proposal } from '@cormac/contract';
+import { ProblemError } from '@cormac/shared';
 
 /**
  * The Agent Runtime Adapter (ADR-006). The control plane reaches the runtime

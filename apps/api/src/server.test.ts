@@ -1,6 +1,6 @@
 import { SignJWT } from 'jose';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { ProblemError } from '@serenica/shared';
+import { ProblemError } from '@cormac/shared';
 import { loadConfig } from './config.js';
 import { buildServer } from './server.js';
 

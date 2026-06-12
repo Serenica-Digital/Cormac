@@ -1,5 +1,5 @@
 {
-  "name": "@serenica/runtime-stub",
+  "name": "@cormac/runtime-stub",
   "version": "0.0.0",
   "private": true,
   "type": "module",

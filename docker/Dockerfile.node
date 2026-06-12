@@ -19,4 +19,4 @@ RUN pnpm install --frozen-lockfile
 ARG SERVICE=api
 ENV SERVICE=${SERVICE}
 # Shell form so the env var resolves at start; compose overrides this locally.
-CMD pnpm --filter "@serenica/${SERVICE}" run start
+CMD pnpm --filter "@cormac/${SERVICE}" run start

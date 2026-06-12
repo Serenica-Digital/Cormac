@@ -1,7 +1,7 @@
 import http from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { EXAMPLE_PERSON_CONTRACT } from '@serenica/contract';
-import { ProblemError } from '@serenica/shared';
+import { EXAMPLE_PERSON_CONTRACT } from '@cormac/contract';
+import { ProblemError } from '@cormac/shared';
 import {
   buildTaskBrief,
   callStubRuntime,

@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { createAnonClient, createServiceClient } from '@serenica/db';
+import { createAnonClient, createServiceClient } from '@cormac/db';
 
 /**
  * Live end-to-end smoke test of the walking skeleton (Phase 1 verification).
@@ -12,7 +12,7 @@ const anonKey = process.env.SUPABASE_ANON_KEY ?? '';
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 const API = process.env.VITE_API_URL ?? 'http://127.0.0.1:8088';
 
-const EMAIL = 'owner@demo.serenica.test';
+const EMAIL = 'owner@demo.cormac.test';
 const PASSWORD = 'demo-password-123';
 
 let failures = 0;
