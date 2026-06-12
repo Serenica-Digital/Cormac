@@ -143,13 +143,6 @@ function asText(value: unknown): string {
 }
 
 /**
- * Stateless-per-task, enforced: completed runs hold their session (and a slot
- * against the runtime's concurrent-run cap) until the session is deleted, so
- * the adapter ends every session it started. This is also the data-retention
- * control: after cleanup the runtime holds nothing about the task. Best-effort;
- * a failed delete must not mask the run's own outcome.
- */
-/**
  * The Runs API usage payload omits cache tokens (#46). They live on the session
  * detail, so the adapter reads it once the run is terminal and before the
  * session is deleted, to instrument cache hits (ADR-027 section 3). Best-effort:
@@ -183,6 +176,13 @@ async function readSessionUsage(
   }
 }
 
+/**
+ * Stateless-per-task, enforced: completed runs hold their session (and a slot
+ * against the runtime's concurrent-run cap) until the session is deleted, so
+ * the adapter ends every session it started. This is also the data-retention
+ * control: after cleanup the runtime holds nothing about the task. Best-effort;
+ * a failed delete must not mask the run's own outcome.
+ */
 async function endSession(cfg: HermesRuntimeConfig, sessionId: string): Promise<void> {
   try {
     await fetch(`${cfg.url}/api/sessions/${sessionId}`, {
