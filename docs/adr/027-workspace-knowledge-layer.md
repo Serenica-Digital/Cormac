@@ -1,6 +1,6 @@
 # ADR-027: The workspace knowledge layer: governed strata, compiled into a cached prefix
 
-**Status:** Accepted
+**Status:** Accepted (open item 1 resolved: the cache spike measured and the v1 cut built and merged, issues #46-#50; the section 3 estimates are superseded by the measured results on #46 and #48)
 **Date:** 2026-06-11
 **Related:** Extends ADR-002 (the contract carries semantics) and ADR-009 (learning as governed data) into a full information architecture. Refines ADR-025's context delivery: the contract moves from tool-fetched to a compiled system-prompt prefix, with the tool retained for mid-run re-reads. Applies ADR-010's confirmation-mode pattern to learning. Strengthens, and does not loosen, ADR-005 (the control plane is the only writer) and the memory-off posture of ADR-006/ADR-009. Settles the relationship question of the ontology research toward an edges table. The evidence base is [docs/research/workspace-knowledge-layer-design.md](../research/workspace-knowledge-layer-design.md) (adversarially verified external research plus source inspection of the pinned runtime image), the workbook spike ([docs/research/workbook-contract-agent-spike.md](../research/workbook-contract-agent-spike.md)), and the Anthropic application note ([docs/research/anthropic-self-service-analytics-and-skills.md](../research/anthropic-self-service-analytics-and-skills.md)). Shapes the authoring agent build (#17), multi-turn state (#37), the learning loop (#35), and retrieval (#36).
 
