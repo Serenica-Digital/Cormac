@@ -19,6 +19,8 @@
 
 3. **Follow Up Boss + AI agent layer (Structurely, custom AI, or forthcoming native AI).** Follow Up Boss is the default CRM for the real-estate design partner's peer group ($69/user/month), with 200+ integrations and a mature API. Its 2025 AI launch added draft replies and scoring. Combined with Structurely ($179–$499/month for AI texting/ISA), this stack covers lead capture, SMS engagement, and CRM management for ~$100–$150/user/month total. It lacks governed writes and schema flexibility, but it's the stack the target buyer is most likely evaluating right now.
 
+**Update, June 12, 2026 — RapidStarter (Forceworks).** A fourth dangerous competitor surfaced after this document was prepared: [RapidStarter](https://marketplace.microsoft.com/en-us/product/forceworks.rapidstarter), self-described as "the First Headless AI CRM on the Microsoft platform," from the vendor behind RapidStart CRM (100,000+ users since 2015). It is the closest convergence on our thesis found to date: it watches M365 activity (email, calendar, Teams) and keeps the CRM current automatically, every change is "a suggestion you approve or dismiss with a single tap" (functionally our confirm-each mode), and records are added "by describing them — no forms" (functionally our capture loop). $99/instance/month including AI tokens, teams up to 9. Full profile in Ring 2. It sharpens Steelman #2: the Microsoft-by-default threat no longer requires Microsoft to build it; Microsoft's partner ecosystem is building it on Microsoft rails. What it does not have: SMS field capture (Teams-bound), any Excel surface, or a client-defined schema (fixed contacts-companies-deals detected from activity exhaust). Those three absences are exactly our bets.
+
 **Single biggest threat to the thesis:** Microsoft gets there by default. The target clients already run on Excel + Outlook + SharePoint. They don't need to buy anything new — they need Copilot turned on (which their M365 subscription increasingly includes). Every quarter, Copilot's Excel editing gets more transparent, more auditable, and more connected to external data. The product must demonstrate value that Copilot structurally cannot provide: multi-channel SMS/email capture → governed writes against a client-defined contract → audit trail — within 12 months, before Microsoft's trajectory closes the gap from the spreadsheet side.
 
 ---
@@ -179,6 +181,21 @@
 | **Compliance** | Not prominently published. **Unknown** |
 | **Traction** | Well-established in GTM tooling space. Steep learning curve widely noted. **Verified** |
 | **User complaints** | Steep learning curve (weeks to fully understand), unpredictable credit costs, not intuitive, requires advanced RevOps skills. **Verified:** warmly.ai, multiple G2 reviews |
+
+#### RapidStarter (Forceworks) — added June 12, 2026
+| Dimension | Assessment |
+|---|---|
+| **Write path** | Suggestion-gated: the agent watches M365 activity and proposes CRM updates; "every change is a suggestion you approve or dismiss with a single tap," reviewed in Teams, "nothing is saved without your okay." The only sub-$500 competitor found with a human-gated write loop as the core product mechanic. No audit trail, versioning, or rollback mentioned. **Verified:** marketplace listing, June 12, 2026 |
+| **Schema model** | Fixed contacts-companies-deals, detected automatically from email/calendar/Teams activity ("builds itself... no data entry"). No client-defined objects, no workbook ingestion. **Verified** |
+| **Excel story** | None. "Headless" means it lives in Teams tabs (Today, Pipeline, People, Companies). **Verified** |
+| **Messaging** | Capture from M365 exhaust (email, calendar, Teams) plus plain-language chat and add-by-describing inside Teams. No SMS, no external field channel. **Verified** |
+| **Pricing** | Starts free; $99/instance/month including AI tokens, designed for teams up to 9. Larger teams directed to RapidStart CRM with "RapidClaw." **Verified** |
+| **Target segment** | Microsoft-365 SMBs under 10 people who "want a CRM that runs itself." Squarely overlaps our demographic's desk-bound half. **Verified** |
+| **Compliance** | Not prominently published. **Unknown** |
+| **Traction** | New listing; vendor credibility is real (Forceworks, RapidStart CRM, 100,000+ users since 2015, certified Microsoft partner). **Verified** |
+| **User complaints** | No review corpus yet. **Unknown** |
+
+**Read on RapidStarter:** the strongest thesis validation found — an established Microsoft partner independently converged on agent-maintained CRM with per-change human approval at SMB pricing. The differentiation that holds: it models only the classic trio detected from Microsoft exhaust, so a lender's facilities or a brokerage's listings cannot exist in it; it cannot hear a text from a parking lot; and it offers no Excel surface, so the client's workbook-resident world stays outside it. Watch item: if RapidStarter adds workbook ingestion or SMS, the gap narrows materially.
 
 ---
 
@@ -365,6 +382,9 @@
 
 **Ring 3 — "Why not just use Copilot in Excel?"**
 "Copilot can edit your spreadsheet when you're sitting at your computer. We catch the update from a text you send while walking out of a meeting — 'Dave's ready on Maple St, bump it to under-contract, follow-up Friday' — validate it against your business rules, and either apply it or ask you to confirm. Copilot is your desktop assistant; we're your field assistant."
+
+**Ring 2 — "Why not just use RapidStarter?"**
+"RapidStarter watches your email and Teams and fills in a standard contacts-and-deals CRM. Your business doesn't run on a standard CRM — it runs on your spreadsheets, with your own objects and rules, and half your updates happen by text from the field where there is no Teams window. We learned your business from your own workbook; they detect a generic one from your inbox."
 
 **Ring 4 — "Why not just use Follow Up Boss?"**
 "Follow Up Boss is a great CRM if you're willing to switch out of your spreadsheets. But your business already runs on workbooks that track deals, contacts, and pipeline in your own way. We keep your workbooks live and add an AI that understands them. No migration, no retraining, no losing your formulas."
