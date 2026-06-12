@@ -218,13 +218,19 @@ export function buildMcpServer(app: AppContext, workspaceId: string): McpServer 
         );
       }
 
-      // An alias binds to one record; confirm it exists before holding the fact.
+      // An alias binds to one record; confirm it exists, is active, and is the
+      // object the payload claims, before holding the fact.
       let recordId: string | null = null;
       if (kind === 'alias') {
         const aliasRecordId = (parsed.data as { recordId: string }).recordId;
         const record = await getRecord(app.db, workspaceId, aliasRecordId);
         if (!record || record.archived_at) {
           return toolError(`No active record ${aliasRecordId} to alias in this workspace.`);
+        }
+        if (record.object_api_name !== parsed.data.objectApiName) {
+          return toolError(
+            `Record ${aliasRecordId} is a ${record.object_api_name}, not a ${parsed.data.objectApiName}.`,
+          );
         }
         recordId = aliasRecordId;
       }

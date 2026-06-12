@@ -39,7 +39,13 @@ create table public.learned_knowledge (
   proposed_by uuid references auth.users(id),
   created_at timestamptz not null default now(),
   decided_by uuid references auth.users(id),
-  decided_at timestamptz
+  decided_at timestamptz,
+  -- An alias always carries its target record; other kinds never do, and the FK
+  -- column can never drift from the payload the dedup_key is generated from.
+  constraint learned_knowledge_alias_has_record
+    check ((kind = 'alias') = (record_id is not null)),
+  constraint learned_knowledge_record_matches_payload
+    check (kind <> 'alias' or record_id = ((payload->>'recordId')::uuid))
 );
 
 create index learned_knowledge_ws_status
