@@ -102,6 +102,42 @@ describe.skipIf(!ready)('RBAC matrix', () => {
     }
   });
 
+  it('gates a learning decision on approve_proposal, like a proposal decision', async () => {
+    const allowed = new Set<Role>(['owner', 'agent_admin', 'manager']);
+    for (const role of ROLES) {
+      const res = await server.inject({
+        method: 'POST',
+        url: `${base()}/learning/${randomUUID()}/decision`,
+        headers: bearer(token[role]!),
+        payload: { decision: 'approve' },
+      });
+      if (allowed.has(role)) {
+        // Passed authz; the random learned id then 404s.
+        expect(res.statusCode, role).toBe(404);
+      } else {
+        expect(res.statusCode, role).toBe(403);
+      }
+    }
+  });
+
+  it('gates contract publish on publish_contract (owner/agent_admin only)', async () => {
+    const allowed = new Set<Role>(['owner', 'agent_admin']);
+    for (const role of ROLES) {
+      const res = await server.inject({
+        method: 'POST',
+        url: `${base()}/contract/publish`,
+        headers: bearer(token[role]!),
+        // An invalid document: allowed roles reach validation and 422, the rest 403.
+        payload: { contract: { name: 'x', version: 1, objects: [] } },
+      });
+      if (allowed.has(role)) {
+        expect(res.statusCode, role).toBe(422);
+      } else {
+        expect(res.statusCode, role).toBe(403);
+      }
+    }
+  });
+
   it('denies capture for read_only and admits it for others', async () => {
     const readOnly = await server.inject({
       method: 'POST',

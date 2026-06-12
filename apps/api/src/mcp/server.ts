@@ -2,8 +2,11 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import {
   buildContextDisplay,
+  LEARNED_KINDS,
   proposedChangeSchema,
+  safeParseLearnedPayload,
   safeParseProposal,
+  validateLearningAgainstContract,
   validateProposalAgainstContract,
   type Contract,
 } from '@serenica/contract';
@@ -13,6 +16,8 @@ import {
   getProposalBySourceMessage,
   getRecord,
   getSourceMessage,
+  insertAuditEvent,
+  insertLearnedKnowledge,
   insertProposal,
   listRecordSummaries,
 } from '../repo.js';
@@ -174,6 +179,105 @@ export function buildMcpServer(app: AppContext, workspaceId: string): McpServer 
         status: row.status,
         changeCount: parsed.data.changes.length,
       });
+    },
+  );
+
+  server.registerTool(
+    'propose_learning',
+    {
+      title: 'Propose a learned fact',
+      description:
+        'Record a small, typed fact you learned this task so the team can confirm it: an alias ' +
+        '(a name or nickname that refers to one specific record) or an enum synonym (a word a ' +
+        'user uses for a fixed option). It is HELD for human review, never applied directly, and ' +
+        'never changes a record. Use it only for a real correction or a variant you had to infer; ' +
+        'do not guess.',
+      inputSchema: {
+        taskId: z.string().uuid().describe('The task id from your instructions'),
+        kind: z.enum(LEARNED_KINDS),
+        payload: z.record(z.string(), z.unknown()).describe('The slot fields for this kind'),
+        rationale: z.string().max(1000).optional(),
+      },
+    },
+    async ({ taskId, kind, payload, rationale }) => {
+      const source = await getSourceMessage(app.db, workspaceId, taskId);
+      if (!source) return toolError(`Unknown taskId ${taskId}.`);
+
+      const parsed = safeParseLearnedPayload(kind, payload);
+      if (!parsed.success) {
+        return toolError(
+          `Learned payload invalid: ${parsed.error.issues.map((i) => i.message).join('; ')}`,
+        );
+      }
+
+      const contract = await requireContract(app, workspaceId);
+      const validation = validateLearningAgainstContract(contract, kind, parsed.data);
+      if (!validation.ok) {
+        return toolError(
+          `Learned fact violates the contract and was not held:\n- ${validation.errors.join('\n- ')}`,
+        );
+      }
+
+      // An alias binds to one record; confirm it exists, is active, and is the
+      // object the payload claims, before holding the fact.
+      let recordId: string | null = null;
+      if (kind === 'alias') {
+        const aliasRecordId = (parsed.data as { recordId: string }).recordId;
+        const record = await getRecord(app.db, workspaceId, aliasRecordId);
+        if (!record || record.archived_at) {
+          return toolError(`No active record ${aliasRecordId} to alias in this workspace.`);
+        }
+        if (record.object_api_name !== parsed.data.objectApiName) {
+          return toolError(
+            `Record ${aliasRecordId} is a ${record.object_api_name}, not a ${parsed.data.objectApiName}.`,
+          );
+        }
+        recordId = aliasRecordId;
+      }
+
+      // Provenance: tie the fact to the proposal this task produced, if any.
+      const proposal = await getProposalBySourceMessage(app.db, workspaceId, taskId);
+
+      let row;
+      try {
+        row = await insertLearnedKnowledge(app.db, {
+          workspaceId,
+          kind,
+          payload: parsed.data,
+          recordId,
+          sourceMessageId: taskId,
+          proposalId: proposal?.id ?? null,
+          proposedBy: null, // the agent, not a user
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (
+          message.includes('learned_knowledge_live_dedup') ||
+          message.includes('duplicate key') ||
+          message.includes('23505')
+        ) {
+          return toolError('That fact is already known or already pending review.');
+        }
+        throw err;
+      }
+
+      // confirm_each only (skeleton): the fact is HELD as 'proposed'. Under
+      // apply_then_report (ADR-010, ADR-027 section 4) typed learning would
+      // auto-activate here, be audited, and surface in the weekly report.
+      await insertAuditEvent(app.db, {
+        workspaceId,
+        actorType: 'agent',
+        actorId: null,
+        action: 'learning_proposed',
+        objectApiName: parsed.data.objectApiName,
+        recordId,
+        before: null,
+        after: { kind, learnedId: row.id, rationale: rationale ?? null },
+        sourceMessageId: taskId,
+        proposalId: proposal?.id ?? null,
+      });
+
+      return jsonContent({ learnedId: row.id, status: row.status, kind });
     },
   );
 

@@ -128,6 +128,7 @@ describe.skipIf(!ready)('MCP tool surface', () => {
     expect(names.sort()).toEqual([
       'get_active_contract',
       'get_record',
+      'propose_learning',
       'search_records',
       'submit_proposal',
     ]);
@@ -201,5 +202,97 @@ describe.skipIf(!ready)('MCP tool surface', () => {
     });
     expect(result.isError).toBe(true);
     expect(result.content![0]!.text).toContain('Unknown taskId');
+  });
+
+  it('holds a proposed learned alias, then blocks a duplicate of the same fact', async () => {
+    const result = await callTool('propose_learning', {
+      taskId,
+      kind: 'alias',
+      payload: { objectApiName: 'person', recordId, variant: 'Dana' },
+      rationale: 'the user called her Dana',
+    });
+    expect(result.isError).toBeFalsy();
+    const payload = JSON.parse(result.content![0]!.text) as { learnedId: string; status: string };
+    expect(payload.status).toBe('proposed');
+
+    const held = await service
+      .from('learned_knowledge')
+      .select('id, status')
+      .eq('workspace_id', workspaceId);
+    expect(held.data).toHaveLength(1);
+
+    const dup = await callTool('propose_learning', {
+      taskId,
+      kind: 'alias',
+      payload: { objectApiName: 'person', recordId, variant: 'Dana' },
+    });
+    expect(dup.isError).toBe(true);
+    expect(dup.content![0]!.text).toContain('already');
+  });
+
+  it('rejects an alias whose record is not the object the payload claims', async () => {
+    // A record of a different object type: the payload will claim it is a person.
+    const cv = await service
+      .from('contract_versions')
+      .select('id')
+      .eq('workspace_id', workspaceId)
+      .single();
+    const stray = await service
+      .from('business_records')
+      .insert({
+        workspace_id: workspaceId,
+        object_api_name: 'listing',
+        contract_version_id: cv.data!.id as string,
+        data: { full_name: 'Waterfront Lot 9' },
+      })
+      .select('id')
+      .single();
+
+    const before = await service
+      .from('learned_knowledge')
+      .select('id')
+      .eq('workspace_id', workspaceId);
+    const result = await callTool('propose_learning', {
+      taskId,
+      kind: 'alias',
+      payload: {
+        objectApiName: 'person',
+        recordId: stray.data!.id as string,
+        variant: 'the waterfront one',
+      },
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content![0]!.text).toContain('is a listing, not a person');
+
+    const after = await service
+      .from('learned_knowledge')
+      .select('id')
+      .eq('workspace_id', workspaceId);
+    expect((after.data ?? []).length).toBe((before.data ?? []).length);
+  });
+
+  it('rejects a learned fact that violates the contract and holds nothing new', async () => {
+    const before = await service
+      .from('learned_knowledge')
+      .select('id')
+      .eq('workspace_id', workspaceId);
+    const result = await callTool('propose_learning', {
+      taskId,
+      kind: 'enum_synonym',
+      payload: {
+        objectApiName: 'person',
+        fieldApiName: 'status',
+        synonym: 'prospect',
+        canonicalOption: 'archived',
+      },
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content![0]!.text).toContain('not an option');
+
+    const after = await service
+      .from('learned_knowledge')
+      .select('id')
+      .eq('workspace_id', workspaceId);
+    expect((after.data ?? []).length).toBe((before.data ?? []).length);
   });
 });
