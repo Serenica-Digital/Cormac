@@ -1,4 +1,4 @@
-import type { Contract, Proposal } from '@serenica/contract';
+import type { Contract, LearnedKind, Proposal } from '@serenica/contract';
 import type { ConfirmationMode, Role } from '@serenica/shared';
 
 /**
@@ -90,6 +90,24 @@ export interface AuditEventRow {
   created_at: string;
 }
 
+export type LearnedStatus = 'proposed' | 'active' | 'revoked';
+
+export interface LearnedKnowledgeRow {
+  id: string;
+  workspace_id: string;
+  kind: LearnedKind;
+  payload: Record<string, unknown>;
+  record_id: string | null;
+  status: LearnedStatus;
+  source_message_id: string | null;
+  proposal_id: string | null;
+  dedup_key: string;
+  proposed_by: string | null;
+  created_at: string;
+  decided_by: string | null;
+  decided_at: string | null;
+}
+
 export const TABLES = {
   workspaces: 'workspaces',
   memberships: 'memberships',
@@ -98,4 +116,5 @@ export const TABLES = {
   sourceMessages: 'source_messages',
   proposals: 'agent_proposals',
   auditEvents: 'audit_events',
+  learnedKnowledge: 'learned_knowledge',
 } as const;

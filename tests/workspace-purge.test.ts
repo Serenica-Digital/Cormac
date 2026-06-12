@@ -35,6 +35,12 @@ describe.skipIf(!ready)('workspace purge path', () => {
       .from('audit_events')
       .insert({ workspace_id: id, actor_type: 'agent', action: 'purge_probe' });
     if (audit.error) throw new Error(audit.error.message);
+    const learned = await service.from('learned_knowledge').insert({
+      workspace_id: id,
+      kind: 'enum_synonym',
+      payload: { objectApiName: 'person', fieldApiName: 'status', synonym: 'prospect', canonicalOption: 'lead' },
+    });
+    if (learned.error) throw new Error(learned.error.message);
     return id;
   }
 
@@ -71,6 +77,8 @@ describe.skipIf(!ready)('workspace purge path', () => {
     expect(ws.data).toEqual([]);
     const audit = await service.from('audit_events').select('id').eq('workspace_id', id);
     expect(audit.data).toEqual([]);
+    const learned = await service.from('learned_knowledge').select('id').eq('workspace_id', id);
+    expect(learned.data).toEqual([]);
   });
 
   it('does not weaken append-only outside the purge: direct audit delete still raises', async () => {

@@ -119,6 +119,31 @@ describe.skipIf(!ready)('cross-tenant isolation and append-only audit', () => {
     expect(error).not.toBeNull();
   });
 
+  it("hides workspace A's learned knowledge from a workspace B user, and blocks writing it", async () => {
+    // A learned item in workspace A (service role is the only writer).
+    const seeded = await service
+      .from('learned_knowledge')
+      .insert({
+        workspace_id: workspaceA,
+        kind: 'enum_synonym',
+        payload: { objectApiName: 'person', fieldApiName: 'status', synonym: 'prospect', canonicalOption: 'lead' },
+      })
+      .select('id')
+      .single();
+    expect(seeded.error).toBeNull();
+
+    const read = await userB.from('learned_knowledge').select('*');
+    expect(read.error).toBeNull();
+    expect(read.data).toEqual([]);
+
+    const write = await userB.from('learned_knowledge').insert({
+      workspace_id: workspaceA,
+      kind: 'enum_synonym',
+      payload: { objectApiName: 'person', fieldApiName: 'status', synonym: 'injected', canonicalOption: 'lead' },
+    });
+    expect(write.error).not.toBeNull();
+  });
+
   it('forbids updating or deleting an audit event, even as the service role', async () => {
     const inserted = await service
       .from('audit_events')
