@@ -1,6 +1,6 @@
 # ADR-024: Naming structure: Serenica Digital the LLC; Cormac the product, whole (working name)
 
-**Status:** Accepted (the naming structure and clearance bar; working name: Cormac, naming the whole product)
+**Status:** Accepted (the naming structure and clearance bar; working name: Cormac, naming the whole product). Amended by ADR-029 (2026-06-12): Cormac is committed as the product name after a founder USPTO knockout search; the clearance bar converts to a pre-AppSource follow-up obligation.
 **Date:** 2026-06-10 (amended three times the same day. First: the initial working name, Walden, was withdrawn within hours because it collides with the name of the design partner's own venture; Cormac then filled the slot after passing the partner-world check. Third amendment, same evening: the founder collapsed the platform-brand middle layer, so Cormac names the whole product rather than only the client-facing agent, and Serenica is the company. The clearance bar is unchanged; Cormac's full section 2 clearance is pending)
 **Related:** ADR-001 (the product placeholder "Serenica CRM Agent" dates from the founding decision), ADR-016 (market posture; the name ends up in the pitch, the A2P campaign registration, and client conversations), ADR-017 (the precedent for strict naming discipline: Jarvis versus the Hermes product runtime), ADR-015 (the security packet carries the formal name).
 
