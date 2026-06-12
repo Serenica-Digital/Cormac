@@ -230,6 +230,47 @@ describe.skipIf(!ready)('MCP tool surface', () => {
     expect(dup.content![0]!.text).toContain('already');
   });
 
+  it('rejects an alias whose record is not the object the payload claims', async () => {
+    // A record of a different object type: the payload will claim it is a person.
+    const cv = await service
+      .from('contract_versions')
+      .select('id')
+      .eq('workspace_id', workspaceId)
+      .single();
+    const stray = await service
+      .from('business_records')
+      .insert({
+        workspace_id: workspaceId,
+        object_api_name: 'listing',
+        contract_version_id: cv.data!.id as string,
+        data: { full_name: 'Waterfront Lot 9' },
+      })
+      .select('id')
+      .single();
+
+    const before = await service
+      .from('learned_knowledge')
+      .select('id')
+      .eq('workspace_id', workspaceId);
+    const result = await callTool('propose_learning', {
+      taskId,
+      kind: 'alias',
+      payload: {
+        objectApiName: 'person',
+        recordId: stray.data!.id as string,
+        variant: 'the waterfront one',
+      },
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content![0]!.text).toContain('is a listing, not a person');
+
+    const after = await service
+      .from('learned_knowledge')
+      .select('id')
+      .eq('workspace_id', workspaceId);
+    expect((after.data ?? []).length).toBe((before.data ?? []).length);
+  });
+
   it('rejects a learned fact that violates the contract and holds nothing new', async () => {
     const before = await service
       .from('learned_knowledge')

@@ -66,6 +66,13 @@ export async function decideLearning(
           'The aliased record no longer exists and the alias was not activated',
         );
       }
+      if (record.object_api_name !== parsed.data.objectApiName) {
+        throw new ProblemError(
+          422,
+          'learning_invalid',
+          `The aliased record is a ${record.object_api_name}, not a ${parsed.data.objectApiName}`,
+        );
+      }
     }
     return decideRpc(app, workspaceId, learnedId, userId, 'activate');
   }
