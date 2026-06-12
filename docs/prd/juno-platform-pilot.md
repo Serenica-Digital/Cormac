@@ -69,6 +69,15 @@ The eventual external Claude/MCP connector is a later surface on the control pla
 A note on the build path: the `runtime-js`/`runtime-python` plugins on the public `556-runtime-environments` branch (PR #557) clone a repo and run a build command per workload, which fits single-package repos. Ours is a pnpm monorepo with workspace dependencies and a build order, so the app services deploy as CI-built images from the Dockerfiles already in the repo, and the runtime plugins remain attractive for quick one-off previews. What we want from PR #557 either way is its `network_mode` select (`ingress-auth`, `ingress-noauth`, `clusterip`, `nodeport`); whether the pilot cluster supports those modes for image workloads is the first onboarding question.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {
+  "fontSize": "18px",
+  "primaryTextColor": "#111111",
+  "lineColor": "#495057",
+  "edgeLabelBackground": "#f1f3f5",
+  "clusterBkg": "#ffffff",
+  "clusterBorder": "#adb5bd",
+  "titleColor": "#111111"
+}}}%%
 flowchart LR
   subgraph people["People"]
     direction TB
@@ -78,7 +87,7 @@ flowchart LR
 
   twilio["Twilio\nSMS provider"]
 
-  subgraph juno["Juno project: serenica — one namespace, every box one container workload"]
+  subgraph juno["Juno project: serenica — one namespace"]
     direction TB
     subgraph appw["Application workloads — CI-built images from this repo"]
       direction TB
@@ -136,11 +145,11 @@ flowchart LR
   class anthropic,twilio,developer,clients third;
   class ide,jarvis,gitea devtool;
 
-  style people fill:#ffffff,stroke:#adb5bd;
-  style juno fill:#ffffff,stroke:#495057,stroke-width:2px;
-  style appw fill:#f8f9fa,stroke:#adb5bd;
-  style devw fill:#f8f9fa,stroke:#adb5bd;
-  style managed fill:#ffffff,stroke:#adb5bd;
+  style people fill:#ffffff,stroke:#adb5bd,color:#111111;
+  style juno fill:#ffffff,stroke:#495057,stroke-width:2px,color:#111111;
+  style appw fill:#f8f9fa,stroke:#adb5bd,color:#111111;
+  style devw fill:#f8f9fa,stroke:#adb5bd,color:#111111;
+  style managed fill:#ffffff,stroke:#adb5bd,color:#111111;
 ```
 
 Color language matches [architecture.md](architecture.md): yellow = client surfaces, green = our trust layer, blue = the agent runtime, red = the system of record, gray = external parties, purple = development tooling that never touches client data. Dashed border = planned, not yet built. Reading it left to right: people reach the surfaces, surfaces talk only to the api, the api is the only path to the runtime and the only writer to Supabase, and the runtime's only reaches are its tool calls back into the api and the model provider.
