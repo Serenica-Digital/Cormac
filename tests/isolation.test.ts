@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { EXAMPLE_PERSON_CONTRACT } from '@serenica/contract';
-import { createAnonClient, createServiceClient, createUserClient, type Db } from '@serenica/db';
+import { EXAMPLE_PERSON_CONTRACT } from '@cormac/contract';
+import { createAnonClient, createServiceClient, createUserClient, type Db } from '@cormac/db';
 import { TestResources } from './helpers.js';
 
 /**

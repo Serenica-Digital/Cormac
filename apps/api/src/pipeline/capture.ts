@@ -1,6 +1,6 @@
-import type { Contract } from '@serenica/contract';
-import { safeParseProposal, validateProposalAgainstContract } from '@serenica/contract';
-import { ProblemError } from '@serenica/shared';
+import type { Contract } from '@cormac/contract';
+import { safeParseProposal, validateProposalAgainstContract } from '@cormac/contract';
+import { ProblemError } from '@cormac/shared';
 import type { AppContext } from '../app.js';
 import { callStubRuntime, runHermesTask } from '../adapter/runtime.js';
 import { compileWorkspaceContext } from './context.js';

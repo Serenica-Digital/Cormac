@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { jwtVerify } from 'jose';
-import { can, isRole, ProblemError, type Capability, type Role } from '@serenica/shared';
-import { TABLES } from '@serenica/db';
+import { can, isRole, ProblemError, type Capability, type Role } from '@cormac/shared';
+import { TABLES } from '@cormac/db';
 import type { RequestContext } from './types.js';
 
 /**

@@ -1,4 +1,4 @@
-import { buildContextDisplay, type Contract, type LearnedKind } from '@serenica/contract';
+import { buildContextDisplay, type Contract, type LearnedKind } from '@cormac/contract';
 import {
   TABLES,
   type AuditEventRow,
@@ -11,7 +11,7 @@ import {
   type ProposalStatus,
   type SourceChannel,
   type WorkspaceRow,
-} from '@serenica/db';
+} from '@cormac/db';
 import type { RuntimeRecordSummary } from './adapter/runtime.js';
 
 /**

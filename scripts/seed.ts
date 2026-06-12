@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import { EXAMPLE_PERSON_CONTRACT } from '@serenica/contract';
-import { createServiceClient } from '@serenica/db';
+import { EXAMPLE_PERSON_CONTRACT } from '@cormac/contract';
+import { createServiceClient } from '@cormac/db';
 
 /**
  * Seed the walking-skeleton demo: one workspace, one owner user, the example
@@ -14,7 +14,7 @@ if (!serviceKey) {
   throw new Error('SUPABASE_SERVICE_ROLE_KEY is required. Copy it from `pnpm db:start` into .env.');
 }
 
-const OWNER_EMAIL = 'owner@demo.serenica.test';
+const OWNER_EMAIL = 'owner@demo.cormac.test';
 const OWNER_PASSWORD = 'demo-password-123';
 
 /**

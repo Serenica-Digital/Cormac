@@ -7,7 +7,7 @@
 # no database credentials (ADR-005, ADR-006); its only reach into CRM data is
 # the control plane's MCP tool surface, bound to one workspace by
 # MCP_WORKSPACE_TOKEN. That invariant is visible right here.
-name: serenica
+name: cormac
 
 services:
   hermes:
@@ -63,7 +63,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.node
-    command: pnpm --filter @serenica/api run start
+    command: pnpm --filter @cormac/api run start
     environment:
       API_PORT: '8088'
       RUNTIME_KIND: 'hermes'
@@ -99,7 +99,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.node
-    command: pnpm --filter @serenica/worker run start
+    command: pnpm --filter @cormac/worker run start
     environment:
       WORKER_PORT: '8070'
     ports:
@@ -114,7 +114,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.web
-    command: pnpm --filter @serenica/web run dev
+    command: pnpm --filter @cormac/web run dev
     environment:
       VITE_API_URL: '${VITE_API_URL:-http://localhost:8088}'
       VITE_SUPABASE_URL: '${VITE_SUPABASE_URL:-http://localhost:54321}'

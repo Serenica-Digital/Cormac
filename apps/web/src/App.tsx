@@ -78,7 +78,7 @@ export function App() {
 }
 
 function Login({ error, onError }: { error: string | null; onError: (e: string | null) => void }) {
-  const [email, setEmail] = useState('owner@demo.serenica.test');
+  const [email, setEmail] = useState('owner@demo.cormac.test');
   const [password, setPassword] = useState('demo-password-123');
   const [busy, setBusy] = useState(false);
 

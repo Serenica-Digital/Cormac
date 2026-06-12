@@ -1,6 +1,6 @@
-import type { Contract } from '@serenica/contract';
-import { parseProposal, validateProposalAgainstContract } from '@serenica/contract';
-import { ProblemError } from '@serenica/shared';
+import type { Contract } from '@cormac/contract';
+import { parseProposal, validateProposalAgainstContract } from '@cormac/contract';
+import { ProblemError } from '@cormac/shared';
 import type { AppContext } from '../app.js';
 import type { RequestContext } from '../types.js';
 import {

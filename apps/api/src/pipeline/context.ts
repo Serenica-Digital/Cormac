@@ -5,7 +5,7 @@ import {
   type Contract,
   type EnumSynonymPayload,
   type LearnedView,
-} from '@serenica/contract';
+} from '@cormac/contract';
 import type { AppContext } from '../app.js';
 import { getRecord, listActiveLearnedKnowledge } from '../repo.js';
 

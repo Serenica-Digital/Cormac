@@ -1,7 +1,7 @@
 import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { ZodError } from 'zod';
-import { ProblemError } from '@serenica/shared';
+import { ProblemError } from '@cormac/shared';
 import { buildAppContext } from './app.js';
 import type { Config } from './config.js';
 import { registerMcpRoutes } from './mcp/routes.js';

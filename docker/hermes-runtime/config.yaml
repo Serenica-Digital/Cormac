@@ -25,7 +25,7 @@ memory:
 # one of these tools itself, so the write gate is intrinsic: submit_proposal
 # can only ever HOLD a pending proposal.
 mcp_servers:
-  serenica_control_plane:
+  cormac_control_plane:
     url: ${MCP_SERVER_URL}
     headers:
       Authorization: "Bearer ${MCP_WORKSPACE_TOKEN}"

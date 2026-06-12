@@ -1,5 +1,5 @@
 {
-  "name": "@serenica/db",
+  "name": "@cormac/db",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,8 +8,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@serenica/contract": "workspace:*",
-    "@serenica/shared": "workspace:*",
+    "@cormac/contract": "workspace:*",
+    "@cormac/shared": "workspace:*",
     "@supabase/supabase-js": "^2.47.10"
   }
 }

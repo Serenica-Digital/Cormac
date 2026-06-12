@@ -1,4 +1,4 @@
-import type { Db } from '@serenica/db';
+import type { Db } from '@cormac/db';
 
 /**
  * Tracks what a test file creates in the shared local database and removes it

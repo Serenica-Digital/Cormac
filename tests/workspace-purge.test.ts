@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createAnonClient, createServiceClient, createUserClient, type Db } from '@serenica/db';
+import { createAnonClient, createServiceClient, createUserClient, type Db } from '@cormac/db';
 
 /**
  * The deliberate workspace deletion path (issue #2, migration 0005). Proves:

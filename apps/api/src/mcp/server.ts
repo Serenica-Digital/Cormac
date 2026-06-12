@@ -9,7 +9,7 @@ import {
   validateLearningAgainstContract,
   validateProposalAgainstContract,
   type Contract,
-} from '@serenica/contract';
+} from '@cormac/contract';
 import type { AppContext } from '../app.js';
 import {
   getActiveContract,
@@ -53,7 +53,7 @@ async function requireContract(app: AppContext, workspaceId: string): Promise<Co
 }
 
 export function buildMcpServer(app: AppContext, workspaceId: string): McpServer {
-  const server = new McpServer({ name: 'serenica-control-plane', version: '0.1.0' });
+  const server = new McpServer({ name: 'cormac-control-plane', version: '0.1.0' });
 
   server.registerTool(
     'get_active_contract',

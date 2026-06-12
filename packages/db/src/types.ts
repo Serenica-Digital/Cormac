@@ -1,5 +1,5 @@
-import type { Contract, LearnedKind, Proposal } from '@serenica/contract';
-import type { ConfirmationMode, Role } from '@serenica/shared';
+import type { Contract, LearnedKind, Proposal } from '@cormac/contract';
+import type { ConfirmationMode, Role } from '@cormac/shared';
 
 /**
  * Row shapes for the app-owned operational tables (ADR-002: these are the only

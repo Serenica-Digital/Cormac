@@ -1,6 +1,6 @@
-import type { Contract } from '@serenica/contract';
-import { safeParseLearnedPayload, validateLearningAgainstContract } from '@serenica/contract';
-import { ProblemError } from '@serenica/shared';
+import type { Contract } from '@cormac/contract';
+import { safeParseLearnedPayload, validateLearningAgainstContract } from '@cormac/contract';
+import { ProblemError } from '@cormac/shared';
 import type { AppContext } from '../app.js';
 import type { RequestContext } from '../types.js';
 import { getActiveContract, getLearnedKnowledge, getRecord } from '../repo.js';
