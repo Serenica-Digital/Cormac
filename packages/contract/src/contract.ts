@@ -26,7 +26,7 @@ export const FIELD_TYPES = [
 ] as const;
 export type FieldType = (typeof FIELD_TYPES)[number];
 
-const apiName = z
+export const apiName = z
   .string()
   .regex(/^[a-z][a-z0-9_]*$/, 'apiName must be snake_case (lowercase, digits, underscores)');
 
@@ -94,11 +94,82 @@ export const contractObjectSchema = z
   });
 export type ContractObject = z.infer<typeof contractObjectSchema>;
 
-export const contractSchema = z.object({
-  name: z.string().min(1),
-  version: z.number().int().positive(),
-  objects: z.array(contractObjectSchema).min(1),
+/**
+ * The business glossary (ADR-027 stratum 2): meaning that is not field-shaped.
+ * Canonical definitions, process notes, and segment context the agent needs but
+ * a data dictionary cannot hold. It lives inside the contract, so it shares one
+ * publish gate, one version, and one audit trail with the schema.
+ */
+export const glossaryEntrySchema = z.object({
+  entryId: z.string().min(1), // stable id, independent of the term text
+  term: z.string().min(1).max(120),
+  definition: z.string().min(1).max(2000),
+  /** Optional scope: an entry can attach to an object, or to a field on it. */
+  appliesTo: z
+    .object({
+      objectApiName: apiName,
+      fieldApiName: apiName.optional(),
+    })
+    .optional(),
 });
+export type GlossaryEntry = z.infer<typeof glossaryEntrySchema>;
+
+export const contractSchema = z
+  .object({
+    name: z.string().min(1),
+    version: z.number().int().positive(),
+    objects: z.array(contractObjectSchema).min(1),
+    // `.default([])` keeps every contract stored before the glossary existed parsing.
+    glossary: z.array(glossaryEntrySchema).default([]),
+  })
+  .superRefine((contract, ctx) => {
+    const seenIds = new Set<string>();
+    const seenScopedTerms = new Set<string>();
+    const objectsByName = new Map(contract.objects.map((o) => [o.apiName, o] as const));
+
+    contract.glossary.forEach((entry, i) => {
+      if (seenIds.has(entry.entryId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `glossary entryId "${entry.entryId}" is duplicated`,
+          path: ['glossary', i, 'entryId'],
+        });
+      }
+      seenIds.add(entry.entryId);
+
+      const scopeKey = entry.appliesTo
+        ? `${entry.appliesTo.objectApiName}.${entry.appliesTo.fieldApiName ?? ''}`
+        : '';
+      // \u0000 separates scope from term so the two can never collide on concatenation.
+      const termKey = `${scopeKey}\u0000${entry.term.toLowerCase()}`;
+      if (seenScopedTerms.has(termKey)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `glossary term "${entry.term}" is duplicated within the same scope`,
+          path: ['glossary', i, 'term'],
+        });
+      }
+      seenScopedTerms.add(termKey);
+
+      if (entry.appliesTo) {
+        const { objectApiName, fieldApiName } = entry.appliesTo;
+        const object = objectsByName.get(objectApiName);
+        if (!object) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `glossary entry "${entry.term}" applies to unknown object "${objectApiName}"`,
+            path: ['glossary', i, 'appliesTo', 'objectApiName'],
+          });
+        } else if (fieldApiName && !object.fields.some((f) => f.apiName === fieldApiName)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `glossary entry "${entry.term}" applies to unknown field "${fieldApiName}" on "${objectApiName}"`,
+            path: ['glossary', i, 'appliesTo', 'fieldApiName'],
+          });
+        }
+      }
+    });
+  });
 export type Contract = z.infer<typeof contractSchema>;
 
 /** Find an object by apiName, or undefined. */

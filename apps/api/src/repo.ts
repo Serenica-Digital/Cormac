@@ -1,10 +1,12 @@
-import { buildContextDisplay, type Contract } from '@serenica/contract';
+import { buildContextDisplay, type Contract, type LearnedKind } from '@serenica/contract';
 import {
   TABLES,
   type AuditEventRow,
   type BusinessRecordRow,
   type ContractVersionRow,
   type Db,
+  type LearnedKnowledgeRow,
+  type LearnedStatus,
   type ProposalRow,
   type ProposalStatus,
   type SourceChannel,
@@ -340,4 +342,90 @@ export async function setProposalDecision(
     .eq('workspace_id', input.workspaceId)
     .eq('id', input.proposalId);
   if (error) throw new Error(`setProposalDecision: ${error.message}`);
+}
+
+// --- Learned knowledge (ADR-027 stratum 3) -------------------------------
+// The status transitions are not here: they run through the decide_learning
+// RPC so the flip and its audit event are one transaction. These helpers only
+// insert a proposed item and read.
+
+export async function insertLearnedKnowledge(
+  db: Db,
+  input: {
+    workspaceId: string;
+    kind: LearnedKind;
+    payload: Record<string, unknown>;
+    recordId: string | null;
+    sourceMessageId: string | null;
+    proposalId: string | null;
+    proposedBy: string | null;
+  },
+): Promise<LearnedKnowledgeRow> {
+  const { data, error } = await db
+    .from(TABLES.learnedKnowledge)
+    .insert({
+      workspace_id: input.workspaceId,
+      kind: input.kind,
+      payload: input.payload,
+      record_id: input.recordId,
+      source_message_id: input.sourceMessageId,
+      proposal_id: input.proposalId,
+      proposed_by: input.proposedBy,
+      status: 'proposed',
+    })
+    .select('*')
+    .single();
+  return must(data as LearnedKnowledgeRow | null, error, 'insertLearnedKnowledge');
+}
+
+export async function getLearnedKnowledge(
+  db: Db,
+  workspaceId: string,
+  learnedId: string,
+): Promise<LearnedKnowledgeRow | null> {
+  const { data, error } = await db
+    .from(TABLES.learnedKnowledge)
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .eq('id', learnedId)
+    .maybeSingle();
+  if (error) throw new Error(`getLearnedKnowledge: ${error.message}`);
+  return (data as LearnedKnowledgeRow | null) ?? null;
+}
+
+export async function listLearnedKnowledge(
+  db: Db,
+  workspaceId: string,
+  status?: LearnedStatus,
+): Promise<LearnedKnowledgeRow[]> {
+  let query = db
+    .from(TABLES.learnedKnowledge)
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .order('created_at', { ascending: false });
+  if (status) query = query.eq('status', status);
+  const { data, error } = await query;
+  if (error) throw new Error(`listLearnedKnowledge: ${error.message}`);
+  return (data as LearnedKnowledgeRow[] | null) ?? [];
+}
+
+/**
+ * The active learned items for prefix compilation (render.ts). Ordered
+ * deterministically so the compiled block is byte-stable; the renderer sorts
+ * again, but a stable read keeps the two in agreement.
+ */
+export async function listActiveLearnedKnowledge(
+  db: Db,
+  workspaceId: string,
+): Promise<LearnedKnowledgeRow[]> {
+  const { data, error } = await db
+    .from(TABLES.learnedKnowledge)
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .eq('status', 'active')
+    .order('kind', { ascending: true })
+    .order('dedup_key', { ascending: true })
+    .order('id', { ascending: true });
+  if (error) throw new Error(`listActiveLearnedKnowledge: ${error.message}`);
+  return (data as LearnedKnowledgeRow[] | null) ?? [];
 }
