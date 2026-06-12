@@ -6,7 +6,7 @@
 
 ## Summary
 
-**Cormac** (working name) is Serenica's product: a contract-first CRM agent platform for small, relationship-heavy businesses that run on spreadsheets, Microsoft 365, email, and text. Clients bring their Excel workbooks; Cormac lifts each into a governed, versioned semantic contract and operates on it through an agent reachable over web, SMS, email, Excel, and Claude/MCP.
+**Cormac** is Serenica Digital's product (ADR-029): a contract-first CRM agent platform for small, relationship-heavy businesses that run on spreadsheets, Microsoft 365, email, and text. Clients bring their Excel workbooks; Cormac lifts each into a governed, versioned semantic contract and operates on it through an agent reachable over web, SMS, email, Excel, and Claude/MCP.
 
 The pilot goal: build and run Cormac on Juno as a real agentic SaaS use case. A multi-service containerized application (web UI, control-plane API, worker, a Dockerized Hermes runtime), managed Supabase/Postgres as the external system of record, and a project-scoped development environment with a dev-assistant agent. Juno is the orchestration and deployment layer; Cormac's application logic, trust model, database authority, and compliance packet stay in its own repo, and every service stays a portable container.
 
@@ -20,7 +20,7 @@ The mapping between how this repo already works and how Juno talks about it. The
 | Container | A running copy of an image, isolated from everything else on the machine. Start one, stop one, throw it away; the image is unchanged. | What `pnpm dev` / compose starts locally; what Juno starts in the cluster |
 | Workload | Juno's unit of management: one container plus its resources (CPU/memory), networking, and env vars. | One compose service. The translation is one-to-one |
 | Workload template / plugin (Terra) | A reusable recipe for launching a workload, parameterized (image, env, ports, resources). | The official plugins we use as-is for dev tools; one custom template for the Hermes runtime |
-| Project / namespace | The isolation boundary that groups workloads; nothing outside it can reach `clusterip` services inside it. | The one `serenica` project |
+| Project / namespace | The isolation boundary that groups workloads; nothing outside it can reach `clusterip` services inside it. | The one `cormac` project |
 | `ingress-auth` / `ingress-noauth` / `clusterip` | Who can reach a workload: public behind Juno's login / public and open (the app does its own auth) / internal to the namespace only. | web is `ingress-auth`, api is `ingress-noauth` (webhooks verify themselves), worker and hermes-runtime are `clusterip` |
 | Cluster DNS | Workloads address each other by service name inside the namespace. | `http://api:8088` works identically in compose and on Juno |
 | Secret | A sensitive env value injected into a workload at deploy, never baked into an image or a template default. | The pre-session checklist in [deployment-setup.md](deployment-setup.md) |
@@ -41,7 +41,7 @@ The walking skeleton (a natural-language update going capture, propose, validate
 
 ## Intended shape on Juno
 
-One Juno project (one namespace) named `serenica`, holding development workloads and application workloads side by side.
+One Juno project (one namespace) named `cormac`, holding development workloads and application workloads side by side.
 
 The translation rule is mechanical. `docker/compose.yaml` is local-only orchestration and never ships; each compose service becomes one Juno workload running the same image. Compose-network DNS (`http://api:8088`) becomes cluster DNS inside the namespace; `.env` values become per-workload env vars and Kubernetes Secrets. A Terra bundle grouping the workload templates is the platform analog of the compose file.
 
@@ -87,7 +87,7 @@ flowchart LR
 
   twilio["Twilio\nSMS provider"]
 
-  subgraph juno["Juno project: serenica — one namespace"]
+  subgraph juno["Juno project: cormac — one namespace"]
     direction TB
     subgraph appw["Application workloads — CI-built images from this repo"]
       direction TB
@@ -167,7 +167,7 @@ Same upstream software, two trust levels, two workloads, separate secrets and vo
 
 Small and concrete; this doubles as the deployment half of our runtime de-risk spike (ADR-017).
 
-1. Create the `serenica` project; launch the dev workspace and confirm the normal `pnpm` workflow and GitHub access.
+1. Create the `cormac` project; launch the dev workspace and confirm the normal `pnpm` workflow and GitHub access.
 2. Register the Terra Source carrying the runtime plugins; confirm `network_mode` options on the pilot cluster.
 3. Launch web, API, and worker as CI-built image workloads; wire secrets/env to managed Supabase.
 4. Deploy the Hermes product runtime workload (the baked `hermes-runtime` image, `clusterip`).
