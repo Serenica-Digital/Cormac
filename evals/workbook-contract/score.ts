@@ -1,4 +1,4 @@
-import type { Contract } from '@serenica/contract';
+import type { Contract } from '@cormac/contract';
 import type { AuthoringOutput } from './authoring-schema.js';
 
 /**

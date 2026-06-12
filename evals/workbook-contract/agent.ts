@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
-import { parseContract, type Contract, type ContractField } from '@serenica/contract';
+import { parseContract, type Contract, type ContractField } from '@cormac/contract';
 import { authoringOutputSchema, type AuthoringOutput } from './authoring-schema.js';
 import { SYSTEM_PROMPT, buildUserPrompt } from './prompt.js';
 

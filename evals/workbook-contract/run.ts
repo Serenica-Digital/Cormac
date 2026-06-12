@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { parseContract, type Contract } from '@serenica/contract';
+import { parseContract, type Contract } from '@cormac/contract';
 import { runAgent, getModel, type AgentRun, type TokenUsage } from './agent.js';
 import { score, type ScoreReport } from './score.js';
 import type { AuthoringOutput } from './authoring-schema.js';
