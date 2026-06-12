@@ -1,10 +1,10 @@
 // Zod 4 (via the zod/v4 subpath that ships inside the installed zod 3.25), because
 // the Anthropic SDK's zodOutputFormat helper is built against zod/v4. Scoped to
-// this spike only: the production contract boundary (@serenica/contract,
+// this spike only: the production contract boundary (@cormac/contract,
 // parseContract) stays on Zod 3. The two never cross at the type level — this
 // schema validates the model output, then a plain object is handed to parseContract.
 import { z } from 'zod/v4';
-import { FIELD_TYPES } from '@serenica/contract';
+import { FIELD_TYPES } from '@cormac/contract';
 
 /**
  * The shape the Workbook Contract Agent must emit. It is the contract
