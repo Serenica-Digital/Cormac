@@ -28,6 +28,7 @@ mcp_servers:
         - search_records
         - get_record
         - submit_proposal
+        - propose_learning
 
 # Second gate (defense in depth, ADR-025): a pre_tool_call hook vetoes tool
 # calls the operations agent has no business making, independent of the model.
