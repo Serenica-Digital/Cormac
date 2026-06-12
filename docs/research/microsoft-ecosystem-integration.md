@@ -1,0 +1,157 @@
+# Microsoft ecosystem integration: the ADR-028 research phase
+
+> **Status:** reference · **Last reviewed:** 2026-06-12
+
+This document answers the seven research questions ADR-028 gated the add-in build on, plus the founder's added questions: giving the agent control of Office.js, the database-to-spreadsheet sync design, marketplace distribution and publisher status, plugging in other data streams, hosting on Juno, and whether to use or mirror the Microsoft 365 Agents SDK.
+
+Method: a two-wave research run (67 agents). Wave 1 swept ten angles across official docs, OfficeDev GitHub issues, and practitioner sources. Wave 2 adversarially verified the eight claims our decisions hang on (three independent refuters per claim) and ran thirteen targeted gap-fill reads. Claims below marked **verified** survived 3/3 refutation attempts against primary sources dated through June 2026. Where refuters corrected a detail, the corrected version is what appears here. Key sources are linked inline; where two readers disagreed, the disagreement is flagged rather than smoothed over.
+
+## The headline
+
+The add-in-first direction survives the research. Nothing found blocks an Excel task pane hosting our own agent UI against our own backend, served from our own containers, with Supabase auth and zero Graph permissions at install. Coefficient ($24.7M raised, SMB spreadsheet-sync, the closest comparable) ships exactly this shape: Office.js only, no Entra, no Graph, own SaaS backend, Publisher Attestation only. Three findings force design changes, one forces a pitch-document correction, and the platform-stability risk is real and worse than ADR-028 priced in. None of it reverses the direction; all of it sharpens the build plan.
+
+The four forced changes:
+
+1. **There is no save event.** "Writes reviewed upon save" cannot be built as specified. The review gate redesigns around change events plus explicit user gestures (section 4).
+2. **The Microsoft "agent in the pane" path cannot run our agent.** The declarative agent + add-in actions combination runs only on Microsoft's Copilot orchestrator. We build our own chat UI in a standard task pane. That is fully permitted and faces only standard Office add-in policies (section 2).
+3. **Supabase auth requires the Dialog API relay pattern.** NAA and Office SSO are Entra-only. The dialog's first page must be on our domain; the session passes back via `messageParent` strings; localStorage cannot bridge the dialog and the pane (section 3).
+4. **The executive summary's "Pending Verification as approved publisher" line understates the path.** Publisher verification is free but the end-to-end timeline for a new LLC is 6 to 10 weeks minimum, and the pilot does not need it at all: LOB deployment and even AppSource listing run on lower bars (section 5).
+
+## 1. Add-in platform reality (ADR-028 question 1)
+
+**Manifest.** The unified (JSON) manifest is supported for Excel on Windows (Version 2501+, M365 subscription only), Mac (16.103+), and web, but not on perpetual/volume-licensed Office or mobile, and no formal GA announcement equivalent to Outlook's exists; Microsoft's own mid-2026 docs still instruct developers to maintain dual manifests for unsupported platforms. Operational bugs remain open (Excel sideloading broken Oct 2025, [#6181](https://github.com/OfficeDev/office-js/issues/6181); add-ins disappear when MinVersion > 1.13, [#5526](https://github.com/OfficeDev/office-js/issues/5526)). **Verified (corrected): the XML add-in-only manifest is the lower-risk choice for the production Excel task pane and for admin-center LOB deployment in 2026.** One nuance: admin-center deployment of a unified manifest auto-generates an XML manifest for older clients, so the perpetual-Office exclusion is less absolute under that path. Decision: ship XML; revisit unified only when Teams/Copilot distribution is actually wanted.
+
+**API floor.** Target **ExcelApi 1.14** as the manifest minimum. It covers every current M365 seat (needs Version 2108, August 2021), Office 2021 LTSC, web, Mac 16.52+, and iPad. It excludes Office 2019 perpetual (capped at ExcelApi 1.7, end-of-support October 14, 2025), which is the correct trade. Gate anything newer with runtime `isSetSupported` checks. One caveat: whether Office 2021 LTSC at RTM build carries 1.14 or only 1.13 needs a one-line spike check.
+
+**Capability limits that shape the build:**
+- Excel on the web enforces a 5 MB payload per request/response (RichAPI.Error past it) and all platforms cap range reads at 5,000,000 cells. Large-workbook reads chunk per `context.sync()`. Whether desktop enforces a comparable payload ceiling is undocumented.
+- Every `context.sync()` is a cross-process round trip; on the web it crosses the network. Batch loads, sync once; never sync in a loop. No published latency numbers exist; the spike should measure.
+- A write-throughput regression from undo-stack support (Excel 16.0.19127, October 2024) cut large table writes roughly 12.5x ([#6240](https://github.com/OfficeDev/office-js/issues/6240), stale-closed without a fix, still in backlog mid-2026). **Verified (corrected):** the safe pattern is a single bulk `range.values` assignment, never per-row writes; APIs that bypass undo (for example `worksheet.protection.unprotect`) clear the undo stack and exist as a destructive workaround. Our writes are small (CRM field updates), so this constrains bulk workbook generation, not daily capture.
+- The Dialog API requires its first page on the add-in's own full domain, allows one dialog at a time, and the docs explicitly say not to use a dialog to interact with the document. The ADR-028 "pop-out review UX" should be a task pane view, not a dialog.
+- Shared runtime (SharedRuntime 1.1, available since builds from early 2020) is the right architecture: state persists while the pane is closed, visibility events fire, one task pane per add-in.
+- `office.js` nullifies `history.pushState/replaceState`. The pane SPA must use hash routing (React Router HashRouter). BrowserRouter throws at startup.
+- Office.js must load from the Microsoft CDN for AppSource distribution (policy 1120.1); it cannot be self-hosted or SRI-pinned (rolling content behind a fixed URL). For LOB-only deployment the CDN rule is recommendation, not policy gate.
+
+**Streaming chat in the pane works.** WebView2 (Windows), WKWebView (Mac), and the web sandbox iframe all support fetch ReadableStream, SSE, and WSS WebSockets natively; Office injects no blocking CSP. Use `@microsoft/fetch-event-source` for POST-based SSE against the control plane. office.js itself requires `unsafe-eval`/`unsafe-inline` in our own CSP, which is a header-score cost, not a blocker. One open item: Chrome 142+ blocks task-pane connections to localhost on Office web ([#6281](https://github.com/OfficeDev/office-js/issues/6281)), which affects local dev only; develop against HTTPS from day one.
+
+## 2. The agent in the pane (founder question: give the agent Office.js as tools)
+
+Two architectures exist and they do not combine:
+
+- **Microsoft's path** (declarative agent + add-in actions, preview): the agent runs on Microsoft's Copilot orchestrator with Microsoft models; Office.js functions are exposed as agent actions via the unified manifest; access requires a Copilot add-on license or Copilot Chat tier. **Verified (corrected): no third-party LLM can sit in that reasoning loop.** Microsoft also offers "custom engine agents" that allow any LLM including Anthropic, but those surface in Teams/Copilot chat panes, not as the driver of an Excel task pane.
+- **Our path**: a standard task pane hosting our own chat UI, calling the control plane over HTTPS, with the control plane's agent (Hermes) deciding actions and the pane executing Office.js operations. Fully permitted, no Copilot license, standard 1120-series policies only, provided the manifest declares no `copilotAgents` node.
+
+The pattern for our path is proven in the open: [hewliyang/office-agents](https://github.com/hewliyang/office-agents) (active through May 2026) implements an AI chat pane with 13 typed Office.js tool functions (get_cell_ranges with a 2,000-cell default cap, set_cell_range with overwrite protection requiring explicit allow_overwrite, screenshot_range, search_data, a sandboxed eval escape hatch we should not copy without security review). Treat it as a tool-layer reference, not a dependency.
+
+The architectural consequence for Cormac: the pane becomes a **tool executor surface**. The agent runs server-side as today (ADR-025/026 posture unchanged, runtime holds no credentials); the pane relays a new class of tool calls (read_range, highlight_range, propose_cell_write) that execute in the user's Excel session and return results. Workbook writes through the pane are still proposals through the control plane pipeline; Office.js execution of an approved write is a surface action, not a new writer. This needs its own short design note when #17's mount point gets planned, because tool round-trips through a browser pane have different latency and failure modes than server-side MCP calls.
+
+## 3. Auth inside the pane (ADR-028 question 2)
+
+**Verified (corrected):** NAA and Office SSO support only Entra ID and MSA identities (Azure AD B2C explicitly excluded; no third-party IdPs). On Office on the web, NAA additionally works only for documents opened from SharePoint Online or OneDrive. Neither is available to Supabase-brokered auth, so ADR-011's broker model survives unchanged and the add-in uses the **Dialog API relay pattern**:
+
+1. Pane opens `displayDialogAsync` pointing at a relay page on our own domain (hard requirement: first page same full domain as the pane).
+2. Relay redirects to the Supabase auth URL (`signInWithOAuth` with `skipBrowserRedirect: true` produces the URL; or the dialog hosts our own email/password UI).
+3. Callback (on our domain) exchanges the code via PKCE (`exchangeCodeForSession`) and passes the stringified token pair back with `Office.context.ui.messageParent` (strings only; cross-domain messageParent technically possible via DialogOrigin 1.1 but same-domain is the supported practice).
+4. Pane calls `supabase.auth.setSession()` and supabase-js owns silent refresh from there (`autoRefreshToken`).
+
+Simpler still for the pilot: email/password or magic-link OTP runs entirely inside the pane with no dialog at all; the dialog is only needed for redirect-based OAuth providers.
+
+Session persistence: on Windows, WebView2 task-pane localStorage persists across pane close/reopen and Excel restarts (the user-data folder survives); on Mac, WKWebView persistence has reported edge cases and no authoritative guarantee. Design for it: store the session via a supabase-js custom storage adapter keyed with `Office.context.partitionKey` where defined, attempt silent refresh on every pane open, fall back to re-auth. Do not use localStorage as a dialog-to-pane bridge ever (Chromium 115+ storage partitioning; Safari blocks it outright; Microsoft classified the isolation as by-design).
+
+No production-quality Supabase-in-add-in reference exists publicly (the one official third-party-auth sample is an archived 2019 Auth0 repo). This is novel integration work and belongs in the spike.
+
+What the IT reviewer sees: nothing in Entra. No app registration, no consent prompt, no admin grant. The add-in is installed (the consent), and auth is our SaaS's own login in a dialog. That is the same posture Coefficient ships with.
+
+## 4. Sync, re-scoped (ADR-028 question 4; founder question: the holy grail)
+
+**Verified: Office.js has no on-save, before-save, or after-save event** (events reference current to June 2026; workbook object exposes exactly onActivated, onAutoSaveSettingChanged, onSelectionChanged; feature requests from 2022 and 2025 sit uncommitted). "Writes reviewed upon save" is impossible as literally specified. The achievable design is better aligned with our proposal pipeline anyway:
+
+- **Capture triggers**: `Worksheet.onChanged` / `Table.onChanged` (ExcelApi 1.7+) with `event.source` distinguishing Local from Remote (coauthor) edits, plus an explicit "Sync to CRM" gesture. Bulk paste fires one event with a bounding-box address. Known holes: data-validation dropdown edits do not fire onChanged on Excel web ([#3888](https://github.com/OfficeDev/office-js/issues/3888), open), and events die with the pane (the add-in is not a background daemon; sync happens while the pane is open or on next open via diff).
+- **The review gate**: changes accumulate as drafts in the pane (or are diffed on pane open), the user reviews, approval submits through the control plane pipeline. This is Coefficient's proven UX shape: their export flow shows a preview highlighting exactly which rows and fields will push, then an explicit commit button. They run full-replace imports, formula auto-fill-down for user content, a TRUE/FALSE flag column for selective writeback, and record IDs carried through from import for matching. They have no conflict detection on writeback (last-write-wins silently); our proposal pipeline showing what would be overwritten is a visible differentiator at exactly that moment.
+- **Row identity**: stamp record IDs in a hidden column at write time (with `context.runtime.enableEvents = false` during the stamp). Avoid SettingCollection and custom XML parts for row maps at scale: settings hit an undocumented ~1 MB ceiling and custom XML parts are hard-capped at 1 MB on Excel web.
+- **Sync-loop risk**: whether Graph REST writes to an open workbook arrive as source=Remote onChanged events is undocumented. Guard with `triggerSource == 'ThisLocalAddin'` (ExcelApi 1.14) plus dedup against last-synced state; test empirically in the spike.
+- **The server-side channel** (Graph Excel REST API) is real but constrained, **verified (corrected)**: .xlsx on OneDrive for Business/SharePoint Online/Group drives only (consumer OneDrive unsupported), workbook sessions (~5 min persistent idle expiry), throttling at 1,500 requests/10s per app per tenant **and 5,000/10s per app across all tenants (the binding ceiling for a multi-tenant SaaS)**, and Microsoft explicitly recommends strictly sequential writes per workbook. Coauthoring-concurrent Graph writes are conflict-prone. Treat Graph write-back as a deferred, sequential, SharePoint-only channel; the pane path needs none of it. Note Coefficient's scheduled background refresh requires the workbook on OneDrive, and they surface that requirement during onboarding; we should do the same if/when scheduled sync ships.
+
+What #30/#31 become: the add-in pane subsumes the validate-at-sync UX for interactive use. The transport question collapses to "pane Office.js now; Graph sessions later if background sync earns its keep."
+
+## 5. Store mechanics and distribution (ADR-028 question 5; folds #32)
+
+Three separate verification tracks exist and the docs blur them:
+
+1. **Partner Center business verification** (required to publish at all): free; officially 3 to 5 business days, practically up to weeks. The DUNS number is the long pole (free registration up to ~6 calendar weeks; expedited ~8 business days, paid). Articles of incorporation work without DUNS but trigger slower manual review. Known failure points for a small LLC: sole-member owners failing employment verification (not in W-2 databases; have the operating agreement and domain records ready), government-ID name mismatches (locked fields, 5+ day support cycles), and exact case-sensitive publisher-name/domain matching.
+2. **Entra publisher verification** (the blue checkmark on OAuth consent screens): free, completes in minutes once prerequisites align, but requires a verified Partner Global Account (not a location account), a custom verified publisher domain matching the Partner Center contact email domain, and MFA. **Only matters when we ask for Graph OAuth consent.** The add-in itself, with zero Graph scopes, never shows that consent screen.
+3. **Microsoft 365 Publisher Attestation** (the security self-questionnaire): optional for Excel add-ins, under an hour to complete, renewed annually. Worth doing because IT admins read it. Full Microsoft 365 Certification (independent audit, 14+60-day evidence cycle) is premature; Coefficient operates at Attestation tier years in.
+
+**AppSource listing**: add-ins are always free to download; monetization is external SaaS billing (zero Microsoft fees, our default) or a linked transactable SaaS offer (3% fee, heavy fulfillment-API integration, and policy 1000.1's Azure-platforming expectation makes transactable a poor fit for a non-Azure backend; flagged unresolved). Certification takes up to four weeks and first submissions commonly fail; top rejection causes are undisclosed charges, unclear first-run experience, missing sign-in/out/up links, and missing test instructions; the enterprise exemption (claimed in certification notes) waives the first-run and sign-up requirements. Calling the add-in an "AI agent" in listing copy does not trigger the 1140.9 Copilot-agent policies (those bind to manifest-declared agents), but AI-generated content rules do apply: describe the AI before acquisition, show a visible AI disclaimer in the UI, provide a report mechanism. The privacy policy must accurately describe Anthropic processing customer data.
+
+**The pilot path needs none of the above.** The design partner's admin uploads the manifest through the admin center (LOB deployment), which requires no AppSource listing, no Partner Center account, and no publisher verification. **Verified: centralized deployment requires every target user to have an active Exchange Online mailbox.** Microsoft 365 Business Basic/Standard/Premium qualify; "Microsoft 365 Apps for Business/Enterprise" SKUs do not; GoDaddy-resold M365 blocks every deployment path including AppSource acquisition. If centralized deployment is unavailable, AppSource self-install by end users works on any direct-Microsoft tenant unless the admin disabled the store, and click-and-run links give one-click installs post-listing. **Action: confirm the design partner's exact M365 SKU and reseller before the pilot plan firms up. A GoDaddy tenant means migrating the tenant before go-live.**
+
+Realistic timeline to a public listing for Serenica: start DUNS and Partner Center enrollment now-ish (they parallelize with the build), expect 6 to 10 weeks of calendar time to a first listing under good conditions, 12+ if verification snags. The pilot is fully decoupled from that clock.
+
+## 6. The Graph ladder, re-derived (ADR-028 question 3; folds #33)
+
+The re-derivation confirms ADR-012's instinct and sharpens it into a four-stage ladder. The product starts at stage 0 and earns each step:
+
+- **Stage 0 (the pilot): zero Graph permissions.** Office.js reads the open workbook; no Entra app, no consent screen, nothing for IT to review beyond add-in installation. This is Coefficient's permanent posture and our default.
+- **Stage 1 (user-scoped file access)**: `Files.Read` / `Files.ReadWrite` delegated; user-consentable by permission spec, but tenant consent policy can override (many tenants require admin consent for everything from unverified publishers; since November 2020, user consent to unverified multi-tenant apps is blocked by default for anything past basic sign-in). Practical consequence: when we add Graph at all, get Entra publisher verification first and route onboarding through an admin-consent URL rather than betting on user consent.
+- **Stage 2 (site-scoped)**: `Sites.Selected` over `Sites.Read.All`. Honest caveats the docs bury: consent alone grants zero access; a second privileged call (POST `/sites/{id}/permissions`, requiring a Sites.FullControl.All-bearing caller) grants each site, so onboarding needs an admin bootstrap step; and file/list-level Selected grants break SharePoint permission inheritance on the granted resource.
+- **Stage 3 (mail/contacts, the email door)**: `Mail.Read` / `Contacts.Read` delegated, requested lazily at feature invocation, never at install. Never the application variants (tenant-wide mailbox access; no SMB admin should approve it and none will).
+- Throttling at our scale is a non-issue for interactive use (SharePoint resource units: 1,250 RU/min per app per small tenant, roughly 625 file requests/min; Excel API flat 1,500/10s per tenant) and a real budget only for background sync loops, which is one more reason the pane path leads.
+
+This resolves #33's two-ladder reconciliation: the connector ladder (ADR-012) and the Excel-integration ladder (ADR-022) merge into the single ladder above, with the add-in occupying stage 0.
+
+## 7. Dependence, fallback, and platform risk (ADR-028 question 6)
+
+The risk is materially worse than ADR-028 priced in, and the mitigation it named is the right one.
+
+The evidence: a February 2026 open letter from 233 add-in developers ([office-js #6513](https://github.com/OfficeDev/office-js/issues/6513), still "under investigation" with no substantive Microsoft response as of June 2026) documents silent CDN-side breaking changes behind a version-pinned-looking URL, ~1,100 open issues with a 2:1 backlog-to-fixed ratio, regressions recurring after marked fixes (the centralized-deployment failure #6321 recurred 77 days after its fix, and the official known-issues page showed seven concurrent deployment-layer problems in early June 2026), `isSetSupported` returning wrong answers on some platforms, add-ins disappearing from the store without developer action, and Microsoft support attributing platform failures to ISVs. Build 2026 gave the add-in platform zero floor time; Visual Studio 2026 deprecated add-in templates; Microsoft's investment is visibly rotating to Copilot extensibility. Even Microsoft's own GitHub add-in sits at 2.5 stars. Independent corroboration: HubSpot's web add-in (not just its deprecated VSTO one) was broken for users by a single Outlook build update in March 2024; Gmail support in Outlook add-ins was removed with zero notice in February 2024.
+
+What this does and does not touch for us. It never touches the write path, the data, the contract, or the gates: those live in our control plane on our containers. The blast radius is the door: the pane can break from a Microsoft update through no fault of ours, deployment can stall tenant-wide for days, and error attribution will land on us. Excel task panes are less exposed than Outlook add-ins (most named regressions are Outlook/EWS-adjacent, and EWS shutdown starting October 2026 is an Outlook-side storm), but the centralized-deployment instability hits any add-in.
+
+The posture this buys, written as commitments:
+- The web app fallback is not optional and must stay feature-complete for capture and review (ADR-014's surviving half). SMS capture is independent of Microsoft entirely.
+- The pane stays thin: rendering, Office.js execution, auth relay. All logic server-side. A pane outage degrades the experience, never the data.
+- Budget standing maintenance for the door (the 69,120-combination test matrix is unwinnable; test the partner's actual configurations, pin a smoke-test set, and watch the OfficeDev known-issues feed as an operational practice).
+- Sell the resilience: "your data and the agent live outside Microsoft; if Excel has a bad day, texting Cormac still works" is a security-packet line our Microsoft-native competitors cannot write.
+
+## 8. Positioning boundary tests (ADR-028 question 7)
+
+**Why not Power Platform/Dataverse, now citable.** Every end user of a Dataverse-based ISV app needs Power Apps Premium (~$20/user/month) or PAYG (~$10/active user/app/month); M365 licenses do not cover custom Dataverse apps; there is no cross-tenant mechanism for the ISV to absorb that cost (the Embed PAYG preview died May 2024). For a 10-person firm on Business Standard, Dataverse more than doubles their Microsoft bill before we charge a cent, against our $199 to $399 per business. Add Dataverse storage at $40/GB/month, no direct SQL, bulk export only through Azure Synapse Link, AppSource-for-Dataverse functioning as brochure-ware, and the ISV Connect 10 to 20% revenue share. RapidStart's own model concedes the point: their pricing assumes the customer already owns the Power Apps licensing. Our add-in needs nothing beyond the M365 subscription the customer already has. (Note for the competitive doc: wave 2 found RapidStart pricing at $10/user/month on PAYGO; the $99/instance figure we carry should be re-verified against their current site.)
+
+**What we will never accept from the Microsoft stack**, as a documented line: Microsoft identity as a requirement for our product's auth (Entra optional, never mandatory); business data at rest in any Microsoft-proprietary store (Dataverse, SharePoint lists as system-of-record); the agent's reasoning loop inside Microsoft's orchestrator; per-user Microsoft licensing as a precondition of our product working (Copilot licenses, Power Apps Premium); and any single-door dependence where a Microsoft policy change can take capture to zero (SMS and web always stand).
+
+## 9. The Agents SDK question (founder question: use it or mirror it)
+
+**Neither.** The M365 Agents SDK is channel plumbing for Teams/Copilot distribution (successor to the retired Bot Framework; not backward compatible with it; multi-tenant bot registration deprecated July 2025). We have no Teams door in scope. When one is wanted, the shape is small and known: an Azure Bot Service channel registration (the Teams relay; free standard channels) plus a thin adapter on a control-plane `/api/messages` endpoint that validates the Bot Service JWT and maps Activity JSON to our pipeline. One to two weeks, no trust-boundary change, no need for the SDK itself in our TypeScript control plane unless it saves time then.
+
+Mirroring the Activity protocol in our own API now would be premature: wave 1 and wave 2 readers disagreed about the protocol's churn state (one read the microsoft/agents repo as carrying a v5 redesign in committee draft; the verification pass found the archived spec stable at v3.1.12 and no v5 draft). The disagreement itself is the answer: do not couple our API shape to a protocol whose owners' direction we cannot pin from public sources.
+
+Adjacent and worth a calendar note, not work: the **Agent 365 SDK** (GA May 2026, distinct product despite the name) is an enterprise governance/identity/observability layer that explicitly supports Anthropic runtimes (first-party Claude extension). Its licensing (~$15/user/month atop Business Premium/E5) is wrong for our segment today; it becomes interesting only if we move upmarket into tenants that demand Entra-governed agent identities.
+
+## 10. Hosting on Juno (founder question)
+
+**Verified (corrected): no Azure or Microsoft hosting requirement exists anywhere in the platform.** The pane is a static SPA on any HTTPS host; the manifest's source location must be HTTPS; our API needs standard CORS for the pane's origin. Specific operational facts for the container setup:
+
+- The reverse proxy in front of the pane must not send `X-Frame-Options: SAMEORIGIN` (Office web loads the pane in an iframe; SAMEORIGIN kills it). Set frame-ancestors appropriately instead.
+- AppDomains (XML manifest) supports no wildcards; one full subdomain per entry; it governs navigation/framing, not fetch (fetch is plain CORS). Keep the pane on a single stable origin and carry tenant context in tokens, not subdomains.
+- Manifest URL changes propagate unreliably after re-upload (documented cases of weeks-long staleness). Keep every manifest URL permanent and ship all updates server-side behind them.
+- The deployment portal does not ping the source location at upload; an unreachable host fails at pane-open time with a blank pane. Uptime of the pane host is user-facing in the most visible way.
+- Manifest image URLs must allow caching (no `Cache-Control: no-cache/no-store`).
+
+## 11. What public sources cannot settle: the spike list
+
+ADR-028 called for a working spike; the research sharpens it into a checklist. A sideloaded XML-manifest pane against the demo workbook and the local control plane should answer, in rough priority order:
+
+1. SSE/streaming chunk arrival timing through WebView2 and WKWebView (chunked transfer vs text/event-stream).
+2. The full Supabase Dialog-relay round trip (PKCE exchange on our callback page, messageParent handoff, setSession, silent refresh on pane reopen), and whether the refresh token survives Excel restart on Windows and Mac.
+3. `context.sync()` round-trip latency, desktop vs web, at interview-realistic workbook sizes; where the 5 MB ceiling actually bites on a real client workbook.
+4. Whether Graph-session writes to an open workbook fire onChanged source=Remote in the pane (sync-loop risk), and whether onChanged fires for find-and-replace.
+5. Whether Office 2021 LTSC RTM supports ExcelApi 1.14 (one `isSetSupported` call).
+6. Range highlighting + a draft-review flow in the pane against a multi-sheet workbook (the interview UX proof).
+7. Whether history.pushState is still nullified by the live office.js bundle (HashRouter permanence check).
+
+Operational asks that are conversations, not code: the design partner's exact M365 SKU and reseller (GoDaddy check), whether their admin can use Integrated Apps, and starting DUNS + Partner Center enrollment in parallel.
+
+## Source notes
+
+Primary: learn.microsoft.com (Office Add-ins, Excel JS API requirement sets, Dialog API, NAA, centralized deployment, Graph permissions and throttling, Marketplace certification policies; doc dates spot-checked through 2026-06-12), github.com/OfficeDev/office-js issues (#6513, #6240, #6181, #5526, #3888, #6281, #6321), devblogs.microsoft.com, github.com/hewliyang/office-agents, Coefficient public docs/reviews, practitioner accounts of Partner Center verification. Verification pass: every claim marked **verified** survived three independent refutation attempts against primary sources; corrections found by refuters are incorporated in the text above. marketplace.microsoft.com and appsource.microsoft.com block automated reading (403); listing-level facts (ratings, installs) were unobtainable and are not claimed here.
