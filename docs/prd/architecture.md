@@ -98,6 +98,25 @@ flowchart TB
   class msApi,twilio,model,supaAuth,providers third;
 ```
 
+## The two trust models, one identity spine
+
+Every door into the system proves itself one of two ways, and the diagram's auth wiring follows from which one applies:
+
+1. **Session trust** (Excel pane, web): a human is present and logs in. Supabase Auth brokers the identity provider and issues the session JWT; the control plane verifies it against the JWKS on every request and then makes its own authorization decision (ADR-011, ADR-020). Built and enforced today.
+2. **Arrival trust** (SMS, email, Graph webhooks): no human session exists at message time, by design; zero-friction capture is the product promise, so these doors cannot demand a login. Proof is two checks made by the control plane at arrival: the transport is cryptographically verified (Twilio signs its webhooks; mailbox ingestion is configuration-controlled; Graph has its validation handshake), and the asserted sender is resolved against workspace membership. Design; no connector code exists yet (SMS waits on A2P registration, #24).
+
+What keeps these from drifting into parallel auth systems is a single identity spine: one user record per human in Postgres, holding linkable identity claims rather than a single credential. An Entra identity, an email/password credential, and a registered phone number are claims on the same user row, so the sender lookup an SMS does and the JWT lookup a session does resolve to the same membership and the same role. Claims are managed only through the RBAC'd admin surface and audited like any other privileged change. Status: the linkable-claims model is design (committed direction in the ADR-028 research, section 3); today's schema keys users to their Supabase identity only, and the linking work lands with the pane's auth build.
+
+The complete credential inventory, so it cannot sprawl silently:
+
+- **Supabase session JWTs**: human identity on interactive surfaces. Built.
+- **Workspace-scoped MCP task tokens**: minted by the control plane for its own runtime, one per task; the token is the tenant binding (ADR-025). These are internal service credentials, not user identity, and they never leave our trust boundary. Built.
+- **Webhook transport verification**: provider signatures and configuration, not tokens; carries no identity beyond the verified transport plus the sender claim. Design.
+
+The future external Claude/MCP door adds no fourth system. MCP's authorization model is OAuth: when that door is built, the intent is that its authorization server is Supabase, so an external MCP client holds a Supabase-issued token that resolves to the same user, the same claims, the same membership row as a web session. That is recorded here as the intended unification so it constrains the eventual design; the decision itself is taken when the door is built.
+
+Arrival trust is weaker than session trust, and the architecture compensates downstream instead of pretending otherwise: arrival-trust doors can only feed the proposal pipeline, high-risk actions always require confirmation on a session-trust surface, and the weekly report is the safety net (ADR-010). A hijacked phone number can file proposals into a review queue; it cannot silently rewrite records, change permissions, or alter the contract.
+
 ## Primary Responsibilities
 
 **Interactive clients**
@@ -113,7 +132,7 @@ flowchart TB
 
 **External conversational connector**
 
-- **Claude/MCP**: a future OAuth/token-authenticated external conversational surface that calls controlled tools, not raw database operations. Distinct from the internal MCP tool server below, which exists today and serves only our own runtime.
+- **Claude/MCP**: a future OAuth-authenticated external conversational surface that calls controlled tools, not raw database operations. Distinct from the internal MCP tool server below, which exists today and serves only our own runtime. Intended to authorize through Supabase so it joins the identity spine rather than adding a parallel token system (see "The two trust models" above).
 
 **Our code**
 
