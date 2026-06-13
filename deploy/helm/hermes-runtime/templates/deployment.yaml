@@ -20,6 +20,18 @@ spec:
       imagePullSecrets:
         - name: {{ . }}
       {{- end }}
+      {{- with .Values.waitForApiUrl }}
+      # Hermes opens its MCP connection to the control plane once at startup and
+      # gives up after a few seconds. Block until the api is reachable so that
+      # connection is not lost to a pod-network/api startup race (ADR-035).
+      initContainers:
+        - name: wait-for-api
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - 'until wget -q -O- {{ . }} >/dev/null 2>&1; do echo "waiting for api at {{ . }}"; sleep 2; done; echo "api reachable"'
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

@@ -41,7 +41,7 @@ jobs:
       - name: Check control register (claim -> control -> test chain)
         run: pnpm check:controls
 
-      - name: Check env contract (manifest <-> .env.example, compose, Helm)
+      - name: Check env artifacts are regenerated (manifest -> .env.example, Helm)
         run: pnpm check:env
 
       - name: Check eval fixtures (structural, no model calls)

@@ -29,6 +29,11 @@ resources:
   limits:
     memory: 1Gi
 
+# Block startup until the control-plane api is reachable, so Hermes does not lose
+# its one-shot MCP connection to a pod-network/api startup race (ADR-035). Same
+# Service name on k3d and Juno. Set empty to skip the init container.
+waitForApiUrl: http://cormac-api:8088/health
+
 secretName: cormac-secrets
 
 env:

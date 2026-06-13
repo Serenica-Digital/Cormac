@@ -3,6 +3,7 @@ import { ENV, Z, browserEnvSchema, DEV_JWT_SECRET } from '../../packages/config/
 import { enforceProdRules, loadServerEnv, readEnv } from '../../packages/config/src/server.js';
 import { loadConfig, API_ENV_KEYS } from '../../apps/api/src/config.js';
 import { buildAppContext } from '../../apps/api/src/app.js';
+import { CHART_WORKLOADS, classify, reconcileChartValues, renderEnvExample } from '../../scripts/lib/env-artifacts.js';
 
 /**
  * The env contract (ADR-034). These bind the manifest to the schemas that derive
@@ -104,6 +105,52 @@ describe('loadConfig + the JWKS-only-in-prod control', () => {
     expect(buildAppContext(loadConfig(prodEnv)).hsSecret).toBeNull();
     const local = loadConfig({ SUPABASE_SERVICE_ROLE_KEY: 'service-key' });
     expect(buildAppContext(local).hsSecret).toBeInstanceOf(Uint8Array);
+  });
+});
+
+describe('the generator stays bound to the manifest (ADR-035)', () => {
+  it('.env.example renders exactly the inEnvExample variables, once each', () => {
+    const rendered = new Set<string>();
+    for (const line of renderEnvExample().split('\n')) {
+      const m = line.match(/^#?\s*([A-Z][A-Z0-9_]*)\s*=/);
+      if (m) {
+        expect(rendered.has(m[1]!), `${m[1]} rendered twice`).toBe(false);
+        rendered.add(m[1]!);
+      }
+    }
+    const expected = ENV.filter((e) => e.inEnvExample).map((e) => e.name).sort();
+    expect([...rendered].sort()).toEqual(expected);
+  });
+
+  it('renderEnvExample is deterministic', () => {
+    expect(renderEnvExample()).toBe(renderEnvExample());
+  });
+
+  it('classify puts every secret a workload reads in secretEnv, and no secret in env', () => {
+    for (const workload of CHART_WORKLOADS) {
+      const { env, secret } = classify(workload);
+      for (const name of env) expect(Z[name], name).toBeDefined();
+      // No secret leaks into the ConfigMap half.
+      for (const name of env) {
+        expect(ENV.find((e) => e.name === name)!.secret, `${name} is a secret in ${workload} env`).toBe(false);
+      }
+      for (const name of secret) {
+        expect(ENV.find((e) => e.name === name)!.secret, `${name} is not a secret`).toBe(true);
+      }
+    }
+  });
+
+  it('reconcileChartValues is a no-op when membership already matches', () => {
+    const inSync = 'env:\n  APP_ENV: prod\n  WORKER_PORT: "8070"\nsecretEnv: []\n';
+    expect(reconcileChartValues('worker', inSync)).toBe(inSync);
+  });
+
+  it('reconcileChartValues adds a missing key and drops a foreign one, and is then idempotent', () => {
+    const drift = 'env:\n  APP_ENV: prod\n  MCP_WORKSPACE_TOKEN: leaked\nsecretEnv: []\n';
+    const fixed = reconcileChartValues('worker', drift);
+    expect(fixed).toContain('WORKER_PORT'); // added (worker reads it)
+    expect(fixed).not.toContain('MCP_WORKSPACE_TOKEN'); // dropped (worker does not read it)
+    expect(reconcileChartValues('worker', fixed)).toBe(fixed); // stable
   });
 });
 
