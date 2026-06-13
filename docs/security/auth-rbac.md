@@ -29,7 +29,7 @@ This mapping is a product decision that should be reviewed against requirements 
 
 ## How it is proven
 
-`tests/rbac-matrix.test.ts` asserts every endpoint, for every role, allows exactly its capabilities and rejects the rest, and that an unauthenticated request is rejected. It needs local Supabase (to mint user JWTs) and runs in CI.
+`tests/integration/rbac-matrix.test.ts` asserts every endpoint, for every role, allows exactly its capabilities and rejects the rest, and that an unauthenticated request is rejected. It needs local Supabase (to mint user JWTs) and runs in CI.
 
 ## Boundaries
 

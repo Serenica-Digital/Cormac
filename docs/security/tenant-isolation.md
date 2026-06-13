@@ -19,7 +19,7 @@ A signed-in user's database token can read only their workspace's rows, and can 
 
 ## How it is proven
 
-[tests/isolation.test.ts](../../tests/isolation.test.ts) creates two workspaces and a user in only one, then asserts:
+[tests/integration/isolation.test.ts](../../tests/integration/isolation.test.ts) creates two workspaces and a user in only one, then asserts:
 
 - the service role can read workspace A (sanity),
 - a workspace B user sees none of A's records,

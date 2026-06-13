@@ -2,13 +2,13 @@ import 'dotenv/config';
 import http from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createServiceClient, type Db } from '@cormac/db';
-import { propose } from '../services/runtime-stub/src/propose.js';
-import { buildAppContext } from '../apps/api/src/app.js';
-import { loadConfig } from '../apps/api/src/config.js';
-import { captureUpdate } from '../apps/api/src/pipeline/capture.js';
-import { decideProposal } from '../apps/api/src/pipeline/apply.js';
-import type { AppContext } from '../apps/api/src/app.js';
-import type { RequestContext } from '../apps/api/src/types.js';
+import { propose } from '../../services/runtime-stub/src/propose.js';
+import { buildAppContext } from '../../apps/api/src/app.js';
+import { loadConfig } from '../../apps/api/src/config.js';
+import { captureUpdate } from '../../apps/api/src/pipeline/capture.js';
+import { decideProposal } from '../../apps/api/src/pipeline/apply.js';
+import type { AppContext } from '../../apps/api/src/app.js';
+import type { RequestContext } from '../../apps/api/src/types.js';
 import { requireSupabaseEnv, seedWorkspace, TestResources } from './helpers.js';
 
 /**

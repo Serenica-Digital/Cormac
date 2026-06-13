@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { EXAMPLE_PERSON_CONTRACT } from './fixtures.js';
+import { EXAMPLE_PERSON_CONTRACT } from '../../packages/contract/src/fixtures.js';
 import {
   parseLearnedPayload,
   safeParseLearnedPayload,
   validateLearningAgainstContract,
-} from './learning.js';
+} from '../../packages/contract/src/learning.js';
 
 const contract = EXAMPLE_PERSON_CONTRACT;
 const UUID = '11111111-1111-4111-8111-111111111111';

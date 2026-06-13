@@ -25,7 +25,7 @@ Where client data enters, where it rests, which subprocessors see it, and how it
 
 ## The minimization guarantee
 
-The model never receives a field a tenant marked `sensitive`, even if that field is also used for matching. The agent matches on non-sensitive identity fields; sensitive values stay inside the control plane and the database. This is tested in [redact.test.ts](../../packages/contract/src/redact.test.ts).
+The model never receives a field a tenant marked `sensitive`, even if that field is also used for matching. The agent matches on non-sensitive identity fields; sensitive values stay inside the control plane and the database. This is tested in [redact.test.ts](../../tests/unit/redact.test.ts).
 
 ## Audit, not logs
 

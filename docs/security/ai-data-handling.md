@@ -12,7 +12,7 @@ For each task the control plane sends the model: the user's message, the active 
 
 ## The sensitivity boundary
 
-Fields a tenant's contract marks `sensitive` are never placed in the model context, even when they are also identity fields used for matching. The agent matches on non-sensitive identity fields; sensitive values stay inside the control plane and the database. Enforced by `buildContextDisplay` ([redact.ts](../../packages/contract/src/redact.ts)) and proven in [redact.test.ts](../../packages/contract/src/redact.test.ts).
+Fields a tenant's contract marks `sensitive` are never placed in the model context, even when they are also identity fields used for matching. The agent matches on non-sensitive identity fields; sensitive values stay inside the control plane and the database. Enforced by `buildContextDisplay` ([redact.ts](../../packages/contract/src/redact.ts)) and proven in [redact.test.ts](../../tests/unit/redact.test.ts).
 
 ## Provider, training, retention
 
