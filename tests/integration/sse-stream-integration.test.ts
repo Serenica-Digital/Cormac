@@ -3,9 +3,9 @@ import http from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createServiceClient, type Db } from '@cormac/db';
-import { propose } from '../services/runtime-stub/src/propose.js';
-import { loadConfig } from '../apps/api/src/config.js';
-import { buildServer } from '../apps/api/src/server.js';
+import { propose } from '../../services/runtime-stub/src/propose.js';
+import { loadConfig } from '../../apps/api/src/config.js';
+import { buildServer } from '../../apps/api/src/server.js';
 import { mintToken, requireSupabaseEnv, seedWorkspace, TestResources } from './helpers.js';
 
 /**

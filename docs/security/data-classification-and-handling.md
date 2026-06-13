@@ -26,7 +26,7 @@ Because these are contract properties, a tenant that brings financing terms, ide
 | Agent may not write | `editableByAgent: false` | contract validation ([validate.ts](../../packages/contract/src/validate.ts)) |
 | Recorded with before/after in audit | all changes | [audit-logging.md](audit-logging.md) |
 
-Proven in [redact.test.ts](../../packages/contract/src/redact.test.ts) and [validate.test.ts](../../packages/contract/src/validate.test.ts).
+Proven in [redact.test.ts](../../tests/unit/redact.test.ts) and [validate.test.ts](../../tests/unit/validate.test.ts).
 
 ## The market guardrail keeps the bar private-pilot
 

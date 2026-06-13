@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { parseContract } from './contract.js';
-import { EXAMPLE_PERSON_CONTRACT } from './fixtures.js';
-import { renderWorkspaceContext, hashWorkspaceContext, type LearnedView } from './render.js';
+import { parseContract } from '../../packages/contract/src/contract.js';
+import { EXAMPLE_PERSON_CONTRACT } from '../../packages/contract/src/fixtures.js';
+import { renderWorkspaceContext, hashWorkspaceContext, type LearnedView } from '../../packages/contract/src/render.js';
 
 const johnRecord = { data: { full_name: 'John Carter', email: 'secret@carterdeals.test', status: 'lead' } };
 const aliasView: LearnedView = { kind: 'alias', objectApiName: 'person', variant: 'Johnny', record: johnRecord };

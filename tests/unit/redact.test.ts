@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { getObject } from './contract.js';
-import { EXAMPLE_PERSON_CONTRACT } from './fixtures.js';
-import { REDACTED, buildContextDisplay, redactSensitive, sensitiveFieldNames } from './redact.js';
+import { getObject } from '../../packages/contract/src/contract.js';
+import { EXAMPLE_PERSON_CONTRACT } from '../../packages/contract/src/fixtures.js';
+import { REDACTED, buildContextDisplay, redactSensitive, sensitiveFieldNames } from '../../packages/contract/src/redact.js';
 
 const person = getObject(EXAMPLE_PERSON_CONTRACT, 'person')!;
 const record = {

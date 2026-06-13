@@ -1,8 +1,8 @@
 import { SignJWT } from 'jose';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ProblemError } from '@cormac/shared';
-import { loadConfig } from './config.js';
-import { buildServer } from './server.js';
+import { loadConfig } from '../../apps/api/src/config.js';
+import { buildServer } from '../../apps/api/src/server.js';
 
 /**
  * Server-boundary controls, no database needed: the CORS allowlist (#3), the

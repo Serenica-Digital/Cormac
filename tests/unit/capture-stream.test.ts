@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { ProblemError } from '@cormac/shared';
-import type { CaptureResult } from '../pipeline/capture.js';
-import { loadConfig } from '../config.js';
-import { buildServer } from '../server.js';
-import { safeErrorPayload, streamCapture, type SseSink } from './capture-stream.js';
+import type { CaptureResult } from '../../apps/api/src/pipeline/capture.js';
+import { loadConfig } from '../../apps/api/src/config.js';
+import { buildServer } from '../../apps/api/src/server.js';
+import { safeErrorPayload, streamCapture, type SseSink } from '../../apps/api/src/routes/capture-stream.js';
 
 /**
  * Two claims, both without a database:

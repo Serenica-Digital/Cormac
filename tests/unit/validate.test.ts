@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { EXAMPLE_PERSON_CONTRACT } from './fixtures.js';
-import { parseProposal } from './proposal.js';
-import { validateProposalAgainstContract } from './validate.js';
+import { EXAMPLE_PERSON_CONTRACT } from '../../packages/contract/src/fixtures.js';
+import { parseProposal } from '../../packages/contract/src/proposal.js';
+import { validateProposalAgainstContract } from '../../packages/contract/src/validate.js';
 
 const contract = EXAMPLE_PERSON_CONTRACT;
 

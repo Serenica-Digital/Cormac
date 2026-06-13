@@ -7,7 +7,7 @@ import {
   callStubRuntime,
   runHermesTask,
   type StubRuntimeRequest,
-} from './runtime.js';
+} from '../../apps/api/src/adapter/runtime.js';
 
 /**
  * Proves the adapter's containment guarantee (ADR-006) for both runtime
