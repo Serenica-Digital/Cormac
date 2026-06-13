@@ -1,11 +1,11 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createAnonClient, createServiceClient, type Db } from '@cormac/db';
+import { createServiceClient, type Db } from '@cormac/db';
 import type { Role } from '@cormac/shared';
 import { buildServer } from '../apps/api/src/server.js';
 import { loadConfig } from '../apps/api/src/config.js';
-import { TestResources } from './helpers.js';
+import { mintToken, requireSupabaseEnv, TestResources } from './helpers.js';
 
 /**
  * The RBAC matrix (control-register rows 9, 10): every protected endpoint, for
@@ -13,27 +13,17 @@ import { TestResources } from './helpers.js';
  * unauthenticated or non-member request is rejected. Uses fastify.inject and
  * real signed-in tokens. Skips without local Supabase.
  */
-const url = process.env.SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const anonKey = process.env.SUPABASE_ANON_KEY;
-const ready = Boolean(url && serviceKey && anonKey);
+const env = requireSupabaseEnv();
 
 const ROLES: Role[] = ['owner', 'agent_admin', 'manager', 'member', 'read_only'];
 
-describe.skipIf(!ready)('RBAC matrix', () => {
+describe.skipIf(!env.ready)('RBAC matrix', () => {
   let service: Db;
   let server: Awaited<ReturnType<typeof buildServer>>;
   let workspaceId: string;
   const token: Record<string, string> = {};
   let nonMemberToken: string;
   const resources = new TestResources();
-
-  async function signIn(email: string, password: string): Promise<string> {
-    const anon = createAnonClient(url!, anonKey!);
-    const res = await anon.auth.signInWithPassword({ email, password });
-    if (!res.data.session) throw new Error(`sign-in failed: ${res.error?.message}`);
-    return res.data.session.access_token;
-  }
 
   async function makeUser(role: Role | 'none'): Promise<{ id: string; token: string }> {
     const email = `${role}-${randomUUID()}@rbac.test`;
@@ -43,11 +33,13 @@ describe.skipIf(!ready)('RBAC matrix', () => {
     if (role !== 'none') {
       await service.from('memberships').insert({ workspace_id: workspaceId, user_id: id, role });
     }
-    return { id, token: await signIn(email, password) };
+    // The API verifies the HS256 token (sub -> membership -> role); mintToken is
+    // the canonical path, so this no longer round-trips through anon sign-in.
+    return { id, token: await mintToken(id) };
   }
 
   beforeAll(async () => {
-    service = createServiceClient(url!, serviceKey!);
+    service = createServiceClient(env.url, env.serviceKey);
     const ws = await service.from('workspaces').insert({ name: `rbac-${randomUUID()}` }).select('id').single();
     workspaceId = resources.workspace(ws.data!.id as string);
     for (const role of ROLES) token[role] = (await makeUser(role)).token;

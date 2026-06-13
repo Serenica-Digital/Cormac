@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EXAMPLE_PERSON_CONTRACT } from '@cormac/contract';
 import { createAnonClient, createServiceClient, createUserClient, type Db } from '@cormac/db';
@@ -8,7 +7,7 @@ import { buildAppContext, type AppContext } from '../apps/api/src/app.js';
 import { loadConfig } from '../apps/api/src/config.js';
 import { publishContract } from '../apps/api/src/pipeline/contract.js';
 import type { RequestContext } from '../apps/api/src/types.js';
-import { TestResources } from './helpers.js';
+import { requireSupabaseEnv, seedWorkspace, TestResources } from './helpers.js';
 
 /**
  * The contract publish gate (ADR-002, ADR-027 section 2). The version is
@@ -16,12 +15,9 @@ import { TestResources } from './helpers.js';
  * an invalid document is refused at the route and writes nothing, and an
  * authenticated user cannot call the RPC directly. Skips without local Supabase.
  */
-const url = process.env.SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const anonKey = process.env.SUPABASE_ANON_KEY;
-const ready = Boolean(url && serviceKey && anonKey);
+const env = requireSupabaseEnv();
 
-describe.skipIf(!ready)('contract publish gate', () => {
+describe.skipIf(!env.ready)('contract publish gate', () => {
   let service: Db;
   let app: AppContext;
   let server: Awaited<ReturnType<typeof buildServer>>;
@@ -32,28 +28,17 @@ describe.skipIf(!ready)('contract publish gate', () => {
   const resources = new TestResources();
 
   beforeAll(async () => {
-    service = createServiceClient(url!, serviceKey!);
+    service = createServiceClient(env.url, env.serviceKey);
     app = buildAppContext(loadConfig());
     server = await buildServer(loadConfig());
 
-    const ws = await service.from('workspaces').insert({ name: `pub-${randomUUID()}` }).select('id').single();
-    workspaceId = resources.workspace(ws.data!.id as string);
-    ownerEmail = `pub-${randomUUID()}@test.local`;
-    ownerPassword = `pw-${randomUUID()}`;
-    const user = await service.auth.admin.createUser({
-      email: ownerEmail,
-      password: ownerPassword,
-      email_confirm: true,
-    });
-    const userId = resources.user(user.data.user!.id);
-    await service.from('memberships').insert({ workspace_id: workspaceId, user_id: userId, role: 'owner' });
+    // seedWorkspace creates a v1 active contract, so a publish here becomes v2.
+    const seed = await seedWorkspace(service, resources, { namePrefix: 'pub' });
+    workspaceId = seed.workspaceId;
+    ownerEmail = seed.ownerEmail;
+    ownerPassword = seed.ownerPassword;
 
-    // A v1 active contract already exists, so a publish becomes v2.
-    await service
-      .from('contract_versions')
-      .insert({ workspace_id: workspaceId, version: 1, document: EXAMPLE_PERSON_CONTRACT, is_active: true });
-
-    ctx = { userId, workspaceId, role: 'owner' };
+    ctx = { userId: seed.userId, workspaceId, role: 'owner' };
   });
 
   afterAll(async () => {
@@ -86,7 +71,7 @@ describe.skipIf(!ready)('contract publish gate', () => {
   });
 
   it('refuses an invalid contract at the route and writes nothing', async () => {
-    const anon = createAnonClient(url!, anonKey!);
+    const anon = createAnonClient(env.url, env.anonKey);
     const signin = await anon.auth.signInWithPassword({ email: ownerEmail, password: ownerPassword });
     const token = signin.data.session!.access_token;
 
@@ -112,9 +97,9 @@ describe.skipIf(!ready)('contract publish gate', () => {
   });
 
   it('refuses publish_contract called directly by an authenticated user', async () => {
-    const anon = createAnonClient(url!, anonKey!);
+    const anon = createAnonClient(env.url, env.anonKey);
     const signin = await anon.auth.signInWithPassword({ email: ownerEmail, password: ownerPassword });
-    const asUser = createUserClient(url!, anonKey!, signin.data.session!.access_token);
+    const asUser = createUserClient(env.url, env.anonKey, signin.data.session!.access_token);
 
     const { error } = await asUser.rpc('publish_contract', {
       p_workspace_id: workspaceId,

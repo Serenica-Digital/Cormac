@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createAnonClient, createServiceClient, createUserClient, type Db } from '@cormac/db';
+import { requireSupabaseEnv } from './helpers.js';
 
 /**
  * The deliberate workspace deletion path (issue #2, migration 0005). Proves:
@@ -12,12 +13,9 @@ import { createAnonClient, createServiceClient, createUserClient, type Db } from
  *   3. EXECUTE is service-role only: an authenticated user is refused.
  * Skipped without local Supabase.
  */
-const url = process.env.SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const anonKey = process.env.SUPABASE_ANON_KEY;
-const ready = Boolean(url && serviceKey && anonKey);
+const env = requireSupabaseEnv();
 
-describe.skipIf(!ready)('workspace purge path', () => {
+describe.skipIf(!env.ready)('workspace purge path', () => {
   let service: Db;
   let userId: string;
   let userEmail: string;
@@ -45,7 +43,7 @@ describe.skipIf(!ready)('workspace purge path', () => {
   }
 
   beforeAll(async () => {
-    service = createServiceClient(url!, serviceKey!);
+    service = createServiceClient(env.url, env.serviceKey);
     userEmail = `purge-${randomUUID()}@test.local`;
     userPassword = `pw-${randomUUID()}`;
     const created = await service.auth.admin.createUser({
@@ -94,9 +92,9 @@ describe.skipIf(!ready)('workspace purge path', () => {
       .from('memberships')
       .insert({ workspace_id: id, user_id: userId, role: 'owner' });
 
-    const anon = createAnonClient(url!, anonKey!);
+    const anon = createAnonClient(env.url, env.anonKey);
     const signin = await anon.auth.signInWithPassword({ email: userEmail, password: userPassword });
-    const asUser = createUserClient(url!, anonKey!, signin.data.session!.access_token);
+    const asUser = createUserClient(env.url, env.anonKey, signin.data.session!.access_token);
 
     const { error } = await asUser.rpc('purge_workspace', { p_workspace_id: id });
     expect(error).not.toBeNull();

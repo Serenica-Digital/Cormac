@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EXAMPLE_PERSON_CONTRACT } from '@cormac/contract';
 import { createAnonClient, createServiceClient, createUserClient, type Db } from '@cormac/db';
-import { TestResources } from './helpers.js';
+import { requireSupabaseEnv, TestResources } from './helpers.js';
 
 /**
  * The first-class isolation test (ADR-003, ADR-015). It proves two things at the
@@ -16,12 +16,9 @@ import { TestResources } from './helpers.js';
  * Skipped automatically unless local Supabase env is present, so unit-only runs
  * stay green. CI starts Supabase and provides these.
  */
-const url = process.env.SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const anonKey = process.env.SUPABASE_ANON_KEY;
-const ready = Boolean(url && serviceKey && anonKey);
+const env = requireSupabaseEnv();
 
-describe.skipIf(!ready)('cross-tenant isolation and append-only audit', () => {
+describe.skipIf(!env.ready)('cross-tenant isolation and append-only audit', () => {
   let service: Db;
   let userB: Db;
   let workspaceA: string;
@@ -29,7 +26,7 @@ describe.skipIf(!ready)('cross-tenant isolation and append-only audit', () => {
   const resources = new TestResources();
 
   beforeAll(async () => {
-    service = createServiceClient(url!, serviceKey!);
+    service = createServiceClient(env.url, env.serviceKey);
 
     // Two workspaces.
     const wsA = await service.from('workspaces').insert({ name: `A-${randomUUID()}` }).select('id').single();
@@ -78,10 +75,10 @@ describe.skipIf(!ready)('cross-tenant isolation and append-only audit', () => {
     recordAId = rec.data.id as string;
 
     // Sign in as user B and build an RLS-constrained client.
-    const anon = createAnonClient(url!, anonKey!);
+    const anon = createAnonClient(env.url, env.anonKey);
     const signin = await anon.auth.signInWithPassword({ email: emailB, password: passwordB });
     if (!signin.data.session) throw new Error(`sign-in failed: ${signin.error?.message}`);
-    userB = createUserClient(url!, anonKey!, signin.data.session.access_token);
+    userB = createUserClient(env.url, env.anonKey, signin.data.session.access_token);
   });
 
   afterAll(async () => {
