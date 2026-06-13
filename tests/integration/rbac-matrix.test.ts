@@ -3,8 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createServiceClient, type Db } from '@cormac/db';
 import type { Role } from '@cormac/shared';
-import { buildServer } from '../apps/api/src/server.js';
-import { loadConfig } from '../apps/api/src/config.js';
+import { buildServer } from '../../apps/api/src/server.js';
+import { loadConfig } from '../../apps/api/src/config.js';
 import { mintToken, requireSupabaseEnv, TestResources } from './helpers.js';
 
 /**

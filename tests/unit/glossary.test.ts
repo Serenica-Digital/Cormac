@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseContract } from './contract.js';
+import { parseContract } from '../../packages/contract/src/contract.js';
 
 const base = {
   name: 'T',

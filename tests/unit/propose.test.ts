@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { propose, type RecordSummary } from './propose.js';
+import { propose, type RecordSummary } from '../../services/runtime-stub/src/propose.js';
 
 const john: RecordSummary = {
   objectApiName: 'person',
