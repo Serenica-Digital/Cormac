@@ -10,6 +10,7 @@ This file is the map and the rulebook: where each kind of doc lives, the header 
 | --- | --- | --- |
 | [adr/](adr/) | Architecture Decision Records: the *why*. One decision per file, with the reasoning and alternatives. | The decision record. Read first. |
 | [prd/](prd/) | The official *what we're building*: the current product shape and requirements. | Canonical product definition. |
+| [runbooks/](runbooks/) | Operational and dev runbooks (scripted steps for a repeatable task). | Procedure, not decisions. |
 | [research/](research/) | External research, each summarized with how it applies to us. | Reference, not decisions. |
 | [security/](security/) | The client-facing security and compliance packet, plus the control register and QA strategy. | Shipped deliverable. |
 | notes/ | Private developer space (transcripts, archive, working material). Gitignored. | Not part of the product record. |
@@ -18,6 +19,7 @@ This file is the map and the rulebook: where each kind of doc lives, the header 
 
 - A decision, or a change to a decision: a **new ADR** in `adr/`. Never edit a settled decision out of the record; supersede it with a new one and mark the old one superseded.
 - The product's current shape or a requirement: `prd/`. Keep it to the canonical set below; do not accumulate drafts here.
+- A scripted, repeatable procedure (sideload, bootstrap, drill): `runbooks/`.
 - A summary of something external (a tool, a standard, a vendor): `research/`.
 - Anything client-facing about security, or a control and its evidence: `security/`.
 - Transcripts, scratch, superseded drafts, anything personal or half-formed: `notes/` (private).
@@ -43,7 +45,10 @@ Status vocabulary: `canonical` (current source of truth), `draft` (in progress),
 ## Index
 
 ### adr/ — decisions
-See [adr/README.md](adr/README.md) for the full catalog (ADR-001 through ADR-029). Start there.
+See [adr/README.md](adr/README.md) for the full catalog (ADR-001 through ADR-032). Start there.
+
+### runbooks/ — scripted procedures
+[runbooks/pane-sideload.md](runbooks/pane-sideload.md): sideload the pane and run the M1 probes.
 
 ### prd/ — what we're building
 - [architecture.md](prd/architecture.md) — the trust topology and component responsibilities.

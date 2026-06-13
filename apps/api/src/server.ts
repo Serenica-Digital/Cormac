@@ -5,6 +5,7 @@ import { ProblemError } from '@cormac/shared';
 import { buildAppContext } from './app.js';
 import type { Config } from './config.js';
 import { registerMcpRoutes } from './mcp/routes.js';
+import { registerCaptureStreamRoute } from './routes/capture-stream.js';
 import { registerRoutes } from './routes.js';
 import './types.js';
 
@@ -51,5 +52,6 @@ export async function buildServer(config: Config): Promise<FastifyInstance> {
 
   registerRoutes(fastify);
   registerMcpRoutes(fastify);
+  registerCaptureStreamRoute(fastify);
   return fastify;
 }
