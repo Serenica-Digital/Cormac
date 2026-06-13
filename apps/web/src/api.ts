@@ -1,4 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL;
+import { env } from './env';
+
+const API_URL = env.VITE_API_URL;
 
 /**
  * Call the control-plane API with the user's bearer token. Everything dangerous

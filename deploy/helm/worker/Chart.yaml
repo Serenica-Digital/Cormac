@@ -1,0 +1,8 @@
+apiVersion: v2
+name: worker
+description: >-
+  Cormac background worker (weekly report, inbound connector processors land
+  here). No inbound traffic (clusterip). A Terra workload template; see ../README.md.
+type: application
+version: 0.1.0
+appVersion: "0.0.0"

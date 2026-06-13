@@ -1,8 +1,10 @@
 # Deployment setup: images, env inventory, remote database
 
-> **Status:** canonical · **Last reviewed:** 2026-06-12
+> **Status:** canonical · **Last reviewed:** 2026-06-13
 
 The operational companion to [juno-platform-pilot.md](juno-platform-pilot.md): every deployable image, every environment variable each workload needs, which of them are secrets, and the bootstrap sequence for a managed Supabase project. This is the input to the secrets conversation at the Juno onboarding session.
+
+> **Update 2026-06-13 (ADR-034):** the env inventory below is now machine-checked, not just documented. The single source of truth is the manifest ([../../packages/config/src/manifest.ts](../../packages/config/src/manifest.ts)), and `pnpm check:env` proves the companion files agree with it: `.env.example`, every `docker/compose.yaml` service block, and the Helm charts. The Juno deployment is authored as one Helm chart per workload under [../../deploy/helm/](../../deploy/helm/); secret generation, injection, and rotation are in [../runbooks/secrets-and-env.md](../runbooks/secrets-and-env.md).
 
 ## Images
 

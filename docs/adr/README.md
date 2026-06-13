@@ -59,3 +59,4 @@ Status values: **Proposed**, **Accepted**, **Superseded by ADR-NNN**. `Planned` 
 | [031](031-pane-architecture-and-sign-in-lanes.md) | The Excel pane architecture and the systematic sign-in lanes | Proposed (commits on ADR-030 GO) | 2026-06-12 |
 | [032](032-identity-linking-schema.md) | Identity linking keys to auth.users, with phone_claims for the SMS claim | Proposed (Probe B selects the option) | 2026-06-12 |
 | [033](033-qa-compliance-infrastructure.md) | QA and compliance infrastructure: four-tier test taxonomy, the auto-audited control chain, evals as a manual pillar | Accepted | 2026-06-13 |
+| [034](034-environment-and-secrets-management.md) | Environment and secrets as one governed contract; the Kubernetes deployment shape | Accepted (Juno bindings provisional) | 2026-06-13 |

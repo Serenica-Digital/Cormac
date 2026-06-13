@@ -1,0 +1,9 @@
+apiVersion: v2
+name: api
+description: >-
+  Cormac control plane (the only writer, ADR-005). Public webhook ingress
+  (ingress-noauth) with in-app signature verification; sole holder of the
+  Supabase service key. A Terra workload template; see ../README.md.
+type: application
+version: 0.1.0
+appVersion: "0.0.0"

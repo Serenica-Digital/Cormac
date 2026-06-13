@@ -1,0 +1,13 @@
+{{- if .Values.env }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.serviceName }}-config
+  labels:
+    app.kubernetes.io/name: {{ .Values.serviceName }}
+    app.kubernetes.io/part-of: cormac
+data:
+  {{- range $k, $v := .Values.env }}
+  {{ $k }}: {{ $v | quote }}
+  {{- end }}
+{{- end }}
