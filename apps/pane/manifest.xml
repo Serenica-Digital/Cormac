@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Cormac Excel task pane — M1 spike manifest (ADR-028).
+  XML add-in-only manifest (not the unified manifest), per REQ-004.
+
+  Dev sideload: serve the pane at https://localhost:5175 (pnpm certs + pnpm dev),
+  then sideload this file (see docs/runbooks/pane-sideload.md).
+
+  Two placeholders the runbook fills once the sign-in-only Entra app exists:
+    - PANE_ENTRA_CLIENT_ID   (WebApplicationInfo/Id and Resource)
+  Lane 0 (email/password) and Probes A/C/D/E need none of this; only Lanes A/B do.
+-->
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+  xsi:type="TaskPaneApp">
+
+  <Id>4b2f8a10-1c3d-4e5f-9a7b-0c1d2e3f4a5b</Id>
+  <Version>0.1.0.0</Version>
+  <ProviderName>Serenica Digital</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="Cormac (spike)" />
+  <Description DefaultValue="Cormac Excel task pane — M1 measurement spike." />
+  <IconUrl DefaultValue="https://localhost:5175/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://localhost:5175/icon-80.png" />
+  <SupportUrl DefaultValue="https://localhost:5175/" />
+
+  <!-- Origins the pane may navigate to: our origin and the Microsoft login host
+       (the Lane B dialog redirects through it). -->
+  <AppDomains>
+    <AppDomain>https://localhost:5175</AppDomain>
+    <AppDomain>https://login.microsoftonline.com</AppDomain>
+  </AppDomains>
+
+  <Hosts>
+    <Host Name="Workbook" />
+  </Hosts>
+
+  <!-- ExcelApi 1.14 is the requirement floor (REQ-004); newer sets are
+       runtime-gated with isSetSupported in code, never required here. -->
+  <Requirements>
+    <Sets DefaultMinVersion="1.14">
+      <Set Name="ExcelApi" MinVersion="1.14" />
+    </Sets>
+  </Requirements>
+
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://localhost:5175/index.html" />
+  </DefaultSettings>
+
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Workbook">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title" />
+            <Description resid="GetStarted.Description" />
+            <LearnMoreUrl resid="GetStarted.LearnMoreUrl" />
+          </GetStarted>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="Cormac.Group">
+                <Label resid="Cormac.Group.Label" />
+                <Icon>
+                  <bt:Image size="16" resid="Cormac.Icon16" />
+                  <bt:Image size="32" resid="Cormac.Icon32" />
+                  <bt:Image size="80" resid="Cormac.Icon80" />
+                </Icon>
+                <Control xsi:type="Button" id="Cormac.OpenPane">
+                  <Label resid="Cormac.OpenPane.Label" />
+                  <Supertip>
+                    <Title resid="Cormac.OpenPane.Label" />
+                    <Description resid="Cormac.OpenPane.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Cormac.Icon16" />
+                    <bt:Image size="32" resid="Cormac.Icon32" />
+                    <bt:Image size="80" resid="Cormac.Icon80" />
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>CormacTaskpane</TaskpaneId>
+                    <SourceLocation resid="Cormac.Taskpane.Url" />
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Cormac.Icon16" DefaultValue="https://localhost:5175/icon-16.png" />
+        <bt:Image id="Cormac.Icon32" DefaultValue="https://localhost:5175/icon-32.png" />
+        <bt:Image id="Cormac.Icon80" DefaultValue="https://localhost:5175/icon-80.png" />
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Cormac.Taskpane.Url" DefaultValue="https://localhost:5175/index.html" />
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://localhost:5175/" />
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GetStarted.Title" DefaultValue="Cormac is ready." />
+        <bt:String id="Cormac.Group.Label" DefaultValue="Cormac" />
+        <bt:String id="Cormac.OpenPane.Label" DefaultValue="Open Cormac" />
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="GetStarted.Description" DefaultValue="Open the Cormac pane to capture updates and onboard your workbook." />
+        <bt:String id="Cormac.OpenPane.Tooltip" DefaultValue="Open the Cormac task pane." />
+      </bt:LongStrings>
+    </Resources>
+
+    <!-- Lane A (NAA silent sign-in). Id/Resource are the sign-in-only Entra app;
+         the runbook fills them once the registration exists. Sign-in-only scopes
+         (openid/profile/email) are exempt from the unverified-publisher consent
+         block, so this works before publisher verification (REQ-044). -->
+    <WebApplicationInfo>
+      <Id>PANE_ENTRA_CLIENT_ID</Id>
+      <Resource>api://localhost:5175/PANE_ENTRA_CLIENT_ID</Resource>
+      <Scopes>
+        <Scope>openid</Scope>
+        <Scope>profile</Scope>
+        <Scope>email</Scope>
+      </Scopes>
+    </WebApplicationInfo>
+  </VersionOverrides>
+</OfficeApp>

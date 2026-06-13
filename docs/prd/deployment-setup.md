@@ -13,11 +13,12 @@ CI publishes one private image per workload to GHCR on every push to `dev` or `m
 | `ghcr.io/serenica-digital/api` | `docker/Dockerfile.node` (`SERVICE=api`) | Control plane |
 | `ghcr.io/serenica-digital/worker` | `docker/Dockerfile.node` (`SERVICE=worker`) | Same base image as api; only the CMD differs |
 | `ghcr.io/serenica-digital/web` | `docker/Dockerfile.web` | See the Vite caveat below |
+| `ghcr.io/serenica-digital/pane` | `docker/Dockerfile.pane` | Excel task pane (M1 spike), same shape as `web`; see the custom-domain note below |
 | `ghcr.io/serenica-digital/hermes-runtime` | `docker/Dockerfile.hermes` | Pinned `nousresearch/hermes-agent:v2026.6.5` + the baked profile from `docker/hermes-runtime/`; verified to boot headless from env alone |
 
 Juno pulls these with an `image_pull_secret` (a GitHub PAT with `read:packages`, or a fine-grained token scoped to the org packages). Image names keep the `serenica-digital` org path deliberately; the org is the company (ADR-029).
 
-**Planned, post-M1:** a fifth image for the Excel task pane (a static SPA server, the same shape as `web`). It is listed in [juno-platform-pilot.md](juno-platform-pilot.md) as a planned workload because it carries the one hard hosting constraint in the system: the add-in manifest pins the pane's public domain near-permanently, so its workload needs a stable custom domain and TLS from day one (Juno onboarding question 12). No Office.js runs in the container; that executes in Excel's client-side webview.
+**Pane workload (wired in CI as of the M1 spike; production shape still open).** The `pane` image is now built and published like the others, currently the Vite dev server (the same interim shape as `web`, same Vite caveat below). Two things stay open until the GO/NO-GO (ADR-030): a hardened static-server image for production, and the one hard hosting constraint in the system, that the add-in manifest pins the pane's public domain near-permanently, so the workload needs a stable custom domain and TLS from day one (Juno onboarding question 12). No Office.js runs in the container; that executes in Excel's client-side webview. The pane needs the `VITE_*` env (including the optional `VITE_ENTRA_CLIENT_ID` for auth Lanes A/B); it holds no secrets and no database access.
 
 No image contains a secret. The hermes-runtime image carries `${VAR}` placeholders in its baked config; Hermes interpolates them from the workload env at load.
 
