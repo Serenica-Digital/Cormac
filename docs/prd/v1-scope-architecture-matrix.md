@@ -1,253 +1,85 @@
 # V1 Scope and Architecture Matrix
 
-> **Status:** canonical · **Last reviewed:** 2026-06-06
+> **Status:** canonical · **Last reviewed:** 2026-06-12
 
-This matrix turns the contract-first product idea into implementation surfaces. It answers: what lives where, what we build, what we integrate, and what should not be promised in v1.
+The scope cut for v1: what lives where, what we build versus integrate versus register, and what is explicitly not promised. v1 means the pilot live on the design partner's real business ([build-plan.md](build-plan.md), milestones M1-M8). The topology lives in [architecture.md](architecture.md); the data-and-knowledge view in [contract-model.md](contract-model.md). This doc is the cut, not the sequence or the why.
 
-## Recommended V1 Architecture
-
-```text
-Users / Surfaces
-  -> PWA / Web App
-  -> Excel workbook / future Excel add-in
-  -> SMS
-  -> Email forwarding
-  -> Future MCP/Claude connector
-      -> SaaS Control Plane (Node/TypeScript API + workers)
-          -> Workbook Contract Agent
-          -> CRM Operations Agent
-          -> Diff / Proposal Engine
-          -> Policy + Permission Engine
-          -> Model Provider Adapter
-          -> Agent Runtime Adapter
-              -> Nous Hermes Agent Runtime candidate
-          -> Supabase/Postgres
-
-Microsoft 365
-  -> OneDrive / SharePoint documents stay in Microsoft
-  -> Outlook/email is ingested only through controlled paths
-  -> Excel supplies raw schema/data and can become a governed draft-update surface
-
-Claude / MCP
-  -> External interface into the Control Plane/runtime
-  -> High-level tools only
-  -> Does not bypass proposal/confirmation/audit model
-```
+The original version of this matrix predates the runtime adoption (ADR-025/026), the knowledge layer (ADR-027), and the surface pivot (ADR-028). The big moves since: Hermes is adopted, not a candidate; the internal MCP tool server exists and is the spine; the Excel task pane replaced the web app as the primary client surface; email ingestion moved out of v1; the sprint plan and estimate bands this doc once carried are superseded by the milestone plan and are gone.
 
 ## What Lives Where
 
-| Surface | V1 Home | Notes |
+| Thing | Home | Notes |
 | --- | --- | --- |
-| Web/PWA UI | Lovable + GitHub | Lovable can generate/refine user-facing screens, with source controlled in GitHub. |
-| Canonical business records | Supabase/Postgres | Contract-defined records, not fixed global People/Deals/etc. tables. |
-| Schema contracts | Supabase/Postgres | Object/field/relationship definitions, aliases, identity rules, Excel mappings, versions, validation rules. |
-| SaaS Control Plane | Node/TypeScript service | Owns tenant routing, auth, RBAC, proposal batches, contract publishing, integration adapters, billing, audit, and write safety. |
-| Agent runtime | Nous Hermes Agent candidate | Optional Dockerized/Python runtime evaluated for skills, MCP, provider routing, messaging gateways, and cron-style tasks. |
-| Agent proposals | Supabase/Postgres | Every proposed change should be stored before approval. |
-| Audit log | Supabase/Postgres | Record user, source, before/after, timestamp, tool/model where relevant. |
-| Documents | Customer Microsoft 365 | App stores links/metadata, not copies, unless explicitly required. |
-| Email source content | TBD | Shared ingestion mailbox is lower-risk than full user mailbox monitoring. |
-| SMS messages | App database + Twilio logs | First-class design-partner surface; messages need CRM source linkage and compliance handling. |
-| Excel workbook | Microsoft 365 | Raw schema/data source and possible draft update surface; arbitrary sync deferred. |
-| Excel add-in | Office Add-in / later | Strategic later surface for in-Excel query, refresh, draft submit, and conflict review. |
-| Agent configuration | App database | Versioned and editable only by Agent Admins. |
-| Integration logic | Control Plane | Microsoft Graph, Twilio, email parsing, sync jobs, Excel diffs, and MCP tools need server-side control. |
-| Claude connector tools | Product-owned MCP server | Later thick interface into the Control Plane/runtime, no raw writes. |
+| Excel task pane (primary client surface) | Office add-in, SPA served from our containers | XML manifest, ExcelApi 1.14 floor; Office.js runs in Excel's webview, not our container. Build gated on M1's GO/NO-GO (ADR-028) |
+| Web/PWA UI (admin, trust, fallback) | Lovable-built React app, source in GitHub | Roles, audit review, learning queue, settings; capture/review stay feature-complete as the platform-risk fallback |
+| Canonical business records | Supabase/Postgres | Contract-defined JSONB hybrid (ADR-019), never fixed product tables |
+| Semantic contracts (glossary included) | Supabase/Postgres, versioned documents | Server-authoritative atomic publish behind the `publish_contract` capability |
+| Learned knowledge | Supabase/Postgres, gated rows | Typed slots (aliases, enum synonyms); propose/decide/revoke lifecycle (ADR-027) |
+| Compiled workspace context | Control plane, per task | Contract + glossary + active learning rendered byte-stable into the runtime's cached prompt prefix |
+| SaaS Control Plane | Node/TypeScript (Fastify) service | The only writer. Tenant routing, RBAC, proposals, publishing, learning gate, audit, connectors |
+| MCP tool surface (internal) | Control plane, `/mcp` | The runtime's only reach into data; workspace-scoped bearer token per task (ADR-025) |
+| Agent runtime | Hermes, pinned image, Dockerized | Adopted (ADR-006/026), stateless per task, no database credentials, swappable behind the adapter |
+| Agent proposals, source messages, audit | Supabase/Postgres | Append-only audit through application flows; everything links back to its source |
+| Documents | Customer Microsoft 365 | We store links/metadata, never copies, in v1 |
+| SMS messages | App database + Twilio logs | Arrival trust: verified webhook + sender claim on the identity spine (M6) |
+| Agent configuration | App database + baked runtime profile | SOUL/profile versioned in repo; per-workspace knowledge through the governed layer, never prompt edits |
+| Integration logic | Control Plane | Twilio, later Graph; server-side only |
+| Claude connector tools | Product-owned MCP server, external | Post-v1; intended to authorize through Supabase so it joins the identity spine |
 
 ## Build / Buy / Register
 
 | Capability | V1 Action | Build / Buy / Register |
 | --- | --- | --- |
-| CRM web UI | Build with Lovable + GitHub refinement | Build |
-| PWA installability | Add manifest/service worker as needed | Build |
-| Auth | Supabase Auth initially, Microsoft SSO later if needed | Build/configure |
-| Contract-defined CRM database | Supabase/Postgres schema | Build |
-| Schema-contract foundation | Object/field/relationship metadata, stable IDs, validation, Excel mappings | Build |
-| SaaS Control Plane | Node/TypeScript backend/API/worker | Build |
-| Agent Runtime Adapter | Product bridge into runtime execution | Build |
-| Nous Hermes Agent Runtime | Dockerized runtime spike, tenant-scoped config/profile | Evaluate |
-| Workbook Contract Agent | Workbook detection + semantic-contract proposal workflow | Build |
-| Supabase security baseline | RLS, tenant isolation, server-side secrets, audit logs, backup plan | Build/configure |
-| Agent proposal queue | Product-specific UX/API | Build |
-| Agent extraction/matching | Control Plane invoking runtime/model APIs | Build |
-| Audit log | Product-specific schema/API | Build |
-| Email forwarding ingestion | Inbound mailbox/parser or Microsoft Graph | Build/integrate |
-| SMS update ingestion | Twilio webhooks | Integrate/register |
-| A2P 10DLC | Required if US business texting is enabled | Register |
-| Microsoft app registration | Required for Graph integrations | Register/configure |
-| Microsoft publisher verification | Recommended before broader Microsoft-heavy beta | Register/verify |
-| Microsoft Publisher Attestation | Later trust milestone | Register/attest |
-| SOC 2 | Not v1 certification; design for readiness | Prepare later |
-| Claude connector | Thick remote MCP server into Control Plane/runtime | Build later |
-| Excel add-in | Office Add-in task pane/ribbon surface | Build later |
-| Excel arbitrary sync | Major later feature | Defer |
+| Excel task pane | Spike (M1), then build (M3/M4) | Build |
+| Web admin/fallback UI | Build with Lovable + GitHub refinement | Build |
+| Auth | Supabase broker; Entra as default IdP in the pane (Lane A), dialog relay fallback; identity linking in the schema | Build/configure |
+| Contract-defined CRM database | Supabase/Postgres schema | Built |
+| Knowledge layer (glossary, learning, prefix) | — | Built (ADR-027) |
+| SaaS Control Plane | Node/TypeScript backend/API/worker | Built, extending |
+| Agent Runtime Adapter + MCP tool surface | — | Built (ADR-025/026) |
+| Hermes runtime | Pinned image, baked profile | Adopted; Juno deployment open (M5) |
+| Workbook Contract Agent | Interview engine (M2), pane mount (M4) | Build |
+| Supabase security baseline | RLS, isolation tests, purge, audit | Built, maintained |
+| A2P 10DLC | Start during M1; gates M6 | Register (#24) |
+| Minimal Entra app registration (sign-in only, no Graph) | M1, for the pane's Lane A silent sign-in | Register/configure |
+| Publisher track (DUNS, Partner Center, verification) | Start during M1; gates nothing before the AppSource listing | Register (#53) |
+| Microsoft Graph app permissions | Post-v1; staged minimal-scope ladder from zero | Defer |
+| Microsoft Publisher Attestation | Post-v1 trust milestone | Attest later |
+| SOC 2 | Design for readiness only | Prepare later |
+| Claude connector | Post-v1 | Build later |
 
 ## V1 Feature Matrix
 
-| Feature | Recommended V1 | Why |
+| Feature | V1 | Why |
 | --- | --- | --- |
-| Web/PWA CRM | In | Operational control surface. |
-| Contract-defined business records | In | Core CRM substrate comes from the semantic contract. |
-| Schema-contract foundation | In | Prevents the design partner's model from becoming hard-coded product architecture. |
-| Starter templates | Probably in | People/deals/properties/tasks can seed the first contract but should not become global assumptions. |
-| Task/follow-up creation | In | High-value CRM automation when included in the active contract. |
-| Agent proposal review queue | In | Trust and control mechanism. |
-| Agent autonomous writes | Out | Too risky before audit/rollback is proven. |
-| SMS update ingestion | In | First-class design-partner surface. Pulls Twilio/A2P/compliance onto the v1 critical path. |
-| SMS questions + reminders | In | Ask/answer, reminders, summaries. |
-| Email forwarding updates | In or P1 | Secondary ingestion surface. |
-| Individual mailbox monitoring | Probably out | Privacy/admin-consent complexity. |
-| Workbook-to-contract ingestion | In | Central to spreadsheet-contract-first product thesis. |
-| Controlled Excel import/export | In | Supports Microsoft/Excel-native customers without full sync complexity. |
-| Excel draft-and-sync | Optional stretch | Makes Excel an update surface while routing through Control Plane proposals/audit. |
-| Excel add-in | Later / optional POC | Strategic in-Excel surface after contract pipeline exists. |
-| Controlled Excel table sync | Optional stretch | Feasible but needs conflict rules. |
-| Arbitrary bidirectional Excel sync | Out | Too broad for v1. |
-| OneDrive/SharePoint document links | In | Useful and lower-risk than full file sync. |
-| Full document ingestion/search | Out or later | Adds permissions, storage, indexing, and privacy risk. |
-| Outlook calendar intelligence | Out | Hard to determine CRM-worthy events reliably. |
-| Claude connector | Later v1.5 | Useful thick interface into Control Plane/runtime after tools/API are stable. |
-| Client agent tuning | Limited in | Admin-editable instructions/rules with audit/versioning. |
-| Model/provider selection | Out | Adds complexity before product behavior is stable. |
-| Self-hosting | Out | Keep architecture portable, but do not build self-hosting first. |
-
-## Interaction Surface Sequencing
-
-### Web/PWA Control Surface
-
-Role:
-
-- Contract review/publishing.
-- Proposal queue.
-- Admin, integrations, audit, settings.
-- Rich review of complex changes.
-
-### Excel Contract and Work Surface
-
-Flow:
-
-```text
-User uploads/selects controlled workbook
-  -> Control Plane detects tables/columns/sample data
-  -> Workbook Contract Agent proposes semantic contract
-  -> admin reviews/publishes contract
-  -> records import/export or draft-sync through proposal pipeline
-```
-
-Pros:
-- Directly validates Microsoft/Excel-native product thesis.
-- Useful for onboarding/migration.
-- Avoids email/SMS ambiguity at first.
-
-Cons:
-- Less magical than agent ingestion.
-- Sync can expand rapidly.
-- Existing spreadsheets may not match controlled schema.
-
-Recommended v1 version:
-
-Workbook-to-contract ingestion plus controlled import/export. Draft-and-sync or Excel add-in are optional scope decisions.
-
-### SMS Surface
-
-Flow:
-
-```text
-User texts Twilio number
-  -> Twilio webhook
-  -> Control Plane authenticates sender
-  -> Control Plane invokes runtime/model to extract structured proposal or answer
-  -> confirmation/review behavior follows workspace setting
-  -> CRM update + audit event if applied
-```
-
-Recommended v1 version:
-
-SMS supports capture, lightweight questions, reminders, and summaries. Complex review should happen in the web app.
-
-### Email Surface
-
-Recommended v1 version:
-
-Use a controlled forwarding address or shared ingestion mailbox before full mailbox monitoring.
-
-## Suggested Pilot Sequence
-
-### Sprint 0: Product and Data Design
-
-- Confirm design partner/customer relationship.
-- Choose first three workflows.
-- Confirm system of record and contract-first data model.
-- Decide v1 Excel depth.
-- Decide interaction-surface sequence.
-- Define compliance baseline.
-
-### Sprint 1: PWA and CRM Skeleton
-
-- Auth.
-- Tenant/account setup.
-- Schema-contract metadata model.
-- Contract-defined record screens.
-- Starter template for the design partner's records if useful.
-- Basic search/filter.
-
-### Sprint 2: Agent Proposal Engine
-
-- Source message model.
-- Agent extraction prompt/tooling.
-- Record matching.
-- Proposal creation.
-- Review queue.
-- Approve/edit/reject.
-- Audit log.
-
-### Sprint 3: Required Pilot Surfaces
-
-- Workbook-to-contract ingestion.
-- Controlled Excel import/export or narrow draft-and-sync.
-- SMS ingestion with Twilio/A2P setup.
-- Email forwarding if selected.
-
-### Sprint 4: Microsoft Foundation
-
-- Microsoft app registration.
-- Minimal Graph permission set for chosen channel.
-- OneDrive/SharePoint document-link support.
-- Admin onboarding notes.
-
-### Sprint 5: Pilot Hardening
-
-- Backups.
-- Tenant isolation checks.
-- Logging/monitoring.
-- Security packet.
-- Prompt/config versioning.
-- Pilot training and feedback loop.
-
-## Estimate Bands
-
-These are planning bands, not commitments.
-
-| Scope | Rough Effort |
-| --- | --- |
-| Product definition / PRD / architecture | 15-30 hours |
-| Clickable PWA prototype | 30-60 hours |
-| Contract-defined CRM schema/API/UI | 80-160 hours |
-| SaaS Control Plane backend foundation | 60-140 hours |
-| Nous Hermes Agent Runtime evaluation | 20-60 hours |
-| Workbook Contract Agent / ingestion wizard | 60-140 hours |
-| Agent proposal loop | 60-140 hours |
-| Email forwarding ingestion | 25-60 hours |
-| SMS ingestion and reminders | 35-90 hours plus registration time |
-| Controlled Excel import/export | 30-80 hours |
-| Excel draft-and-sync / add-in proof of concept | 80-200 hours |
-| Controlled Excel table sync hardening | 80-180 hours |
-| Claude/MCP connector | 30-80 hours after API exists |
-| Compliance/security packet | 20-60 hours, not counting legal review |
-| Self-hosted deployment path | 80-200+ hours, deferred |
+| Excel task pane: capture, review queue, proposal diffs | In (M3) | The primary surface; the demographic lives in Excel (ADR-028) |
+| Excel task pane: authoring interview against the open workbook | In (M4) | The keystone onboarding moment (ADR-023) |
+| Web admin: roles, audit, learning queue, settings | In (M3/M5) | The trust door; what the security packet points at |
+| Web capture/review fallback | In | Platform-risk floor: capture never hits zero on a Microsoft bad day |
+| Contract-defined business records | In (built) | Core substrate |
+| Business glossary in the contract | In (built) | One knowledge artifact, one gate (ADR-027) |
+| Governed learning (typed slots, gated) | In (built) | The agent gets smarter per workspace; every lesson inspectable and revocable |
+| Compiled cached context prefix | In (built) | Measured: 2-3 calls/8-15s/~$0.03 per task, from 5/21s/$0.045 |
+| Agent proposal review queue | In (built; pane UI M3) | Trust and control mechanism |
+| Configurable confirmation (confirm-each / apply-then-report) | In (M7 completes it) | The original product motivation; weekly report is the safety net |
+| Weekly change report | In (M7) | Load-bearing for apply-then-report |
+| SMS capture, questions, reminders | In (M6) | First-class design-partner surface |
+| Email forwarding ingestion | Out (post-v1) | Secondary channel; SMS + pane cover capture for the pilot |
+| Workbook-to-contract ingestion | In (M2/M4) | The product thesis |
+| Contract-generated constrained workbook + validate-at-sync | Out (post-v1, #29/#30) | The pane subsumes its interactive UX for the pilot (ADR-022 stands as the later shape) |
+| Arbitrary bidirectional Excel sync | Out | Unchanged; never promised for v1 |
+| OneDrive/SharePoint document links (pasted URLs) | In, links only | No Graph consent needed for pasted links |
+| Full document ingestion/search | Out | Permissions, storage, privacy risk |
+| Microsoft Graph data access (files, mail) | Out (post-v1 ladder) | The add-in needs zero Graph permissions; stage 0 is the v1 posture |
+| Claude/MCP external connector | Out (post-v1) | After the API surface stabilizes |
+| Outlook host for the pane | Out (candidate second host) | Decided in the ADR-028 follow-up |
+| Client agent tuning (free-form prompt edits) | Out | Governed learning and contract changes are the tuning paths |
+| Model/provider selection | Out | Claude-first behind the provider seam (ADR-013) |
+| Self-hosting | Out | Portable containers, but not a v1 product |
+| Relationships as first-class edges | Out (#20, backlog) | JSONB + contract relationships suffice at pilot scale |
 
 ## Proposal Warning Language
 
 Use direct language around the risky promises:
 
-"The pilot will not attempt fully autonomous CRM mutation or arbitrary bidirectional sync with any existing spreadsheet. Those are later-stage capabilities that require conflict handling, auditability, permissions, and operational support. V1 is designed to prove the agent-assisted update loop safely: extract, match, propose, approve, apply, and audit."
+"The pilot will not attempt fully autonomous CRM mutation or arbitrary bidirectional sync with any existing spreadsheet. Those are later-stage capabilities that require conflict handling, auditability, permissions, and operational support. V1 proves the agent-assisted update loop safely: extract, match, propose, approve (or apply-and-report), and audit. Where the agent acts without per-change approval, it does so under an opt-in mode with full audit and a weekly report, and high-risk actions always require explicit confirmation."
