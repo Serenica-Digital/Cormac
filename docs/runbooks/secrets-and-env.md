@@ -3,17 +3,23 @@
 > **Status:** canonical · **Last reviewed:** 2026-06-13
 
 How to generate, inject, and rotate the platform's secrets and environment, local
-and on Juno (ADR-034). The variable contract itself lives in the manifest
-([packages/config/src/manifest.ts](../../packages/config/src/manifest.ts)); `pnpm
-check:env` proves `.env.example`, `docker/compose.yaml`, and the Helm charts agree
-with it. The deployable env inventory and the managed-Supabase bootstrap live in
+and on Juno (ADR-034, ADR-035). The variable contract lives in the manifest
+([packages/config/src/manifest.ts](../../packages/config/src/manifest.ts)), which
+generates `.env.example` and the Helm charts' `env`/`secretEnv`; `pnpm check:env`
+fails the build if they drift. Secret *values* live in Infisical, the single
+authority. The deployable env inventory is in
 [../prd/deployment-setup.md](../prd/deployment-setup.md).
 
 ## Principles
 
+- Secret values live in one authority, Infisical (ADR-035). Nothing else keeps a
+  copy. Host tooling injects them with `infisical run`; the cluster synthesizes the
+  one k8s Secret `cormac-secrets` from Infisical via the External Secrets Operator
+  ([../../deploy/eso/](../../deploy/eso/)). Every read is logged.
+- **There is no local `.env`.** A developer runs `infisical login` once; after that
+  the env-needing commands pull from Infisical. `.infisical.json` (a committed
+  project pointer, not a secret) binds the repo to the project.
 - Secrets are never committed and never baked into an image or a chart default.
-  They are read from the environment at boot (server) or injected via
-  `secretKeyRef` (Kubernetes). `.env` is gitignored; only `.env.example` is committed.
 - The Supabase service-role key is held only by the api (and bootstrap scripts),
   never the browser or the runtime (ADR-003/005).
 - In `dev`/`prod` (`APP_ENV`), a missing or unsafe secret fails the boot, loudly
@@ -21,25 +27,34 @@ with it. The deployable env inventory and the managed-Supabase bootstrap live in
 
 ## Local
 
-1. `cp .env.example .env`.
-2. Fill the Supabase values from `pnpm db:start` (or `pnpm exec supabase status -o env`).
-3. Generate the runtime/MCP secrets:
-   ```sh
-   echo "RUNTIME_API_KEY=$(openssl rand -hex 24)"
-   echo "MCP_WORKSPACE_TOKEN=$(openssl rand -hex 24)"
-   ```
-4. `ANTHROPIC_API_KEY` from console.anthropic.com (synthetic data only locally).
-5. Leave `APP_ENV` at `local`; the dev JWT secret default is fine on a laptop only.
+One-time, per machine:
 
-The `REMOTE_*` and `SUPABASE_DB_*` values are namespaced for the managed-Supabase
-bootstrap (`db:push:remote`, `seed`, `check:remote`) and never collide with the
-local stack.
+1. `infisical login` (browser; pick **Infisical Cloud (US Region)**).
+2. `pnpm db:start` brings up the local Supabase stack. Its keys are already in
+   Infisical's `dev` environment; if you rebuild the stack and they change, push the
+   new values: `infisical secrets set SUPABASE_SERVICE_ROLE_KEY=... --env=dev`.
+
+After that, the env-needing commands inject from Infisical automatically because they
+wrap `infisical run`: `pnpm seed`, `pnpm smoke`, `pnpm evals*`, and the frontends
+(`pnpm --filter @cormac/web dev`, `pnpm --filter @cormac/pane dev`). Vite reads the
+`VITE_*` from the injected process env, so the frontends need no `.env` either. The
+`check:*` scripts that read the environment (`check:rls`, `check:migrations`) take an
+explicit prefix locally: `infisical run -- pnpm check:rls`.
+
+The `dev` environment holds the local Supabase keys, the runtime/MCP tokens, the
+Anthropic key, the non-secret config (`SUPABASE_URL`, the `VITE_*`), and the
+namespaced `REMOTE_*`/`SUPABASE_DB_*` for the managed-Supabase bootstrap.
 
 ## Juno (Kubernetes)
 
-Charts read every secret via `secretKeyRef` from one Secret, `cormac-secrets`.
-Create it and the GHCR pull secret **before** `helm install` (a documented juno_k3s
-race deploys workloads before a later-created secret exists).
+Charts read every secret via `secretKeyRef` from one Secret, `cormac-secrets`. The
+intended path is the External Secrets Operator synthesizing it from Infisical, so no
+secret value ever lives in a cluster spec ([../../deploy/eso/](../../deploy/eso/),
+proven on local k3d, ADR-035): install ESO, create the one bootstrap auth secret
+(`infisical-auth`, a machine identity's client id/secret), then apply
+`secretstore.yaml` + `externalsecret.yaml`. The hand-made `kubectl` path below is the
+bootstrap fallback; either way it must exist **before** `helm install` (a documented
+juno_k3s race deploys workloads before a later-created secret exists).
 
 ```sh
 # 1. App secrets. Generate fresh values for the deployment; do not reuse local ones.
@@ -75,10 +90,13 @@ cannot serve a per-workload custom host, front the pane with a CDN (Cloudflare).
 
 ## Rotation
 
-- **Supabase keys**: rotate in the Supabase project, then update `cormac-secrets`
-  (`kubectl create secret ... --dry-run=client -o yaml | kubectl apply -f -`) and
-  restart the api. Verification is JWKS-based, so no JWT secret rotation is needed
-  in prod.
+Rotate a value once in Infisical; host tooling picks it up on the next `infisical
+run`, and ESO refreshes the cluster Secret (1h interval, or force with `kubectl
+annotate externalsecret cormac-secrets force-sync=$(date +%s) --overwrite`). Then
+restart the consuming workload so it re-reads the env. Specifics:
+
+- **Supabase keys**: rotate in the Supabase project, set the new value in Infisical,
+  restart the api. Verification is JWKS-based, so no JWT secret rotation in prod.
 - **RUNTIME_API_KEY / API_SERVER_KEY (one value) and MCP_WORKSPACE_TOKEN**: generate
   new values, update the Secret, and `kubectl rollout restart` both the api and the
   hermes-runtime so they pick up the new pair together (re-key without downtime:

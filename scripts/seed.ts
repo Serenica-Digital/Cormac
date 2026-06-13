@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { readEnv } from '@cormac/config/server';
 import { EXAMPLE_PERSON_CONTRACT } from '@cormac/contract';
 import { createServiceClient } from '@cormac/db';
