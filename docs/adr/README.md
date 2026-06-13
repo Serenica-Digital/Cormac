@@ -55,3 +55,6 @@ Status values: **Proposed**, **Accepted**, **Superseded by ADR-NNN**. `Planned` 
 | [027](027-workspace-knowledge-layer.md) | The workspace knowledge layer: governed strata, compiled into a cached prefix | Accepted | 2026-06-11 |
 | [028](028-office-addin-primary-surface.md) | The Office add-in as the primary client surface; Microsoft posture under fresh review | Accepted as direction; research done, spike and GO/NO-GO pending | 2026-06-12 |
 | [029](029-cormac-name-committed.md) | Cormac is the committed product name; build proceeds ahead of formal clearance | Accepted | 2026-06-12 |
+| [030](030-pane-go-no-go.md) | Excel task pane GO/NO-GO (M1 spike result) | Proposed (skeleton; pending M1 measurements) | 2026-06-12 |
+| [031](031-pane-architecture-and-sign-in-lanes.md) | The Excel pane architecture and the systematic sign-in lanes | Proposed (commits on ADR-030 GO) | 2026-06-12 |
+| [032](032-identity-linking-schema.md) | Identity linking keys to auth.users, with phone_claims for the SMS claim | Proposed (Probe B selects the option) | 2026-06-12 |

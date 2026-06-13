@@ -9,8 +9,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "pnpm --filter @cormac/web run build",
-    "typecheck": "tsc --noEmit -p tsconfig.json && pnpm --filter @cormac/web run typecheck",
+    "build": "pnpm --filter @cormac/web run build && pnpm --filter @cormac/pane run build",
+    "typecheck": "tsc --noEmit -p tsconfig.json && pnpm --filter @cormac/web run typecheck && pnpm --filter @cormac/pane run typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

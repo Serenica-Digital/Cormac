@@ -22,11 +22,16 @@ const envSchema = z.object({
     .default('super-secret-jwt-token-with-at-least-32-characters-long'),
   API_PORT: z.coerce.number().int().positive().default(8088),
   /**
-   * CORS allowlist, comma-separated origins. Defaults to the local web surface.
-   * Any origin not on the list gets no CORS headers and is blocked by the
-   * browser (control-register known gap #3).
+   * CORS allowlist, comma-separated origins. Defaults to the local web surface
+   * (5174) and the Excel pane's HTTPS dev origin (5175; Office sideloading needs
+   * HTTPS). Any origin not on the list gets no CORS headers and is blocked by
+   * the browser (control-register known gap #3).
    */
-  CORS_ORIGINS: z.string().default('http://127.0.0.1:5174,http://localhost:5174'),
+  CORS_ORIGINS: z
+    .string()
+    .default(
+      'http://127.0.0.1:5174,http://localhost:5174,https://localhost:5175,https://127.0.0.1:5175',
+    ),
   /**
    * Which runtime the capture pipeline dispatches to. `hermes` is the product
    * runtime (Runs API, ADR-006/ADR-025) and the default; `stub` selects the
@@ -47,6 +52,17 @@ const envSchema = z.object({
    */
   MCP_WORKSPACE_ID: z.string().uuid().optional(),
   MCP_WORKSPACE_TOKEN: z.string().min(16).optional(),
+  /**
+   * The M1 pane spike's SSE streaming probe (Probe A). Off by default so the
+   * route is inert anywhere it is not explicitly turned on, the same posture as
+   * the MCP surface. SSE_TICK_MS is the wall-clock cadence of the progress
+   * frames; Hermes streams no tokens, so these ticks are progress, not output.
+   */
+  SSE_PROBE_ENABLED: z
+    .string()
+    .default('false')
+    .transform((v) => ['true', '1', 'yes', 'on'].includes(v.toLowerCase())),
+  SSE_TICK_MS: z.coerce.number().int().positive().default(1000),
 });
 
 export type Config = z.infer<typeof envSchema>;
