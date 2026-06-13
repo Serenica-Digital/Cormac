@@ -1,6 +1,6 @@
 # Deployment setup: images, env inventory, remote database
 
-> **Status:** canonical · **Last reviewed:** 2026-06-10
+> **Status:** canonical · **Last reviewed:** 2026-06-12
 
 The operational companion to [juno-platform-pilot.md](juno-platform-pilot.md): every deployable image, every environment variable each workload needs, which of them are secrets, and the bootstrap sequence for a managed Supabase project. This is the input to the secrets conversation at the Juno onboarding session.
 
@@ -15,7 +15,9 @@ CI publishes one private image per workload to GHCR on every push to `dev` or `m
 | `ghcr.io/serenica-digital/web` | `docker/Dockerfile.web` | See the Vite caveat below |
 | `ghcr.io/serenica-digital/hermes-runtime` | `docker/Dockerfile.hermes` | Pinned `nousresearch/hermes-agent:v2026.6.5` + the baked profile from `docker/hermes-runtime/`; verified to boot headless from env alone |
 
-Juno pulls these with an `image_pull_secret` (a GitHub PAT with `read:packages`, or a fine-grained token scoped to the org packages).
+Juno pulls these with an `image_pull_secret` (a GitHub PAT with `read:packages`, or a fine-grained token scoped to the org packages). Image names keep the `serenica-digital` org path deliberately; the org is the company (ADR-029).
+
+**Planned, post-M1:** a fifth image for the Excel task pane (a static SPA server, the same shape as `web`). It is listed in [juno-platform-pilot.md](juno-platform-pilot.md) as a planned workload because it carries the one hard hosting constraint in the system: the add-in manifest pins the pane's public domain near-permanently, so its workload needs a stable custom domain and TLS from day one (Juno onboarding question 12). No Office.js runs in the container; that executes in Excel's client-side webview.
 
 No image contains a secret. The hermes-runtime image carries `${VAR}` placeholders in its baked config; Hermes interpolates them from the workload env at load.
 
@@ -88,7 +90,7 @@ SUPABASE_URL='https://<project>.supabase.co' SUPABASE_SERVICE_ROLE_KEY='...' pnp
 SUPABASE_URL='https://<project>.supabase.co' SUPABASE_SERVICE_ROLE_KEY='...' SUPABASE_ANON_KEY='...' pnpm check:remote
 ```
 
-**Executed 2026-06-10** against the dev project (`serenica-crm-agent`, Serenica Digital org, East US, free tier): all four migrations applied, the demo workspace seeded, and the cross-tenant isolation test passed 5/5 against the hosted database. Project creation notes: Data API on, "automatically expose new tables" left on for parity with the local CLI stack (tightening it is a production-hardening question, not a dev-project one), automatic RLS on as a harmless backstop to our own per-table policies. The free tier pauses the project after a week of inactivity; unpause from the dashboard.
+**Executed 2026-06-10** against the dev project (Serenica Digital org, East US, free tier; created as `serenica-crm-agent`, since renamed in the dashboard alongside the repo — the GitHub integration tracks by project ID and survived the rename): the then-current four migrations applied, the demo workspace seeded, and the cross-tenant isolation test passed 5/5 against the hosted database. Since then: migrations now run through `0007_workspace_knowledge` (the ADR-027 tables and RPCs), and the hosted project was reseeded 2026-06-12 with the `owner@demo.cormac.test` identity. Project creation notes: Data API on, "automatically expose new tables" left on for parity with the local CLI stack (tightening it is a production-hardening question, not a dev-project one), automatic RLS on as a harmless backstop to our own per-table policies. The free tier pauses the project after a week of inactivity; unpause from the dashboard.
 
 **Resolved (ADR-020):** the hosted project signs user tokens **ES256** against its published JWKS (`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`; the token `kid` matches the JWKS key), the issuer is exactly `${SUPABASE_URL}/auth/v1`, and `aud` is `authenticated`. So on Juno: `SUPABASE_AUTH_ISSUER` stays unset and `SUPABASE_JWT_SECRET` is not provisioned at all; JWKS verification is the only path the api needs.
 
@@ -102,6 +104,7 @@ Generate or collect before the session; each lands in the pilot cluster's secret
 - [ ] `SUPABASE_SERVICE_ROLE_KEY`: the dev project's `sb_secret_...` key
 - [ ] `VITE_SUPABASE_ANON_KEY` / `SUPABASE_URL`: the dev project's publishable key and URL (not secrets, but bring them)
 - [ ] GHCR `image_pull_secret`: a GitHub PAT with `read:packages` for the `Serenica-Digital` org images. Note: a default `gh` CLI token does not carry this scope; mint a fine-grained PAT deliberately.
+- [ ] Confirm the hosted project's migration state matches local (`pnpm db:push:remote`, then `pnpm check:remote`): the 2026-06-12 reseed is confirmed, but a push of `0005`-`0007` to the hosted project is not separately recorded. Run it (idempotent) rather than assume it.
 
 ## Local reference
 
