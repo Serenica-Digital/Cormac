@@ -29,21 +29,21 @@ import { join } from 'node:path';
  */
 const QA_EXEMPT: { path: string; reason: string }[] = [
   {
-    path: 'tests/usage-telemetry.test.ts',
+    path: 'tests/integration/usage-telemetry.test.ts',
     reason:
       'Observability: persists run id + usage onto the source message. Touches no auth/isolation/audit/write-gate/redaction control.',
   },
   {
-    path: 'packages/contract/src/render.test.ts',
+    path: 'tests/unit/render.test.ts',
     reason:
       'Correctness of byte-stable contract rendering; the control (only approved, no sensitive content reaches the prefix) is register rows 26 and 6 via context-compile.',
   },
   {
-    path: 'packages/contract/src/glossary.test.ts',
+    path: 'tests/unit/glossary.test.ts',
     reason: 'Correctness of glossary parsing/dedup; the compiled-context control is register row 26.',
   },
   {
-    path: 'services/runtime-stub/src/propose.test.ts',
+    path: 'tests/unit/propose.test.ts',
     reason: 'Test-only stub fixture for the runtime seam; not production code, enforces nothing.',
   },
   {

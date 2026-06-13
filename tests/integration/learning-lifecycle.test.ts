@@ -2,15 +2,15 @@ import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EXAMPLE_PERSON_CONTRACT } from '@cormac/contract';
 import { createServiceClient, type Db } from '@cormac/db';
-import { buildAppContext, type AppContext } from '../apps/api/src/app.js';
-import { loadConfig } from '../apps/api/src/config.js';
-import { decideLearning, revokeLearning } from '../apps/api/src/pipeline/learning.js';
+import { buildAppContext, type AppContext } from '../../apps/api/src/app.js';
+import { loadConfig } from '../../apps/api/src/config.js';
+import { decideLearning, revokeLearning } from '../../apps/api/src/pipeline/learning.js';
 import {
   getLearnedKnowledge,
   insertLearnedKnowledge,
   listActiveLearnedKnowledge,
-} from '../apps/api/src/repo.js';
-import type { RequestContext } from '../apps/api/src/types.js';
+} from '../../apps/api/src/repo.js';
+import type { RequestContext } from '../../apps/api/src/types.js';
 import { requireSupabaseEnv, seedWorkspace, TestResources } from './helpers.js';
 
 /**

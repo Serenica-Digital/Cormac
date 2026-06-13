@@ -2,11 +2,11 @@ import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EXAMPLE_PERSON_CONTRACT } from '@cormac/contract';
 import { createAnonClient, createServiceClient, createUserClient, type Db } from '@cormac/db';
-import { buildServer } from '../apps/api/src/server.js';
-import { buildAppContext, type AppContext } from '../apps/api/src/app.js';
-import { loadConfig } from '../apps/api/src/config.js';
-import { publishContract } from '../apps/api/src/pipeline/contract.js';
-import type { RequestContext } from '../apps/api/src/types.js';
+import { buildServer } from '../../apps/api/src/server.js';
+import { buildAppContext, type AppContext } from '../../apps/api/src/app.js';
+import { loadConfig } from '../../apps/api/src/config.js';
+import { publishContract } from '../../apps/api/src/pipeline/contract.js';
+import type { RequestContext } from '../../apps/api/src/types.js';
 import { requireSupabaseEnv, seedWorkspace, TestResources } from './helpers.js';
 
 /**

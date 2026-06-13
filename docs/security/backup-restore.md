@@ -17,5 +17,5 @@ Blocked on: a real database to run a restore drill against (local Supabase was d
 
 1. Take a backup of the pilot database.
 2. Restore it to a separate environment.
-3. Run [tests/isolation.test.ts](../../tests/isolation.test.ts) against the restored instance to confirm isolation and append-only audit still hold.
+3. Run [tests/integration/isolation.test.ts](../../tests/integration/isolation.test.ts) against the restored instance to confirm isolation and append-only audit still hold.
 4. Record the steps, timings, and owner here, and flip control-register row 17 to a real status.
