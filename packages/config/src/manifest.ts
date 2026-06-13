@@ -7,14 +7,15 @@ import { DEV_JWT_SECRET } from './appEnv.js';
  *
  *   - `Z`   : the validation rule (a Zod schema) for each variable, declared once.
  *   - `ENV` : the metadata for each variable (scope, secret, which workloads read
- *             it, whether an operator sets it in .env). Drives `scripts/check-env.ts`,
- *             which proves `.env.example`, `docker/compose.yaml`, and the Helm
- *             charts all agree with this file. Nothing about an env var is born
- *             anywhere else.
+ *             it, whether an operator sets it in .env). This is the only place a
+ *             variable is declared. `pnpm gen:env` (scripts/gen-env.ts) generates
+ *             `.env.example` and each Helm chart's env/secretEnv from it, and
+ *             `pnpm check:env` fails the build if those generated files drift
+ *             (ADR-035). Nothing about an env var is born anywhere else.
  *
  * The boot-time loaders (server.ts, browser.ts) and apps/api/src/config.ts all
  * build their schemas from `Z`, so a variable's type and validation live in one
- * place. A `SSE_PROBE_ENABLED`-style drift (read by code, missing from compose)
+ * place. A `SSE_PROBE_ENABLED`-style drift (read by code, missing from a chart)
  * is now a CI failure, not a silent dead route.
  */
 

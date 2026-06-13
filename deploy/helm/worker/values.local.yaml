@@ -1,0 +1,9 @@
+# Local k3d overlay for the worker (ADR-035). No secrets, no DB; boots with just
+# APP_ENV + WORKER_PORT, so it is the credential-free half of the mechanics proof.
+image:
+  repository: cormac/worker
+  tag: dev
+  pullPolicy: IfNotPresent
+imagePullSecret: ""
+env:
+  APP_ENV: dev

@@ -1,0 +1,25 @@
+# k3d cluster for the local Cormac stack (ADR-035). `pnpm dev:up` creates this;
+# `pnpm dev:down` deletes it. Local dev runs the SAME Helm charts that deploy to
+# Juno, so the deployment is proven on the developer's Mac (arm64-native) before
+# it ever ships. The backend (api, worker, hermes-runtime) runs in-cluster; the
+# web and pane frontends run on the host via Vite against this cluster's api
+# (their VITE_* are build-time, and the pane needs host HTTPS for sideload).
+#
+# A single server node is enough for the backend trio. The host reaches the api
+# with `kubectl port-forward svc/cormac-api 8088:8088` (dev:up prints this), which
+# survives k3d's networking model better than a serverlb port map onto a ClusterIP
+# Service. Ingress is disabled in the local overlays, so traefik is unused.
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: cormac
+servers: 1
+agents: 0
+options:
+  k3d:
+    wait: true
+  k3s:
+    nodeLabels:
+      - label: cormac.local=true
+        nodeFilters:
+          - server:0

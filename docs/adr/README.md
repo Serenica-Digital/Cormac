@@ -60,3 +60,4 @@ Status values: **Proposed**, **Accepted**, **Superseded by ADR-NNN**. `Planned` 
 | [032](032-identity-linking-schema.md) | Identity linking keys to auth.users, with phone_claims for the SMS claim | Proposed (Probe B selects the option) | 2026-06-12 |
 | [033](033-qa-compliance-infrastructure.md) | QA and compliance infrastructure: four-tier test taxonomy, the auto-audited control chain, evals as a manual pillar | Accepted | 2026-06-13 |
 | [034](034-environment-and-secrets-management.md) | Environment and secrets as one governed contract; the Kubernetes deployment shape | Accepted (Juno bindings provisional) | 2026-06-13 |
+| [035](035-generated-env-infisical-k3d.md) | One source of truth by generation; Infisical the secret authority; Helm the only orchestrator; k3d the local environment | Accepted (live k3d/ESO proof gated) | 2026-06-13 |
