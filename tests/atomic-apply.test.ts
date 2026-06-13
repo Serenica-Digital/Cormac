@@ -1,9 +1,8 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { EXAMPLE_PERSON_CONTRACT } from '@cormac/contract';
 import { createAnonClient, createServiceClient, createUserClient, type Db } from '@cormac/db';
-import { TestResources } from './helpers.js';
+import { requireSupabaseEnv, seedWorkspace, TestResources } from './helpers.js';
 
 /**
  * Proves the atomic-apply fix against live Postgres (control-register claim #7).
@@ -18,10 +17,7 @@ import { TestResources } from './helpers.js';
  *
  * Skipped without local Supabase.
  */
-const url = process.env.SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const anonKey = process.env.SUPABASE_ANON_KEY;
-const ready = Boolean(url && serviceKey && anonKey);
+const env = requireSupabaseEnv();
 
 interface ChangeInput {
   op: 'create' | 'update';
@@ -30,7 +26,7 @@ interface ChangeInput {
   values: Record<string, unknown>;
 }
 
-describe.skipIf(!ready)('atomic apply_proposal', () => {
+describe.skipIf(!env.ready)('atomic apply_proposal', () => {
   let service: Db;
   let workspaceId: string;
   let ownerId: string;
@@ -113,27 +109,13 @@ describe.skipIf(!ready)('atomic apply_proposal', () => {
   }
 
   beforeAll(async () => {
-    service = createServiceClient(url!, serviceKey!);
-
-    const ws = await service.from('workspaces').insert({ name: `atomic-${randomUUID()}` }).select('id').single();
-    workspaceId = resources.workspace(ws.data!.id as string);
-
-    ownerEmail = `atomic-${randomUUID()}@test.local`;
-    ownerPassword = `pw-${randomUUID()}`;
-    const user = await service.auth.admin.createUser({
-      email: ownerEmail,
-      password: ownerPassword,
-      email_confirm: true,
-    });
-    ownerId = resources.user(user.data.user!.id);
-    await service.from('memberships').insert({ workspace_id: workspaceId, user_id: ownerId, role: 'owner' });
-
-    const cv = await service
-      .from('contract_versions')
-      .insert({ workspace_id: workspaceId, version: 1, document: EXAMPLE_PERSON_CONTRACT, is_active: true })
-      .select('id')
-      .single();
-    contractVersionId = cv.data!.id as string;
+    service = createServiceClient(env.url, env.serviceKey);
+    const seed = await seedWorkspace(service, resources, { namePrefix: 'atomic' });
+    workspaceId = seed.workspaceId;
+    ownerId = seed.userId;
+    contractVersionId = seed.contractVersionId;
+    ownerEmail = seed.ownerEmail;
+    ownerPassword = seed.ownerPassword;
   });
 
   afterAll(async () => {
@@ -192,10 +174,10 @@ describe.skipIf(!ready)('atomic apply_proposal', () => {
   });
 
   it('forbids an authenticated user from executing the function', async () => {
-    const anon = createAnonClient(url!, anonKey!);
+    const anon = createAnonClient(env.url, env.anonKey);
     const signin = await anon.auth.signInWithPassword({ email: ownerEmail, password: ownerPassword });
     expect(signin.data.session).not.toBeNull();
-    const asUser = createUserClient(url!, anonKey!, signin.data.session!.access_token);
+    const asUser = createUserClient(env.url, env.anonKey, signin.data.session!.access_token);
 
     const rid = await seedPerson({ full_name: 'Atomic Three', status: 'lead' });
     const { proposalId: pid } = await pendingProposal([

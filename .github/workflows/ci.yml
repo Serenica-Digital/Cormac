@@ -38,6 +38,12 @@ jobs:
       - name: Secret scan
         run: pnpm check:secrets
 
+      - name: Check control register (claim -> control -> test chain)
+        run: pnpm check:controls
+
+      - name: Check eval fixtures (structural, no model calls)
+        run: pnpm check:eval-fixtures
+
       - name: Start Supabase (applies migrations)
         run: pnpm exec supabase start
 
