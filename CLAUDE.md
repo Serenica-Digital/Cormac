@@ -2,7 +2,7 @@
 
 Cormac is a multi-tenant, contract-first CRM agent platform, by Serenica Digital. Clients bring the spreadsheets their business already runs on. The system lifts each workbook into a governed, versioned semantic contract and operates on it through an agent reachable over web, SMS, email, Excel, and Claude/MCP. The generalizable product is the build. The first design partner is a small real-estate firm.
 
-Status: early build. The walking skeleton runs end to end against real Postgres, and real Hermes runs the operations agent locally in the ADR-025 posture (ADR-026). The managed Supabase dev project exists and is bootstrapped. The Juno deployment is the open front (ADR-017). ADR-018 records the repository shape.
+Status: early build, sequenced as eight milestones to v1 (the pilot live on the design partner's business; see [docs/prd/build-plan.md](docs/prd/build-plan.md), mirrored on the board). Done and verified: the walking skeleton end to end against real Postgres; real Hermes running the operations agent as a tool-user in the ADR-025 posture (ADR-026); the workspace knowledge layer with the compiled, cached context prefix (ADR-027). Committed direction: the Excel task pane add-in as the primary client surface, build gated on a spike and GO/NO-GO (ADR-028). Open fronts: M1 (pane proof) and M2 (authoring engine) in parallel, with the Juno deployment (ADR-017) behind them. ADR-018 records the repository shape; ADR-029 commits the Cormac name.
 
 At the start of a fresh session, run `/onboard` (defined in [.claude/commands/onboard.md](.claude/commands/onboard.md)). It walks the decision record, the PRD, and the current build state, then reports back before any work starts.
 
