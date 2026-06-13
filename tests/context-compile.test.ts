@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import http from 'node:http';
-import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EXAMPLE_PERSON_CONTRACT } from '@cormac/contract';
 import { createServiceClient, type Db } from '@cormac/db';
@@ -9,7 +8,7 @@ import { loadConfig } from '../apps/api/src/config.js';
 import { compileWorkspaceContext } from '../apps/api/src/pipeline/context.js';
 import { captureUpdate } from '../apps/api/src/pipeline/capture.js';
 import type { RequestContext } from '../apps/api/src/types.js';
-import { TestResources } from './helpers.js';
+import { requireSupabaseEnv, seedWorkspace, TestResources } from './helpers.js';
 
 /**
  * The compiled context prefix (ADR-027 section 3, #48). compileWorkspaceContext
@@ -18,11 +17,9 @@ import { TestResources } from './helpers.js';
  * is byte-stable. Capture on the Hermes path passes the block as the run's
  * instructions. Skips without local Supabase.
  */
-const url = process.env.SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const ready = Boolean(url && serviceKey);
+const env = requireSupabaseEnv();
 
-describe.skipIf(!ready)('compiled workspace context', () => {
+describe.skipIf(!env.ready)('compiled workspace context', () => {
   let service: Db;
   let app: AppContext;
   let ctx: RequestContext;
@@ -61,30 +58,18 @@ describe.skipIf(!ready)('compiled workspace context', () => {
     process.env.RUNTIME_KIND = 'hermes';
     process.env.RUNTIME_URL = `http://127.0.0.1:${addr.port}`;
 
-    service = createServiceClient(url!, serviceKey!);
+    service = createServiceClient(env.url, env.serviceKey);
     app = buildAppContext(loadConfig());
 
-    const ws = await service.from('workspaces').insert({ name: `ctx-${randomUUID()}` }).select('id').single();
-    workspaceId = resources.workspace(ws.data!.id as string);
-    const user = await service.auth.admin.createUser({
-      email: `ctx-${randomUUID()}@test.local`,
-      password: `pw-${randomUUID()}`,
-      email_confirm: true,
-    });
-    const userId = resources.user(user.data.user!.id);
-    await service.from('memberships').insert({ workspace_id: workspaceId, user_id: userId, role: 'owner' });
-
-    const cv = await service
-      .from('contract_versions')
-      .insert({ workspace_id: workspaceId, version: 1, document: EXAMPLE_PERSON_CONTRACT, is_active: true })
-      .select('id')
-      .single();
+    const seed = await seedWorkspace(service, resources, { namePrefix: 'ctx' });
+    workspaceId = seed.workspaceId;
+    const userId = seed.userId;
     const john = await service
       .from('business_records')
       .insert({
         workspace_id: workspaceId,
         object_api_name: 'person',
-        contract_version_id: cv.data!.id,
+        contract_version_id: seed.contractVersionId,
         data: { full_name: 'John Carter', email: 'john@carterdeals.test', status: 'lead' },
       })
       .select('id')
@@ -95,7 +80,7 @@ describe.skipIf(!ready)('compiled workspace context', () => {
       .insert({
         workspace_id: workspaceId,
         object_api_name: 'person',
-        contract_version_id: cv.data!.id,
+        contract_version_id: seed.contractVersionId,
         data: { full_name: 'Ghost Gone', status: 'lead' },
         archived_at: new Date().toISOString(),
       })
