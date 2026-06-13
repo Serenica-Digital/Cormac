@@ -81,6 +81,9 @@ jobs:
           - name: web
             dockerfile: docker/Dockerfile.web
             build-args: ''
+          - name: pane
+            dockerfile: docker/Dockerfile.pane
+            build-args: ''
           - name: hermes-runtime
             dockerfile: docker/Dockerfile.hermes
             build-args: ''

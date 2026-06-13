@@ -35,7 +35,8 @@ Read in this order:
 On demand (do not read now unless the focus calls for it):
 
 - `docs/prd/requirements.md`: numbered REQ-IDs with acceptance criteria. Consult when implementing or reviewing a feature.
-- `docs/prd/v1-scope-architecture-matrix.md`: the v1 in/deferred cut and sprint sequencing.
+- `docs/prd/v1-scope-architecture-matrix.md`: the v1 in/deferred cut and the build/buy/register matrix (the old sprint bands are gone; milestones live in build-plan.md).
+- `docs/prd/deployment-setup.md`: the deployable images, per-workload env inventory, which vars are secrets, and the managed-Supabase bootstrap. Consult for anything deployment, secrets, or environment shaped.
 - `docs/prd/juno-platform-pilot.md`: the Juno pilot outreach plan.
 
 ## 4. Reference indexes (awareness, not full reads)
@@ -50,7 +51,7 @@ The docs describe intent; the tree describes reality; the board describes the li
 - **The GitHub project board is the source of truth for what is planned, in flight, and prioritized.** Repo: `Serenica-Digital/Cormac` (private). Board: https://github.com/orgs/Serenica-Digital/projects/3. Read priorities off the board; do not reconstruct them from the docs. Each issue body carries its context, a "Done when" line, and the ADR or handoff it traces to. Labels are type (`bug`, `security`, `infra`, `agent`, `contract`, `ui`, `docs`) plus priority (`P0`/`P1`/`P2`), with `needs-verification` marking built-but-unproven work. Pull current state with:
   - `gh issue list --repo Serenica-Digital/Cormac --label P0` for the must-close-before-pilot items.
   - `gh issue list --repo Serenica-Digital/Cormac --state open --milestone "<name>"` for a phase. Milestones are the eight v1 milestones in [build-plan.md](../../docs/prd/build-plan.md) (`M1: Pane proof and GO/NO-GO` through `M8: Pilot readiness (v1)`).
-  - `gh project item-list 3 --owner Serenica-Digital --limit 100` for the board with statuses (Todo, In Progress, Done). The `--limit` matters; the default page size truncates the list.
+  - `gh project item-list 3 --owner Serenica-Digital --format json --limit 100 | jq -r '.items[] | "\(.status // "—")\t#\(.content.number)\t\(.content.title)"'` for the board with statuses (Todo, In Progress, Done). The `--format json` matters: the plain text output omits the Status field, so a status-free `item-list` will read every issue as if it were Todo. The `--limit` matters too; the default page size truncates the list.
 - `git log --oneline -15` and `git status`: what landed, what is in flight and uncommitted. `dev` is the work trunk where routine commits land; `main` is the stable branch, updated from `dev` by PR. A `fix/...` or `feat/...` branch off `dev` is an in-flight issue, not stray work. See CLAUDE.md for the full branching rule.
 - Root `README.md`: package layout, quick start, and the check commands (`pnpm typecheck`, `pnpm lint`, `pnpm test`).
 - Be skeptical of green checkmarks. What is actually built versus merely claimed lives in the tracker: `bug` issues record known defects and the `needs-verification` label marks work that compiles but has not been proven against a live system. Trust those over a passing typecheck.
