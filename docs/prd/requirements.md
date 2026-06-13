@@ -1,442 +1,319 @@
 # Requirements and Acceptance Criteria
 
-> **Status:** draft · **Last reviewed:** 2026-06-06
+> **Status:** canonical · **Last reviewed:** 2026-06-12
 
-This document converts the contract-first CRM agent platform PRD into numbered requirements. It uses the current recommended v1 package until the team makes final product decisions.
-
-Priority key:
-
-- P0: required for v1 pilot.
-- P1: strong v1 candidate or v1.1.
-- P2: later product milestone.
-- Deferred: explicitly out of v1.
+Numbered requirements for the v1 pilot, kept aligned with the decision record. REQ IDs are stable and referenced from other docs; numbers are never reused. Priorities map to the milestone plan in [build-plan.md](build-plan.md): P0 is required for the pilot (v1), P1 is a strong candidate that may land inside M1-M8 without gating the pilot, P2 and Deferred are post-v1. Pane-specific acceptance criteria firm up at M1's GO/NO-GO ADR; they are written here to current knowledge (ADR-028 and [../research/microsoft-ecosystem-integration.md](../research/microsoft-ecosystem-integration.md)).
 
 ## Product Foundation
 
 ### REQ-001: Multi-Tenant Workspace
 
-Priority: P0
+Priority: P0 — built
 
 The product must support an organization/workspace boundary so users, records, agent settings, and audit logs are scoped to the correct tenant.
 
 Acceptance criteria:
 
 - A user belongs to one or more organizations/workspaces.
-- CRM records are scoped to a workspace.
-- Agent settings are scoped to a workspace.
-- Audit events include workspace ID.
+- CRM records, contracts, learned knowledge, proposals, and audit events are scoped to a workspace.
 - Users cannot access records from another workspace through the UI or API.
+- The cross-tenant isolation test suite is a CI gate, and the workspace purge path removes tenant data completely.
 
 ### REQ-002: Role-Based Access Control
 
-Priority: P0
+Priority: P0 — built
 
-The product must support roles for normal users and privileged agent/admin functions.
+The product must support roles for normal users and privileged functions.
 
 Acceptance criteria:
 
-- Supported roles include Owner/Admin, Agent Admin, Manager, User, and Read-only User.
-- Only Owner/Admin can manage users and integrations.
-- Only Agent Admin or Owner/Admin can change agent behavior.
+- Roles are `owner`, `agent_admin`, `manager`, `member`, `read_only` (packages/shared is the source of truth).
+- Only owner manages users; owner and agent_admin hold `publish_contract`.
+- Manager and above decide proposals and learning (the learning decision reuses the `approve_proposal` capability).
 - Read-only users cannot approve or apply CRM mutations.
-- Permission failures are logged where security-relevant.
+- Permission failures are logged where security-relevant, and the RBAC matrix test covers every role-capability pair.
 
-### REQ-003: PWA/Web App Control Surface
+### REQ-003: Web App: Admin, Trust, and Fallback Surface
 
 Priority: P0
 
-The v1 product must ship as a browser-based web app, with PWA installability if practical.
+The web app is the admin, trust, and fallback door (ADR-028 demoted it from primary). It must stay feature-complete for capture and review as the platform-risk floor.
 
 Acceptance criteria:
 
-- Users can access the CRM through a web browser.
-- Core contract-defined CRM screens work on desktop and mobile viewports.
-- If PWA support is included, the app has a manifest and basic install behavior.
-- Native desktop app is not required in v1.
+- Role management, audit review, the learning queue, and workspace settings live in the web app.
+- Capture and proposal review work in the web app without any Microsoft dependency.
+- Core screens work on desktop and mobile viewports; PWA installability is optional.
+
+### REQ-004: Excel Task Pane: Primary Client Surface
+
+Priority: P0 — gated on M1's GO/NO-GO (ADR-028)
+
+The product's primary client surface is an Office task pane add-in in Excel, hosting both agent experiences.
+
+Acceptance criteria:
+
+- One pane hosts day-to-day operations (capture, review queue, proposal diffs; M3) and the authoring interview against the live open workbook (M4).
+- The pane is a thin SPA served from our own HTTPS infrastructure; it renders, relays, and executes Office.js surface actions; it holds no business logic, no write authority, and no secrets.
+- Ships on the XML add-in-only manifest with ExcelApi 1.14 as the requirement floor; newer API sets are runtime-gated with `isSetSupported`.
+- An approved write rendered back into the workbook via Office.js is a surface action on an already-audited decision, never a direct write path.
+- Capture triggers are change events plus explicit user gestures; the design assumes no save event exists on the platform.
+- Pilot distribution is admin upload (centralized deployment / Integrated Apps) or AppSource self-install; neither requires the AppSource listing to exist first.
 
 ## Contract-First Data Model
 
 ### REQ-009: Client Schema Contracts
 
-Priority: P0
+Priority: P0 — built
 
-The product must support client-specific semantic contracts that define the structured business objects, fields, relationships, validation rules, aliases, identity rules, sync rules, and external mappings used by a workspace.
+The product must support client-specific semantic contracts that define the structured business objects, fields, relationships, validation rules, aliases, identity rules, the business glossary, and external mappings used by a workspace.
 
 Acceptance criteria:
 
-- A workspace can define a semantic contract for business objects and fields.
-- Schema contracts include stable internal object and field IDs independent of display labels or Excel column names.
-- Schema contracts can map external surfaces such as Excel tables to internal objects/fields.
-- Schema changes are versioned and audited.
-- Agent extraction and proposal tools use the active schema contract when generating proposed updates.
-- V1 should begin with a schema-contract foundation rather than hard-baking the design partner's model. The first contract can be authored from the design partner's use case and may be configured by the developer rather than fully self-service, but the internal model should still use stable object/field/relationship definitions and mappings from the start.
+- A workspace can define a semantic contract for business objects and fields, with stable internal IDs independent of display labels or Excel column names.
+- The contract carries the workspace glossary (terms, definitions, optional object/field scope) as part of the same versioned document (ADR-027).
+- Publishing is server-authoritative and atomic: the control plane bumps the version, flips the single active flag, and writes the audit event in one transaction, behind the `publish_contract` capability.
+- Agent extraction and proposal tools run against the active contract version.
+- Records, proposals, and audit events reference the contract version that governed them.
 
 ### REQ-010: Contract-Defined Business Records
 
-Priority: P0
+Priority: P0 — built
 
 The product must support business records whose object types are defined by the workspace's published semantic contract.
 
 Acceptance criteria:
 
 - Users can create, view, edit, archive, and search records for contract-defined object types.
-- Object types such as People, Organizations, Deals/Opportunities, Properties/Assets, Facilities, Lenders, Tasks/Follow-ups, and Notes may be starter templates or design-partner contract objects, not mandatory global product tables.
+- Object types are never mandatory global product tables; storage is the JSONB hybrid of ADR-019.
 - Record views and forms are generated or configured from the active contract.
-- Records link to the contract version and field definitions that governed their creation/update where practical.
 - Records include created/updated timestamps and creator/updater IDs.
 
 ### REQ-011: Starter Templates
 
 Priority: P1
 
-The product should support starter templates for common relationship/deal workflows without requiring every workspace to use those exact objects.
-
-Acceptance criteria:
-
-- Templates can include relationship/deal objects such as People, Organizations, Deals, Properties/Assets, Notes, Tasks, Facilities, Lenders, or Follow-ups.
-- Templates can be renamed, hidden, or omitted based on the workspace contract.
-- Template fields compile into the same stable object/field/relationship structure as workbook-derived objects.
+Starter templates for common relationship/deal workflows, compiled into the same stable contract structure as workbook-derived objects, renameable and omittable per workspace.
 
 ### REQ-012: Source Message Object
 
-Priority: P0
+Priority: P0 — built
 
-The product must preserve source context for agent-created proposals.
+Source context is preserved for agent-created proposals.
 
 Acceptance criteria:
 
-- Source messages can represent web-entered text, forwarded email, SMS, or imported spreadsheet rows.
-- Source messages include channel, sender/user, timestamp, raw/normalized content where appropriate, and linked CRM records.
-- Agent proposals link back to their source message.
-- Sensitive source retention behavior is documented.
+- Source messages represent web-entered text, SMS, or imported rows (email post-v1), with channel, sender/user, timestamp, content, and runtime telemetry.
+- Agent proposals link back to their source message; sensitive retention behavior is documented in the security packet.
 
 ### REQ-013: Document Links
 
 Priority: P1
 
-The product should link CRM records to documents stored in Microsoft 365 without replacing SharePoint/OneDrive as the document system.
-
-Acceptance criteria:
-
-- Users can attach/store a document URL on a CRM record.
-- The app can display linked document metadata when available.
-- The app does not need to ingest full document contents in v1.
+CRM records can carry pasted Microsoft 365 document URLs (links and metadata only, no file content, no Graph consent required in v1).
 
 ## Agent Proposal Loop
 
-### REQ-019: SaaS Control Plane and Agent Runtime
+### REQ-019: Control Plane and Agent Runtime
 
-Priority: P0
+Priority: P0 — built (ADR-025/026)
 
-The product must define a SaaS Control Plane that owns safety-critical product behavior and can invoke a tenant-scoped agent runtime for reasoning work. Nous Hermes Agent is the current runtime candidate to evaluate, not a replacement for the control plane.
+The SaaS Control Plane owns safety-critical behavior and invokes the adopted Hermes runtime for reasoning work.
 
 Acceptance criteria:
 
-- Control Plane handles tenant routing, auth/session checks, RBAC, schema-contract workflows, diff/proposal generation, policy checks, connector webhooks, billing/usage metering, and integration adapters.
-- Control Plane can invoke an agent runtime for tenant-scoped agent execution, skill loading, provider/model routing, MCP behavior, and scheduled agent tasks.
-- Nous Hermes Agent is evaluated as a Dockerized/self-hosted runtime candidate with tenant-scoped profiles/configuration for the pilot.
-- Lovable/web UI calls Control Plane APIs for safety-critical actions.
-- Supabase stores state; Control Plane owns the workflow logic that interprets and mutates that state.
-- n8n or similar workflow tools are not used as the canonical implementation of schema publishing, write approval, audit logging, permission enforcement, or the main agent pipeline.
+- The control plane owns tenant routing, auth, RBAC, contract workflows, the proposal pipeline, the learning gate, policy checks, connector webhooks, usage, and audit.
+- Hermes (pinned image, Dockerized, stateless per task) runs agents as tool-users; its only reach into tenant data is the control plane's MCP tool surface at `/mcp`, authenticated by a workspace-scoped bearer token minted per task.
+- A proposal is a schema-enforced tool call (`submit_proposal`), never parsed free text; invalid tool input is rejected, never written.
+- The runtime is swappable behind the adapter; no workflow tool (n8n or similar) implements the canonical pipeline.
 
 ### REQ-020: Agent Extraction
 
-Priority: P0
+Priority: P0 — built
 
-The agent must extract CRM-relevant entities, facts, dates, and follow-up actions from a user-provided source message.
-
-Acceptance criteria:
-
-- The agent identifies candidate contract-defined records, fields, relationships, tasks/follow-ups, notes, and dates.
-- The agent returns structured output suitable for validation before database writes.
-- The agent marks uncertainty when it cannot confidently match an entity or interpret an instruction.
-- Extraction output is stored as an Agent Proposal, not applied directly.
+The agent extracts CRM-relevant entities, facts, dates, and follow-ups from a source message, returns structured output via tool call, marks uncertainty, and never applies anything directly.
 
 ### REQ-021: Record Matching
 
-Priority: P0
+Priority: P0 — built; quality work continues (#36)
 
-The product must attempt to match extracted entities to existing CRM records before proposing new records.
-
-Acceptance criteria:
-
-- The system searches existing records by contract-defined display fields, identity rules, relevant names, email addresses, organization/deal labels where applicable, and aliases where available.
-- The proposal distinguishes matched records from new suggested records.
-- Ambiguous matches require user selection or clarification.
-- Match rationale or source fields are visible enough for review.
+Extracted entities are matched to existing records before new ones are proposed, using contract display fields, identity rules, aliases (contract-level and learned), with ambiguous matches routed to clarification or review.
 
 ### REQ-022: Review Queue
 
-Priority: P0
+Priority: P0 — built; pane UI lands M3
 
-The product provides a review queue for agent proposals. In confirm-each mode it is the approval surface before changes apply; in apply-then-report mode it is the after-the-fact inspection/correction surface and holds anything flagged high-risk for explicit confirmation (see REQ-023).
-
-Acceptance criteria:
-
-- Users can see a list of pending and recently-applied proposals.
-- Users can inspect proposed or applied field changes (before/after).
-- Users can approve, edit, reject, or leave a proposal pending (confirm-each), or correct/revert an applied change (apply-then-report).
-- Users can navigate from a proposal to its source message.
-- The system records who reviewed/confirmed the proposal and when.
+The review queue is the approval surface in confirm-each mode and the inspection/correction surface in apply-then-report mode, with before/after diffs, source-message navigation, and reviewer attribution.
 
 ### REQ-023: Configurable Write Confirmation
 
-Priority: P0
+Priority: P0 — confirm-each built; apply-then-report lands M7
 
-Write friction is a single configurable setting (per workspace, overridable per user), not a fixed global approval gate. It supports two modes, and both always write a full audit event, link the source message, and keep changes reversible.
+Write friction is a per-workspace setting (overridable per user) with two modes; both audit fully and keep changes reversible.
 
 Acceptance criteria:
 
-- A workspace/user setting selects the confirmation mode: "confirm each update" or "apply-then-report".
-- Confirm-each mode: agent-created mutations apply only after explicit user confirmation (e.g. text-back "yes"); no PIN-over-SMS.
-- Apply-then-report mode: agent-created mutations apply immediately, with no per-update confirmation, and are surfaced in the weekly change report (REQ-026) plus reminders.
-- High-risk actions (schema-contract edits, bulk operations, deletes) can require explicit confirmation even in apply-then-report mode.
-- Rejected or unconfirmed proposals (in confirm-each mode) do not mutate CRM records.
-- Apply and confirmation events are written to the audit log in both modes.
-- New workspaces default to confirm-each; switching to apply-then-report is an Agent Admin action and is itself audited.
+- Confirm-each: agent-created mutations apply only after explicit confirmation; the default for new workspaces.
+- Apply-then-report: validated agent mutations apply immediately and surface in the weekly report (REQ-026); switching modes is an agent_admin action, itself audited, and gated by the eval bar (REQ-027A).
+- High-risk actions (contract edits, bulk operations, deletes, permission changes) require explicit confirmation in every mode.
+- The learning gate follows the same workspace mode (ADR-027); v1 ships confirm-each, so all learning is held for human decision.
 
 ### REQ-024: Audit Trail
 
-Priority: P0
+Priority: P0 — built
 
-The product must maintain an audit trail for agent proposals and applied CRM mutations.
-
-Acceptance criteria:
-
-- Audit events include workspace, actor, action, target record, timestamp, source channel, and before/after values where applicable.
-- Agent-assisted events identify the proposal/tool/model path at a useful level.
-- Users with appropriate permissions can view audit history for a record.
-- Audit events are append-only through normal application flows.
+Append-only audit events with workspace, actor, action, target, timestamp, source channel, and before/after values; agent-assisted events identify the proposal/tool path; legibility work tracked (#42).
 
 ### REQ-025: Reversal / Correction
 
 Priority: P1
 
-The product should allow an approved change to be corrected or reverted.
-
-Acceptance criteria:
-
-- Users can inspect before/after values for a change.
-- Users can revert simple field updates where safe.
-- Reverts create their own audit events.
+Approved changes can be inspected (before/after) and simple field updates reverted, with reverts creating their own audit events.
 
 ### REQ-026: Weekly Change Report
 
-Priority: P0 (safety net for apply-then-report mode, REQ-023)
+Priority: P0 for apply-then-report (M7)
 
-The product must prepare a weekly report of CRM changes made since the previous report. This is the primary oversight mechanism when a workspace runs in apply-then-report mode, so it is load-bearing, not optional.
+The weekly report lists applied changes (actor, channel, record, summary, timestamp, source link), includes what the agent learned that week, and is the load-bearing oversight mechanism for apply-then-report mode.
+
+### REQ-027: Governed Learning Loop
+
+Priority: P0 — built (ADR-027)
+
+The agent improves per workspace only through governed, typed, reviewable data; the runtime keeps no memory.
 
 Acceptance criteria:
 
-- Report lists applied CRM changes in chronological order.
-- Report includes actor, source channel, affected record, change summary, and timestamp.
-- Agent-assisted changes identify the originating source message/proposal where available.
-- Report can be sent to configured recipients or viewed in the app.
-- Report can be filtered by workspace, user, object type, or channel where practical.
-- Complex reversals may require manual correction in v1.
+- The agent proposes learning through the `propose_learning` tool into typed slots only: `alias` (a string variant bound to exactly one record) and `enum_synonym` (a workspace word mapped to a canonical field option). No free-text memory slot exists.
+- Proposals validate against the active contract at propose time, are held `proposed`, decided by manager+, and re-validated at decision; only `active` rows reach the agent's context.
+- Rows deduplicate on a natural key; revocation frees the slot and takes effect at the next compile; record-bound aliases cascade-delete with their record.
+- Every transition is audited; there is no autonomous compaction or self-editing of learned content.
+
+### REQ-027A: Eval Gate for Autonomy
+
+Priority: P1 (gates REQ-023's apply-then-report; M7)
+
+A starter eval set for entity matching and disambiguation must pass before a workspace switches to apply-then-report (#22), and the authoring interview carries its own eval bar including the plain-language register (M2).
+
+### REQ-028: Compiled Workspace Context
+
+Priority: P0 — built (ADR-027)
+
+The agent's per-task knowledge is compiled by the control plane, never assembled by the runtime.
+
+Acceptance criteria:
+
+- Per task, the control plane compiles the active contract (glossary included) and active learned knowledge into one rendered block, joined against live records at compile time and passed through the redaction path.
+- The render is deterministic and byte-stable (fixed section order, codepoint sorts, hostile content flattened inert) so the runtime's prompt-prefix cache holds across runs.
+- Nothing enters the compiled context without passing the publish gate or the learning decision.
+- Cost and latency are part of acceptance for changes here (the ADR-026/027 precedent: measured numbers on the tracking issue).
 
 ## Interaction Channels
 
 ### REQ-030: Manual Web Update
 
-Priority: P0
+Priority: P0 — built
 
-Users must be able to enter a natural-language update in the web app.
-
-Acceptance criteria:
-
-- User can enter update text from the web app.
-- The update creates a Source Message.
-- The agent processes the update into an Agent Proposal.
-- Proposal appears in the review queue.
+Natural-language updates entered in the web app create a source message, run the agent, and land a proposal in the review queue.
 
 ### REQ-031: Email Forwarding Ingestion
 
-Priority: P1 (secondary channel)
+Priority: Deferred (post-v1)
 
-The product should support forwarding an email or email thread to the agent as a secondary ingestion surface.
-
-Acceptance criteria:
-
-- A controlled forwarding address or shared ingestion mailbox receives messages.
-- The system maps the inbound email to the correct workspace/user through address, token, or mailbox configuration.
-- The system creates a Source Message from the email.
-- The agent creates an Agent Proposal from the email content.
-- Attachments may be ignored or linked in v1 unless explicitly scoped.
+Email moved out of v1 (build plan); SMS and the pane cover capture for the pilot. The design (controlled forwarding address, workspace mapping, source message) stands for when it returns.
 
 ### REQ-032: SMS Update Ingestion
 
-Priority: P0 (first-class design-partner surface)
+Priority: P0 (M6)
 
-The product must support texting updates, questions, and reminders to/from the agent. SMS is a first-class v1 interaction surface and design-partner requirement, not a deferred notification feature.
+Texting updates, questions, and reminders is a first-class design-partner surface.
 
 Acceptance criteria:
 
-- Twilio webhook receives inbound SMS.
-- Sender phone number maps to a known user/workspace.
-- Unknown senders are rejected or handled safely.
-- Inbound SMS creates a Source Message.
-- Agent proposal is created and handled per the configurable confirmation setting (REQ-023): either text-back "yes" confirmation, or apply-then-report.
-- The agent can answer read-only questions by SMS and send reminders/summaries by SMS.
-- Outbound SMS responses include the result, and a review link for anything needing the web app.
-- A2P 10DLC brand + campaign registration/compliance is completed before production US business texting (treated as v1 critical-path).
+- Twilio webhooks are signature-verified (arrival trust); the sender phone number resolves through the identity spine to a workspace user; unknown senders are rejected safely.
+- Inbound SMS creates a source message; proposals follow the workspace confirmation mode (text-back "yes" in confirm-each).
+- SMS-originated changes can only feed the proposal pipeline; high-risk actions require confirmation on a session-trust surface.
+- The agent answers read-only questions and sends reminders/summaries by SMS; complex review links to the pane or web app.
+- A2P 10DLC registration (#24, started during M1) completes before production US texting.
 
 ### REQ-033: Ask the CRM
 
-Priority: P1
+Priority: P1 — partially live (the operations agent answers questions)
 
-Users should be able to ask natural-language questions about CRM data.
-
-Acceptance criteria:
-
-- User can ask a question from the web app.
-- The system answers using structured CRM records.
-- The answer includes source references or linked records where possible.
-- The system avoids unsupported factual claims when data is missing.
-- Read-only users can ask questions without gaining write permission.
+Natural-language questions answered from structured records, with source references, no unsupported claims, and no write permission implied.
 
 ### REQ-034: Claude/MCP Connector
 
-Priority: P2 / v1.5
+Priority: P2 (post-v1)
 
-The product should eventually expose a Claude connector through remote MCP as an external interface into the SaaS Control Plane and tenant-scoped agent runtime.
-
-Acceptance criteria:
-
-- MCP tools call Control Plane/product APIs.
-- MCP tools enforce the same workspace and user permissions as the app.
-- High-level tools include `ask_crm`, `capture_update`, `whats_pending`, and `prepare_brief` or equivalents.
-- Thick tools route through the same schema contract, permissions, agent pipeline, proposal, confirmation, and audit model used by web/SMS/email/Excel.
-- No raw write tools are exposed over MCP.
-- Mutation-like tools create Agent Proposals or route through the configured confirmation model rather than directly applying writes.
-- The distinction between Claude seats, Anthropic API usage, platform-provided model keys, and customer BYOK is documented.
-- Connector authentication is documented.
+An external MCP connector exposing thick tools (`ask_crm`, `capture_update`, `whats_pending`) over the same pipeline, permissions, and audit; no raw write tools; intended to authorize through Supabase so it joins the identity spine rather than adding a parallel token system.
 
 ## Microsoft and Excel
 
-> The Excel model is set by ADR-022 (the live surface is a contract-generated, contract-constrained workbook; in-sheet rules guide while the Control Plane validates at sync) and ADR-023 (the Workbook Contract Agent that produces the contract). Live Excel is a first-class capability, with manual upload (REQ-041) as the always-on floor that needs no Microsoft consent.
+> The pane is the primary surface (REQ-004, ADR-028). The contract-generated, validate-at-sync workbook of ADR-022 is the post-v1 Excel data surface; the pane subsumes its interactive UX for the pilot. The v1 Microsoft posture is Graph stage zero: the add-in requires no Graph permissions at all.
 
 ### REQ-040: Workbook Contract Ingestion
 
-Priority: P0
+Priority: P0 (M2 engine, M4 pane mount)
 
-The product must support workbook-driven contract ingestion as a core product capability.
+Workbook-driven contract authoring is the keystone capability.
 
 Acceptance criteria:
 
-- User/admin can upload or select an Excel workbook that represents existing business data.
-- System detects sheets, tables, columns, sample values, formulas where relevant, and likely relationships.
-- Workbook Contract Agent proposes a draft semantic contract.
-- Admin/developer can review and edit object, field, relationship, alias, identity, and sync-rule suggestions.
-- Accepted contracts create versioned schema definitions.
-- Contract changes do not silently migrate production data or change agent behavior without review.
+- The system detects sheets, tables, columns, sample values, and likely relationships from a client workbook (proven in the spike; both fixtures).
+- The Workbook Contract Agent runs a consultative interview (free-form with fixed checkpoints: structure agreed, fill, review) in the client's plain language, never database terms, and may propose a better structure than the workbook brought.
+- The draft contract is reviewed and published by a human with the `publish_contract` capability; nothing takes effect unpublished.
+- Contract changes never silently migrate production data or change agent behavior without review.
+- In the pane (M4), the interview reads the live open workbook and can highlight the ranges it is asking about.
 
 ### REQ-041: Controlled Excel Import/Export
 
 Priority: P1
 
-The product should support controlled Excel import/export for contract-defined business records.
-
-Acceptance criteria:
-
-- Users can export contract-defined records to a controlled workbook/table format.
-- Users can import from a controlled workbook/table format.
-- Import flow shows a diff or review step before applying changes.
-- Import errors identify invalid/missing required fields.
-- Arbitrary existing workbook sync is not required.
+Controlled import/export of contract-defined records through the pane or web, with a diff/review step before any import applies; arbitrary workbook sync is never required.
 
 ### REQ-041A: Excel Draft-and-Sync Updates
 
-Priority: P1/P2 depending pilot focus
+Priority: P2 (post-v1, with REQ-041D)
 
-The product may allow Excel to act as a draft update surface for contract-defined business records.
-
-Acceptance criteria:
-
-- CRM-backed Excel tables include stable record IDs, field IDs, contract version, and sync metadata where possible.
-- User edits in Excel remain draft changes until submitted.
-- Submitted workbook/table changes are diffed by the Control Plane.
-- Diffed changes create proposal batches and use the same permissions, validation, confirmation, audit, and weekly-report behavior as other write surfaces.
-- Conflict behavior is documented.
-- Unsupported workbook situations fail safely with clear error reporting.
+Excel as a draft update surface (edits diffed, proposal batches, same gates) follows the generated-workbook work.
 
 ### REQ-041B: Excel Add-in
 
-Priority: P2 / strategic later surface
-
-The product may provide an Excel Office Add-in that lets users query and work with CRM-backed tables from inside Excel.
-
-Acceptance criteria:
-
-- Add-in can refresh CRM-backed tables from canonical state.
-- Add-in can submit draft changes to the Control Plane for diff/proposal processing.
-- Add-in can show sync conflicts or review links.
-- Add-in does not directly mutate canonical CRM records.
-- Add-in authentication and Microsoft deployment path are documented.
+Superseded by REQ-004. The add-in is not a later strategic surface; it is the primary surface.
 
 ### REQ-041C: Controlled Excel Table Sync
 
-Priority: P2 unless explicitly selected for v1
+Priority: P2 (post-v1)
 
-The product may support bidirectional sync with one approved workbook/table schema that maps to the workspace's schema contract.
-
-Acceptance criteria:
-
-- Sync is limited to a known workbook/table schema.
-- Rows have stable IDs linking workbook rows to app records.
-- Columns map to stable internal field IDs rather than relying only on display names.
-- Conflict behavior is documented.
-- Sync events are audited.
-- Unsupported workbook situations fail safely with clear error reporting.
+Bidirectional sync limited to the approved generated-workbook schema, with stable row IDs, documented conflict behavior, audited sync events, and safe failure. Server-side Graph writes, if used, are sequential per workbook and SharePoint/OneDrive-for-Business only.
 
 ### REQ-041D: Contract-Generated Constrained Workbook
 
-Priority: P1 candidate (tied to the live-Excel decision, ADR-022)
+Priority: P2 (post-v1, #29/#30; ADR-022 stands as the shape)
 
-The live Excel data surface is a workbook generated from the published contract, with the contract expressed as native Excel rules.
-
-Acceptance criteria:
-
-- The system can generate a workbook from a published contract: one table per object, enum fields as dropdown validation, typed fields as number or date validation, hidden and locked columns for record IDs, field IDs, and contract version, protected headers, and conditional formatting that flags out-of-contract values.
-- In-sheet validation is best-effort guidance, not the authoritative gate. The Control Plane validates every submitted change against the contract and is the only writer (ADR-005, ADR-022).
-- Off-contract rows are reported back with reasons and become flagged proposals, never silent writes or silent drops.
-- The workbook is regenerated when the contract changes rather than hand-edited.
+A workbook generated from the published contract with the contract expressed as native Excel rules (dropdowns, typed validation, hidden locked ID columns, protected headers); in-sheet validation guides, the Control Plane gates; off-contract rows become flagged proposals, never silent writes.
 
 ### REQ-042: Arbitrary Workbook Sync
 
-Priority: Deferred
+Priority: Deferred (unchanged)
 
-The product will not support arbitrary bidirectional sync with any existing client spreadsheet in v1.
-
-Acceptance criteria:
-
-- Proposal and PRD language explicitly defer this capability.
-- V1 implementation does not depend on arbitrary workbook parsing or mutation.
+No arbitrary bidirectional sync with any existing client spreadsheet; proposal and PRD language state this explicitly.
 
 ### REQ-043: Microsoft 365 File Links
 
 Priority: P1
 
-The product should support linking CRM records to files in OneDrive/SharePoint.
+Pasted OneDrive/SharePoint links on records, links and metadata only; no file-content ingestion, no Graph consent in v1.
 
-Acceptance criteria:
+### REQ-044: Microsoft App Registrations
 
-- Users can add Microsoft 365 file links to CRM records.
-- App requests only the Microsoft permissions needed for the selected implementation.
-- Full file-content ingestion is not required in v1.
+Priority: P0 for the sign-in registration (M1); Graph registration post-v1
 
-### REQ-044: Microsoft App Registration
+Two registrations with different weights, never conflated:
 
-Priority: P1 when Graph integrations are enabled
-
-The product must use a documented Microsoft Entra app registration for Microsoft Graph integrations.
-
-Acceptance criteria:
-
-- Required Graph permissions are documented.
-- Admin/user consent flow is documented.
-- Permissions follow least-privilege principle.
-- Publisher verification is planned before broader Microsoft-heavy beta.
+- A minimal Entra app registration with sign-in-only scopes (openid/profile) serves the pane's Lane A silent sign-in (NAA brokered into Supabase). Basic sign-in scopes are exempt from the unverified-publisher consent block, so this works before publisher verification.
+- A Graph-permissioned registration arrives only post-v1, climbing the staged minimal-scope ladder (delegated before application, `Sites.Selected` before `Sites.Read.All`, mail/contacts lazily at feature invocation, never application-variant mailbox scopes). Entra publisher verification precedes any Graph consent ask.
 
 ## Agent Administration
 
@@ -444,42 +321,19 @@ Acceptance criteria:
 
 Priority: P1
 
-Privileged users should be able to configure limited agent behavior.
-
-Acceptance criteria:
-
-- Agent Admin can edit organization-level agent instructions.
-- Agent Admin can configure field mappings or workflow rules where supported.
-- Agent settings are versioned.
-- Agent setting changes create audit events.
-- Users can test changed settings before relying on them in production.
-
-### REQ-052: Model Provider and AI Billing Modes
-
-Priority: P1
-
-The product should support a Claude-first model provider path while preserving future provider flexibility and buyer-specific billing modes.
-
-Acceptance criteria:
-
-- The Control Plane/runtime uses a model-provider adapter rather than scattering model calls directly through UI code.
-- Platform-provided model key is supported as the default SMB mode.
-- BYOK can be supported without giving up the product's prompt, contract, validation, and audit pipeline.
-- Future customer endpoint/in-tenant model mode is represented as a later enterprise option.
-- Product documentation distinguishes Claude seats/chat subscriptions from Anthropic API usage.
+Privileged configuration is governed and narrow: workspace confirmation mode, learning decisions, and contract changes are the tuning paths. The runtime profile (SOUL) is versioned in the repo and changes through review, not through a customer-facing free-form prompt editor.
 
 ### REQ-051: Approval Thresholds
 
 Priority: P1
 
-The product should support configurable approval or confidence behavior.
+Workspaces default to confirm-each; low-confidence proposals are visually distinguished; ambiguous proposals request clarification (#38) or route to review.
 
-Acceptance criteria:
+### REQ-052: Model Provider and AI Billing Modes
 
-- Workspace can define whether all writes require approval.
-- New workspaces default to confirm-each mode unless explicitly configured otherwise by an Agent Admin.
-- Low-confidence proposals are visually distinguished.
-- Ambiguous proposals request clarification or manual review.
+Priority: P1
+
+Claude-first behind the provider seam (ADR-013): the runtime's model calls go through its provider adapter with the Anthropic key held by the runtime workload only; platform-key is the default SMB mode; BYOK remains possible without giving up the pipeline; documentation distinguishes Claude seats from API usage.
 
 ## Compliance and Trust
 
@@ -487,136 +341,54 @@ Acceptance criteria:
 
 Priority: P0 before organizational pilot
 
-The product team must prepare a security packet as a first-class product deliverable before any organizational pilot with real data.
-
-Acceptance criteria:
-
-- Security packet folder exists and is linked from the PRD.
-- Security overview drafted.
-- Privacy policy drafted.
-- Terms drafted.
-- DPA template drafted.
-- Subprocessor list drafted.
-- Data-flow diagram drafted.
-- Security architecture diagram drafted.
-- Trust-boundary diagram drafted.
-- Tenant isolation model drafted.
-- Auth/RBAC model drafted.
-- Audit logging model drafted.
-- Agent runtime security model drafted.
-- Secrets management policy drafted.
-- Incident response policy drafted.
-- Backup/restore plan drafted and tested or scheduled for test before pilot.
-- Data retention/deletion policy drafted.
-- Vulnerability/dependency management policy drafted.
-- AI data handling statement drafted.
-- Microsoft permission inventory drafted if Microsoft integrations are enabled.
-- SMS compliance note drafted if SMS is enabled.
-- Security questionnaire draft exists for customer review.
+The packet ([../security/](../security/)) must read as a true summary of enforced controls when the pilot starts, including by then: the add-in deployment model and pane sandbox posture, the SMS compliance note, the learning-layer controls, and the AI data handling statement naming Anthropic as a subprocessor.
 
 ### REQ-061: Data Protection
 
-Priority: P0
+Priority: P0 — baseline built, maintained
 
-The product must protect customer CRM data using baseline SaaS security practices and produce evidence that the controls exist.
-
-Acceptance criteria:
-
-- Data is encrypted in transit.
-- Data is encrypted at rest through platform/database configuration.
-- Tenant/workspace ID is present on all tenant-scoped records.
-- Supabase RLS policies exist for critical tenant-scoped tables.
-- Cross-tenant access tests exist for critical tables and protected APIs.
-- Control Plane verifies session/JWT and workspace role before protected actions.
-- Secrets are not stored in source code.
-- Production credentials are access-controlled.
-- Secrets/tokens/API keys are not logged.
-- Backups exist for production data.
-- Restore path is documented and tested where practical before pilot.
-- Basic monitoring/logging is enabled.
+Encryption in transit and at rest, workspace ID on all tenant rows, RLS on tenant tables, cross-tenant tests as CI gates, JWT + role verification before protected actions, secrets out of source and logs, backups with a documented restore path, basic monitoring.
 
 ### REQ-061A: Agent Runtime Containment
 
-Priority: P0 before runtime handles real customer data
+Priority: P0 — built and tested
 
-The tenant-scoped agent runtime must be contained so it cannot bypass the product's authorization, proposal, confirmation, and audit model.
-
-Acceptance criteria:
-
-- Runtime has no direct write credentials for canonical business records.
-- Runtime receives only tenant-scoped context selected by the Control Plane.
-- Runtime tools are allowlisted per workspace/tenant.
-- Runtime output is validated before creating proposals or writes.
-- Runtime output cannot directly apply high-risk actions such as schema changes, bulk operations, deletes, or permission changes.
-- Runtime version and dependencies are pinned for pilot.
-- Runtime logs are reviewed for customer-data and secret leakage risk.
-- If Nous Hermes Agent is adopted, its tenant profile/instance isolation model is documented.
+The runtime holds no database credentials; receives only control-plane-compiled context; reaches data only through the allowlisted MCP tools bound to one workspace per task; its output is schema-validated; it cannot apply high-risk actions; image and dependencies are pinned; the deny-hook and containment behavior are covered by tests (#44 tracks the CI gap).
 
 ### REQ-061B: Feature Security Review
 
 Priority: P0 process requirement
 
-Every new surface, connector, or agent capability should pass a lightweight security review before implementation.
-
-Acceptance criteria:
-
-- Review identifies what data enters the feature.
-- Review identifies who or what can trigger it.
-- Review documents identity/provider verification.
-- Review documents workspace/user mapping.
-- Review documents whether the feature can read, propose writes, or apply writes.
-- Review documents audit events and log exclusions.
-- Review documents secrets/tokens/API keys involved.
-- Review documents subprocessors receiving customer data.
-- Review documents failure, retry, and ambiguity behavior.
+Every new surface, connector, or agent capability passes a lightweight security review before implementation (data in, trigger, identity verification, workspace mapping, read/propose/apply class, audit events, secrets, subprocessors, failure behavior). The pane and SMS doors each get one before their milestone starts.
 
 ### REQ-062: SMS Compliance
 
-Priority: P0 when SMS is enabled for production
+Priority: P0 when SMS goes to production (M6)
 
-The product must comply with US business texting requirements for production SMS through Twilio or equivalent. Because SMS is a first-class design-partner surface, A2P 10DLC brand/campaign registration should be started early given uncertain carrier approval timelines.
+A2P 10DLC registration completed, consent and opt-out language documented, STOP handling implemented or provider-managed, SMS messages and outbound confirmations logged.
 
-Acceptance criteria:
+### REQ-063: Microsoft Trust Track
 
-- A2P 10DLC brand/campaign registration completed where applicable.
-- Consent and opt-out language documented.
-- STOP/opt-out handling is implemented or provider-managed.
-- SMS source messages and outbound confirmations are logged.
+Priority: P1, calendar-bound (#53)
 
-### REQ-063: Microsoft Trust Milestones
-
-Priority: P1/P2
-
-The product should follow a Microsoft trust path if Microsoft 365 integrations are central to GTM.
-
-Acceptance criteria:
-
-- Company domain and Microsoft tenant are selected.
-- Microsoft publisher verification requirements are tracked.
-- Microsoft 365 Publisher Attestation readiness is tracked.
-- Microsoft 365 Certification is treated as later strategic milestone, not a v1 prerequisite unless buyer requires it.
+DUNS, Partner Center enrollment, and business verification start during M1 (6-10 weeks end to end for a new LLC). Entra publisher verification precedes any Graph consent ask. Publisher Attestation is the post-listing trust milestone; full M365 Certification only on buyer pressure. None of it gates the pilot.
 
 ### REQ-064: SOC 2 Readiness
 
 Priority: P2
 
-The product should be designed for eventual SOC 2 readiness but not require SOC 2 certification for the first private pilot.
-
-Acceptance criteria:
-
-- Controls relevant to access, change management, incident response, vendors, backups, and logging are documented.
-- Evidence collection path is identified.
-- SOC 2 Type I/Type II timing is not promised until buyer pressure and resources justify it.
+Design for readiness (the control register is the evidence path); no certification promised until buyer pressure justifies it.
 
 ## Explicit Non-Requirements for V1
 
-- Full autonomous CRM writes.
+- Full autonomous CRM writes outside the governed apply-then-report mode.
 - Arbitrary bidirectional Excel sync.
 - Silent schema mutation from uploaded workbooks.
-- Deep Outlook calendar intelligence.
-- Native desktop app.
-- Full document indexing/search.
-- Self-hosted deployment.
-- SOC 2 certification.
-- Microsoft 365 Certification.
+- Email ingestion (moved post-v1).
+- The generated constrained workbook and validate-at-sync engine (post-v1).
+- Any Microsoft Graph data permission (v1 is Graph stage zero).
+- Free-text agent memory or autonomous learning compaction.
+- Deep Outlook calendar intelligence; Outlook pane host.
+- Native desktop app; full document indexing/search; self-hosted deployment.
+- SOC 2 certification; Microsoft 365 Certification; the AppSource listing itself.
 - Public Claude connector directory listing.
