@@ -1,7 +1,7 @@
 # Security Packet
 
 Status: first-class deliverable track
-Last updated: June 6, 2026
+Last updated: 2026-06-13
 
 This folder is the client-facing security-review evidence packet for the contract-first CRM agent platform. It is built alongside the product, not after it.
 
@@ -57,6 +57,7 @@ The first real-data pilot should not begin until these are implemented or explic
 - The agent runtime has no direct write credentials for canonical business records.
 - Agent/runtime tools are allowlisted by tenant/workspace.
 - Agent outputs are validated before becoming proposals or writes.
+- Learned knowledge is gated and the agent's per-task context is compiled control-plane-side, so nothing unapproved reaches the agent.
 - Proposal, approval, apply, revert, and admin actions write audit events.
 - Secrets are not stored in source code and are not logged.
 - Backups are configured and at least one restore path is documented.
