@@ -66,6 +66,8 @@ The first real-data pilot should not begin until these are implemented or explic
 
 ## Feature security review checklist
 
+Completed reviews live as `*-feature-review.md` here: [pane-feature-review.md](pane-feature-review.md) (Excel pane + SSE capture-stream route, M1).
+
 Use before adding a new surface, connector, or agent capability:
 
 1. What data enters this feature?
