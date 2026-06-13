@@ -1,0 +1,11 @@
+apiVersion: v2
+name: pane
+description: >-
+  Cormac Excel task pane assets (the primary client surface, ADR-028). A pure
+  static file server: Office.js runs in Excel's webview on the client, never here.
+  Publicly reachable (ingress-noauth) on a STABLE CUSTOM DOMAIN because the add-in
+  manifest pins the URL effectively permanently. No secrets, no database access.
+  VITE_* are baked at build. A Terra workload template; see ../README.md.
+type: application
+version: 0.1.0
+appVersion: "0.0.0"

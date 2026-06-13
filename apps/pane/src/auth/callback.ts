@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { env } from '../env';
 
 /**
  * Lane B callback page (runs inside the Office dialog, our origin). Entra has
@@ -7,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
  * the tokens to the pane with messageParent. Nothing persists to the pane's
  * store; the pane owns persistence and calls setSession itself.
  */
-const supa = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY, {
+const supa = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
   auth: {
     detectSessionInUrl: false,
     flowType: 'pkce',

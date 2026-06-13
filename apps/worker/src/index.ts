@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { loadServerEnv } from '@cormac/config/server';
 
 /**
  * Background worker. A stub for the walking skeleton: it is a valid, portable
@@ -6,7 +7,8 @@ import http from 'node:http';
  * change report (ADR-010, the safety net that gates apply-then-report) and the
  * inbound connector processors (SMS, email) land here next.
  */
-const port = Number(process.env.WORKER_PORT ?? 8070);
+const env = loadServerEnv('worker');
+const port = env.WORKER_PORT as number;
 
 const server = http.createServer((req, res) => {
   if (req.url === '/health') {
