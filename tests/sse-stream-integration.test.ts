@@ -1,13 +1,12 @@
 import 'dotenv/config';
 import http from 'node:http';
-import { createHmac, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { EXAMPLE_PERSON_CONTRACT } from '@cormac/contract';
 import { createServiceClient, type Db } from '@cormac/db';
 import { propose } from '../services/runtime-stub/src/propose.js';
 import { loadConfig } from '../apps/api/src/config.js';
 import { buildServer } from '../apps/api/src/server.js';
-import { TestResources } from './helpers.js';
+import { mintToken, requireSupabaseEnv, seedWorkspace, TestResources } from './helpers.js';
 
 /**
  * The SSE probe route over a REAL socket (the unit test in apps/api covers the
@@ -17,11 +16,9 @@ import { TestResources } from './helpers.js';
  * wiring. Uses the real runtime-stub logic behind a local HTTP server, against a
  * real DB. Skips without local Supabase, like the other integration tests.
  */
-const url = process.env.SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const ready = Boolean(url && serviceKey);
+const env = requireSupabaseEnv();
 
-describe.skipIf(!ready)('SSE capture stream over a real socket', () => {
+describe.skipIf(!env.ready)('SSE capture stream over a real socket', () => {
   let runtime: http.Server;
   let server: Awaited<ReturnType<typeof buildServer>>;
   let service: Db;
@@ -55,18 +52,19 @@ describe.skipIf(!ready)('SSE capture stream over a real socket', () => {
       RUNTIME_URL: `http://127.0.0.1:${raddr.port}`,
     });
 
-    service = createServiceClient(url!, serviceKey!);
+    service = createServiceClient(env.url, env.serviceKey);
 
-    const ws = await service.from('workspaces').insert({ name: `sse-${randomUUID()}` }).select('id').single();
-    workspaceId = resources.workspace(ws.data!.id as string);
+    // The shared harness stands up the workspace, owner (the member), membership,
+    // and active contract; this suite adds a record and a non-member.
+    const seed = await seedWorkspace(service, resources, { namePrefix: 'sse' });
+    workspaceId = seed.workspaceId;
 
-    const member = await service.auth.admin.createUser({
-      email: `sse-m-${randomUUID()}@test.local`,
-      password: `pw-${randomUUID()}`,
-      email_confirm: true,
+    await service.from('business_records').insert({
+      workspace_id: workspaceId,
+      object_api_name: 'person',
+      contract_version_id: seed.contractVersionId,
+      data: { full_name: 'John Carter', email: 'john@carterdeals.test', status: 'lead' },
     });
-    const memberId = resources.user(member.data.user!.id);
-    await service.from('memberships').insert({ workspace_id: workspaceId, user_id: memberId, role: 'owner' });
 
     // A second user who is NOT a member of this workspace (the 403 case).
     const stranger = await service.auth.admin.createUser({
@@ -76,33 +74,10 @@ describe.skipIf(!ready)('SSE capture stream over a real socket', () => {
     });
     const strangerId = resources.user(stranger.data.user!.id);
 
-    const cv = await service
-      .from('contract_versions')
-      .insert({ workspace_id: workspaceId, version: 1, document: EXAMPLE_PERSON_CONTRACT, is_active: true })
-      .select('id')
-      .single();
-    await service.from('business_records').insert({
-      workspace_id: workspaceId,
-      object_api_name: 'person',
-      contract_version_id: cv.data!.id,
-      data: { full_name: 'John Carter', email: 'john@carterdeals.test', status: 'lead' },
-    });
-
-    // Mint an HS256 token the route's authenticate() accepts (it verifies HS256
-    // against config.SUPABASE_JWT_SECRET; ADR-020). Hand-rolled with node:crypto
-    // so this root-level test needs no jose dependency.
-    const issuer = config.SUPABASE_AUTH_ISSUER ?? `${config.SUPABASE_URL}/auth/v1`;
-    const sign = (sub: string): string => {
-      const enc = (obj: object) => Buffer.from(JSON.stringify(obj)).toString('base64url');
-      const now = Math.floor(Date.now() / 1000);
-      const head = enc({ alg: 'HS256', typ: 'JWT' });
-      const payload = enc({ sub, iss: issuer, aud: 'authenticated', iat: now, exp: now + 300 });
-      const data = `${head}.${payload}`;
-      const sig = createHmac('sha256', config.SUPABASE_JWT_SECRET).update(data).digest('base64url');
-      return `${data}.${sig}`;
-    };
-    memberToken = sign(memberId);
-    nonMemberToken = sign(strangerId);
+    // The route's authenticate() verifies HS256 against SUPABASE_JWT_SECRET (ADR-020);
+    // mintToken is the one canonical path, so this suite no longer hand-rolls a token.
+    memberToken = await mintToken(seed.userId);
+    nonMemberToken = await mintToken(strangerId);
 
     server = await buildServer(config);
     await server.listen({ port: 0, host: '127.0.0.1' });

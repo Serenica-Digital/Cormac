@@ -2,10 +2,9 @@ import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createServiceClient, type Db } from '@cormac/db';
-import { EXAMPLE_PERSON_CONTRACT } from '@cormac/contract';
 import { buildServer } from '../apps/api/src/server.js';
 import { loadConfig } from '../apps/api/src/config.js';
-import { TestResources } from './helpers.js';
+import { requireSupabaseEnv, seedWorkspace, TestResources } from './helpers.js';
 
 /**
  * The MCP tool surface (ADR-025): the runtime's tools are control-plane
@@ -15,9 +14,7 @@ import { TestResources } from './helpers.js';
  * a valid proposal held as pending, duplicates blocked, sensitive values
  * redacted from search results. Skips without local Supabase.
  */
-const url = process.env.SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const ready = Boolean(url && serviceKey);
+const env = requireSupabaseEnv();
 
 const MCP_TOKEN = `test-${randomUUID()}`;
 
@@ -26,13 +23,14 @@ interface ToolResult {
   content?: { type: string; text: string }[];
 }
 
-describe.skipIf(!ready)('MCP tool surface', () => {
+describe.skipIf(!env.ready)('MCP tool surface', () => {
   let service: Db;
   let server: Awaited<ReturnType<typeof buildServer>>;
   let baseUrl: string;
   let workspaceId: string;
   let recordId: string;
   let taskId: string;
+  let contractVersionId: string;
   const resources = new TestResources();
 
   async function rpc(method: string, params?: unknown, token: string = MCP_TOKEN) {
@@ -55,34 +53,18 @@ describe.skipIf(!ready)('MCP tool surface', () => {
   }
 
   beforeAll(async () => {
-    service = createServiceClient(url!, serviceKey!);
+    service = createServiceClient(env.url, env.serviceKey);
 
-    const ws = await service
-      .from('workspaces')
-      .insert({ name: `mcp-${randomUUID()}` })
-      .select('id')
-      .single();
-    workspaceId = resources.workspace(ws.data!.id as string);
-
-    await service.from('contract_versions').insert({
-      workspace_id: workspaceId,
-      version: EXAMPLE_PERSON_CONTRACT.version,
-      document: EXAMPLE_PERSON_CONTRACT,
-      is_active: true,
-    });
+    const seed = await seedWorkspace(service, resources, { namePrefix: 'mcp' });
+    workspaceId = seed.workspaceId;
+    contractVersionId = seed.contractVersionId;
 
     const rec = await service
       .from('business_records')
       .insert({
         workspace_id: workspaceId,
         object_api_name: 'person',
-        contract_version_id: (
-          await service
-            .from('contract_versions')
-            .select('id')
-            .eq('workspace_id', workspaceId)
-            .single()
-        ).data!.id,
+        contract_version_id: contractVersionId,
         data: { full_name: 'Dana Match', email: 'dana@mcp.test', status: 'lead' },
       })
       .select('id')
@@ -232,17 +214,12 @@ describe.skipIf(!ready)('MCP tool surface', () => {
 
   it('rejects an alias whose record is not the object the payload claims', async () => {
     // A record of a different object type: the payload will claim it is a person.
-    const cv = await service
-      .from('contract_versions')
-      .select('id')
-      .eq('workspace_id', workspaceId)
-      .single();
     const stray = await service
       .from('business_records')
       .insert({
         workspace_id: workspaceId,
         object_api_name: 'listing',
-        contract_version_id: cv.data!.id as string,
+        contract_version_id: contractVersionId,
         data: { full_name: 'Waterfront Lot 9' },
       })
       .select('id')
