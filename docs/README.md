@@ -45,7 +45,7 @@ Status vocabulary: `canonical` (current source of truth), `draft` (in progress),
 ## Index
 
 ### adr/ — decisions
-See [adr/README.md](adr/README.md) for the full catalog (ADR-001 through ADR-035). Start there.
+See [adr/README.md](adr/README.md) for the full catalog (ADR-001 through ADR-036). Start there.
 
 ### Migration status
 [env-deploy-migration-ledger.md](env-deploy-migration-ledger.md): the old-shape to new-shape inventory for env, secrets, and deployment (companion to ADR-035).

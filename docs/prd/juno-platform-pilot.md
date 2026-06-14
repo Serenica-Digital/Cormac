@@ -1,6 +1,6 @@
 # Juno Platform Pilot Plan
 
-> **Status:** canonical · **Last reviewed:** 2026-06-12
+> **Status:** canonical · **Last reviewed:** 2026-06-13
 
 **Audience:** the Juno Innovations team and Serenica Digital project collaborators. This is the scope document the June 5 meeting asked for, and the working agenda for the onboarding session. It is written in Juno's own platform vocabulary (projects, workload templates, Terra Sources, plugins, bundles) so the mapping is direct. Platform facts below were verified against the public juno-fx repos and docs on 2026-06-10; items the public record cannot settle are marked as onboarding questions, since the June 5 meeting was clear that the docs trail the platform. The deeper research record is [docs/research/juno-hermes-deployment-research.md](../research/juno-hermes-deployment-research.md).
 
@@ -43,7 +43,7 @@ The walking skeleton (a natural-language update going capture, propose, validate
 
 One Juno project (one namespace) named `cormac`, holding development workloads and application workloads side by side.
 
-The translation rule is mechanical. The same Helm charts run locally on k3d and on Juno; each chart is one Juno workload running the same image. Cluster DNS (`http://cormac-api:8088`) is identical in both; secret values come from Infisical, synced into Kubernetes Secrets by ESO. A Terra bundle grouping the workload templates is the platform packaging of the charts.
+The translation rule is mechanical. The same Helm charts run locally on k3d and on Juno; each chart is one Juno workload running the same image. Cluster DNS (`http://cormac-api:8088`) is identical in both; secret values come from Infisical, synced into Kubernetes Secrets by ESO. A Terra bundle grouping the workload templates is the platform packaging of the charts: each `deploy/helm/<workload>/` chart carries a `terra.yaml` and the `cormac` bundle lives in [../../deploy/terra/](../../deploy/terra/). The step-by-step deploy (Terra-native and a guaranteed direct-`helm install` fallback) is [../runbooks/deploy-to-juno.md](../runbooks/deploy-to-juno.md).
 
 The application workloads, end to end from repo to cluster:
 
@@ -54,7 +54,7 @@ The application workloads, end to end from repo to cluster:
 | Worker | `apps/worker` | `docker/Dockerfile.node` | `worker` (8070) | `ghcr.io/serenica-digital/worker` | Image workload, `clusterip`; no inbound traffic at all |
 | Hermes product runtime | upstream `nousresearch/hermes-agent` (pinned) + profile in `docker/hermes-runtime/` | `docker/Dockerfile.hermes` (bakes the profile; secrets stay env-injected) | `hermes` (8642) | `ghcr.io/serenica-digital/hermes-runtime` | Custom workload template, `clusterip`: never publicly routable, called only by the control plane, tools only via the control plane's MCP surface, no database credentials, memory off, stateless per task |
 | Excel pane assets (planned; gated on the ADR-028 GO/NO-GO) | `apps/addin` (planned) | static-server Dockerfile (planned) | none yet | `ghcr.io/serenica-digital/addin` | Image workload, `ingress-noauth`: a pure static file server for the task pane's web assets. Office.js itself runs in Excel's webview on the client machine, never here. No secrets, no database access. Must be publicly reachable (Excel loads it directly), must NOT send `X-Frame-Options: SAMEORIGIN`, and needs a stable custom domain because the add-in manifest pins the source URL effectively permanently (see onboarding question 12) |
-| System of record | `supabase/migrations` (schema only) | none | Supabase CLI stack beside the cluster | none | **Not a workload.** Managed Supabase/Postgres outside Juno; every workload reaches it over the network |
+| System of record | `supabase/migrations` (schema only) | none | managed dev Supabase (the local CLI stack is CI-only, ADR-036) | none | **Not a workload.** Managed Supabase/Postgres outside Juno; every workload reaches it over the network |
 
 The development workloads are official plugins used as shipped:
 
