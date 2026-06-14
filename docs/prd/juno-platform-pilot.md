@@ -12,17 +12,17 @@ The pilot goal: build and run Cormac on Juno as a real agentic SaaS use case. A 
 
 ## The vocabulary for the room
 
-The mapping between how this repo already works and how Juno talks about it. The short version: `docker/compose.yaml` is the rehearsal, Juno is the venue, and the images are identical in both.
+The mapping between how this repo already works and how Juno talks about it. The short version: the Helm charts run locally on k3d as the rehearsal, Juno is the venue, and the images are identical in both (ADR-035).
 
 | Term in the room | What it means | What it maps to in this repo |
 | --- | --- | --- |
 | Image | A frozen, shippable snapshot of one program and everything it needs to run. Built by CI, pushed to a registry (GHCR for us). Contains no secrets. | The four published images in [deployment-setup.md](deployment-setup.md) (api, worker, web, hermes-runtime), plus the planned addin image |
-| Container | A running copy of an image, isolated from everything else on the machine. Start one, stop one, throw it away; the image is unchanged. | What `pnpm dev` / compose starts locally; what Juno starts in the cluster |
-| Workload | Juno's unit of management: one container plus its resources (CPU/memory), networking, and env vars. | One compose service. The translation is one-to-one |
+| Container | A running copy of an image, isolated from everything else on the machine. Start one, stop one, throw it away; the image is unchanged. | What `pnpm dev` (the charts on k3d) starts locally; what Juno starts in the cluster |
+| Workload | Juno's unit of management: one container plus its resources (CPU/memory), networking, and env vars. | One Helm chart and workload. The translation is one-to-one |
 | Workload template / plugin (Terra) | A reusable recipe for launching a workload, parameterized (image, env, ports, resources). | The official plugins we use as-is for dev tools; one custom template for the Hermes runtime |
 | Project / namespace | The isolation boundary that groups workloads; nothing outside it can reach `clusterip` services inside it. | The one `cormac` project |
 | `ingress-auth` / `ingress-noauth` / `clusterip` | Who can reach a workload: public behind Juno's login / public and open (the app does its own auth) / internal to the namespace only. | web is `ingress-auth`, api is `ingress-noauth` (webhooks verify themselves), worker and hermes-runtime are `clusterip` |
-| Cluster DNS | Workloads address each other by service name inside the namespace. | `http://api:8088` works identically in compose and on Juno |
+| Cluster DNS | Workloads address each other by service name inside the namespace. | `http://cormac-api:8088` works identically in local k3d and on Juno |
 | Secret | A sensitive env value injected into a workload at deploy, never baked into an image or a template default. | The pre-session checklist in [deployment-setup.md](deployment-setup.md) |
 | Volume / mount | Persistent disk attached to a workload, surviving restarts. | Jarvis's memory volume. The app workloads are deliberately stateless; state lives in managed Supabase |
 
@@ -34,7 +34,7 @@ This is not a greenfield. The repo is a pnpm monorepo of normal containers, alre
 - `apps/api`: the control plane (Node/TypeScript, Fastify). The trust layer and the only writer of business records. Verifies Supabase JWTs, enforces RBAC, runs the proposal/confirmation/audit pipeline, and serves the agent runtime's tool surface over MCP at `/mcp` (workspace-scoped bearer token; the runtime's only reach into data).
 - `apps/worker`: a minimal long-running job container (health endpoint today; the weekly change report and inbound connector processors land here).
 - The agent runtime: real Hermes (`nousresearch/hermes-agent`, pinned version), configured by a profile versioned in `docker/hermes-runtime/`: headless API server only, messaging gateways off, memory off, tools allowlisted to the control plane's MCP endpoints, no database credentials. Landed and proven locally (ADR-026), then optimized: the control plane compiles each tenant's context into a cached prompt prefix, and a typical agent task now runs 2-3 tool calls, 8-15 seconds, about three cents (ADR-027). The runtime arrives at Juno already measured, which matters for the capacity and pricing conversation. (`services/runtime-stub` remains in the repo as a test fixture only; it no longer runs in the stack.)
-- `docker/`: the Dockerfiles for every service, the Hermes profile, and `compose.yaml`, which runs the whole stack locally.
+- `docker/`: the Dockerfiles for every service and the Hermes runtime profile. `deploy/helm/`: the charts that run the whole stack, locally on k3d and on Juno.
 - `supabase/migrations`: app-owned schema, RLS, append-only audit. Canonical state lives in managed Supabase, outside Juno.
 
 The walking skeleton (a natural-language update going capture, propose, validate, confirm, write, audit) runs against real Postgres with CI checks including a cross-tenant isolation test.
@@ -43,18 +43,18 @@ The walking skeleton (a natural-language update going capture, propose, validate
 
 One Juno project (one namespace) named `cormac`, holding development workloads and application workloads side by side.
 
-The translation rule is mechanical. `docker/compose.yaml` is local-only orchestration and never ships; each compose service becomes one Juno workload running the same image. Compose-network DNS (`http://api:8088`) becomes cluster DNS inside the namespace; `.env` values become per-workload env vars and Kubernetes Secrets. A Terra bundle grouping the workload templates is the platform analog of the compose file.
+The translation rule is mechanical. The same Helm charts run locally on k3d and on Juno; each chart is one Juno workload running the same image. Cluster DNS (`http://cormac-api:8088`) is identical in both; secret values come from Infisical, synced into Kubernetes Secrets by ESO. A Terra bundle grouping the workload templates is the platform packaging of the charts.
 
 The application workloads, end to end from repo to cluster:
 
-| Service | Repo source | Build recipe | Local compose service (port) | Published image | Juno workload (network mode) |
+| Service | Repo source | Build recipe | Local k3d service (port) | Published image | Juno workload (network mode) |
 | --- | --- | --- | --- | --- | --- |
 | Web UI | `apps/web` | `docker/Dockerfile.web` | `web` (5174) | `ghcr.io/serenica-digital/web` | Image workload, `ingress-auth` (or `ingress-noauth` for client previews); the shareable preview link |
 | Control plane API | `apps/api` | `docker/Dockerfile.node` | `api` (8088) | `ghcr.io/serenica-digital/api` | Image workload, `ingress-noauth`: public webhook routes (Twilio, later Microsoft Graph) with in-app signature verification; sole holder of the Supabase service key; serves the runtime's MCP tools at `/mcp` |
 | Worker | `apps/worker` | `docker/Dockerfile.node` | `worker` (8070) | `ghcr.io/serenica-digital/worker` | Image workload, `clusterip`; no inbound traffic at all |
 | Hermes product runtime | upstream `nousresearch/hermes-agent` (pinned) + profile in `docker/hermes-runtime/` | `docker/Dockerfile.hermes` (bakes the profile; secrets stay env-injected) | `hermes` (8642) | `ghcr.io/serenica-digital/hermes-runtime` | Custom workload template, `clusterip`: never publicly routable, called only by the control plane, tools only via the control plane's MCP surface, no database credentials, memory off, stateless per task |
 | Excel pane assets (planned; gated on the ADR-028 GO/NO-GO) | `apps/addin` (planned) | static-server Dockerfile (planned) | none yet | `ghcr.io/serenica-digital/addin` | Image workload, `ingress-noauth`: a pure static file server for the task pane's web assets. Office.js itself runs in Excel's webview on the client machine, never here. No secrets, no database access. Must be publicly reachable (Excel loads it directly), must NOT send `X-Frame-Options: SAMEORIGIN`, and needs a stable custom domain because the add-in manifest pins the source URL effectively permanently (see onboarding question 12) |
-| System of record | `supabase/migrations` (schema only) | none | Supabase CLI stack beside compose | none | **Not a workload.** Managed Supabase/Postgres outside Juno; every workload reaches it over the network |
+| System of record | `supabase/migrations` (schema only) | none | Supabase CLI stack beside the cluster | none | **Not a workload.** Managed Supabase/Postgres outside Juno; every workload reaches it over the network |
 
 The development workloads are official plugins used as shipped:
 

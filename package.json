@@ -22,6 +22,7 @@
     "check:controls": "tsx scripts/check-control-register.ts",
     "gen:env": "tsx scripts/gen-env.ts",
     "check:env": "tsx scripts/check-env.ts",
+    "check:infisical": "tsx scripts/check-infisical.ts",
     "check:eval-fixtures": "tsx scripts/check-eval-fixtures.ts",
     "evals": "infisical run -- tsx evals/run.ts",
     "evals:workbook": "infisical run -- tsx evals/workbook-contract/run.ts",
@@ -35,10 +36,8 @@
     "db:reset": "supabase db reset",
     "db:push:remote": "sh -c 'test -n \"$SUPABASE_DB_URL\" || { echo \"Set SUPABASE_DB_URL to the managed project db url\" >&2; exit 1; }; supabase db push --db-url \"$SUPABASE_DB_URL\"'",
     "check:remote": "vitest run tests/integration/isolation.test.ts",
-    "dev": "docker compose -f docker/compose.yaml --env-file .env up --build",
-    "dev:backend": "docker compose -f docker/compose.yaml --env-file .env up --build api hermes",
-    "dev:down": "docker compose -f docker/compose.yaml --env-file .env down",
-    "up": "pnpm db:start && pnpm check:migrations && pnpm seed && pnpm dev"
+    "dev": "bash scripts/k3d/up.sh",
+    "up": "pnpm db:start && pnpm check:migrations && pnpm dev"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
