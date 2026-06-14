@@ -2,7 +2,7 @@
 
 > **Status:** canonical · **Last reviewed:** 2026-06-13
 
-The deployment artifacts for Juno (ADR-017, ADR-034). One Helm chart per workload;
+The deployment artifacts for Juno (ADR-017, ADR-037/038). One Helm chart per workload;
 each is a Terra workload template that runs a CI-built image from this repo (not
 Juno's build-from-repo runtime plugins, which do not fit a pnpm monorepo). Charts
 are plain, portable Kubernetes, so Juno stays swappable.
@@ -53,7 +53,7 @@ each `deploy/helm/<workload>` is a parameterized chart Genesis can launch. A
 
 ## Confirm at the Juno onboarding session
 
-The chart values marked `PLACEHOLDER` ride on documented Juno defaults (ADR-034
+The chart values marked `PLACEHOLDER` ride on documented Juno defaults (ADR-038
 risk note). Resolve these operational items, then finalize the values:
 
 1. **Custom domain + TLS for the pane** (load-bearing): can a workload be served on

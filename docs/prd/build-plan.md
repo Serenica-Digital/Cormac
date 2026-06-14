@@ -1,6 +1,6 @@
 # Build Plan
 
-> **Status:** canonical · **Last reviewed:** 2026-06-12
+> **Status:** canonical · **Last reviewed:** 2026-06-13
 
 Companion to [architecture.md](architecture.md) and [contract-model.md](contract-model.md). Those two describe *what* we are building; this one describes *how and in what order*. The why for every choice lives in the ADRs; this doc records the sequence and points back. The board (Project #3) is the live tracker; its milestones mirror the eight below, and issue numbers here are pointers into it.
 
@@ -12,6 +12,7 @@ The original plan here (foundation, then a walking skeleton as the spike) comple
 - **The runtime seam is real, not stubbed (ADR-025/026).** Hermes (pinned image) runs the operations agent as a tool-user against the control plane's MCP tool server; a proposal is a schema-enforced tool call. The old "MCP server" deferral is dead: the MCP surface is now the spine.
 - **The knowledge layer shipped (ADR-027).** Glossary in the contract, typed learned knowledge behind a gate, and the compiled context prefix delivered through run instructions. Measured: 5 tool calls/21s/$0.045 per task down to 2-3 calls/8-15s/~$0.03, cross-run cache reuse proven.
 - **The surface strategy pivoted (ADR-028).** The Excel task pane add-in is the primary client surface; the web app is the admin/trust/fallback door. The research phase ran ([../research/microsoft-ecosystem-integration.md](../research/microsoft-ecosystem-integration.md)); the pane build is gated on its spike and a GO/NO-GO ADR.
+- **The env, secrets, and deployment foundation landed (ADR-037/038).** One generated env contract from a single manifest, Infisical the secret authority synced via ESO, and the whole backend proven on local k3d with the same Helm charts that deploy to Juno (managed Supabase everywhere except CI), plus the Terra packaging. This is the deployment groundwork M5 builds on; the live Juno cluster deploy is gated on the onboarding session (#15).
 
 What v1 means: **the pilot live on the design partner's real business.** Everything below is sequenced toward that.
 

@@ -34,7 +34,7 @@ Every committed doc starts, right under its H1, with:
 > **Status:** <status> · **Last reviewed:** <YYYY-MM-DD>
 ```
 
-Status vocabulary: `canonical` (current source of truth), `draft` (in progress), `reference` (research/external), `superseded` (kept for history, names its replacement), `stub` (placeholder pending a dependency). ADRs use their own `**Status:** / **Date:** / **Related:**` header, which predates this convention and is compatible.
+Status vocabulary: `canonical` (current source of truth), `draft` (in progress), `reference` (research/external), `superseded` (kept for history, names its replacement), `stub` (placeholder pending a dependency). ADRs use their own `**Status:** / **Date:** / **Related:**` header, which predates this convention and is compatible. The security packet (`security/`) adds one packet-specific status, `drafted` (a doc written against real enforced controls, as distinct from `draft` = in progress).
 
 ## House rules
 
@@ -45,23 +45,22 @@ Status vocabulary: `canonical` (current source of truth), `draft` (in progress),
 ## Index
 
 ### adr/ — decisions
-See [adr/README.md](adr/README.md) for the full catalog (ADR-001 through ADR-036). Start there.
-
-### Migration status
-[env-deploy-migration-ledger.md](env-deploy-migration-ledger.md): the old-shape to new-shape inventory for env, secrets, and deployment (companion to ADR-035).
+See [adr/README.md](adr/README.md) for the full catalog (ADR-001 through ADR-038). Start there.
 
 ### runbooks/ — scripted procedures
 - [runbooks/pane-sideload.md](runbooks/pane-sideload.md): sideload the pane and run the M1 probes.
 - [runbooks/secrets-and-env.md](runbooks/secrets-and-env.md): generate, inject, and rotate secrets (Infisical + ESO).
 - [runbooks/juno-dev-workspace.md](runbooks/juno-dev-workspace.md): the code-server dev-workspace contract for Juno.
+- [runbooks/deploy-to-juno.md](runbooks/deploy-to-juno.md): deploy the stack to Juno (Terra bundle, with a direct-helm fallback).
 
 ### prd/ — what we're building
 - [architecture.md](prd/architecture.md) — the trust topology and component responsibilities.
 - [contract-model.md](prd/contract-model.md) — how a client's spreadsheets become the governed semantic contract.
 - [build-plan.md](prd/build-plan.md) — the build sequence (phases, what gates what, what's deferred).
 - [requirements.md](prd/requirements.md) — numbered requirements and acceptance criteria.
-- [v1-scope-architecture-matrix.md](prd/v1-scope-architecture-matrix.md) — the v1 in/deferred cut and sprint sequencing.
+- [v1-scope-architecture-matrix.md](prd/v1-scope-architecture-matrix.md) — the v1 in/deferred cut and the build/buy/register matrix.
 - [juno-platform-pilot.md](prd/juno-platform-pilot.md) — the Juno orchestration pilot outreach.
+- [deployment-setup.md](prd/deployment-setup.md) — deployable images, per-workload env inventory, and the managed-Supabase bootstrap.
 
 ### research/ — external research, applied
 Runtime, platform, connector, and compliance evaluations (Hermes, Juno, Microsoft 365, SMS/A2P, Excel sync, Anthropic skills, security/vendor risk, Supabase hardening). Each states how the finding applies to us.

@@ -2,7 +2,7 @@
 
 > **Status:** drafted · **Last reviewed:** 2026-06-13
 
-Infisical is Cormac's single secret authority (ADR-035). One authority holds every
+Infisical is Cormac's single secret authority (ADR-037). One authority holds every
 secret value once; host tooling, CI, and the cluster reference it and keep no copy.
 This directory wires the cluster half via the External Secrets Operator (ESO),
 which synthesizes the one `cormac-secrets` k8s Secret the charts already consume by
@@ -46,11 +46,10 @@ pnpm k3d:up
 
 ## Host tooling and CI
 
-- **Host:** `infisical run -- pnpm seed` and `infisical run -- pnpm smoke` inject the
+- **Host:** `pnpm seed` and `pnpm smoke` (they self-wrap `infisical run`) inject the
   secrets at run time, so no real `.env` of values sits on disk.
-- **CI:** GitHub Actions holds one machine-identity token; the Infisical CLI injects the
-  rest. The existing guards stay green; the migration off `supabase status` env is staged
-  (ADR-035 open item 4).
+- **CI:** CI is Infisical-free. Its hermetic test database uses local Supabase
+  (`supabase start`), so CI needs no secret values from Infisical (ADR-038).
 
 ## Rotation and audit
 

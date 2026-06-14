@@ -4,7 +4,7 @@
 
 The operational companion to [juno-platform-pilot.md](juno-platform-pilot.md): every deployable image, every environment variable each workload needs, which of them are secrets, and the bootstrap sequence for a managed Supabase project. This is the input to the secrets conversation at the Juno onboarding session.
 
-> **Update 2026-06-13 (ADR-035):** the env inventory below is machine-checked and generated. The single source of truth is the manifest ([../../packages/config/src/manifest.ts](../../packages/config/src/manifest.ts)); `pnpm gen:env` generates `.env.example` and each Helm chart's env/secretEnv, and `pnpm check:env` fails the build if they drift. The deployment is one Helm chart per workload under [../../deploy/helm/](../../deploy/helm/), run locally on k3d and on Juno (compose is retired). Secret VALUES live in Infisical and inject via ESO into the cluster and `infisical run` locally; see [../runbooks/secrets-and-env.md](../runbooks/secrets-and-env.md). Migration status: [../env-deploy-migration-ledger.md](../env-deploy-migration-ledger.md).
+> **Update 2026-06-13 (ADR-037/038):** the env inventory below is machine-checked and generated. The single source of truth is the manifest ([../../packages/config/src/manifest.ts](../../packages/config/src/manifest.ts)); `pnpm gen:env` generates `.env.example` and each Helm chart's env/secretEnv, and `pnpm check:env` fails the build if they drift. The deployment is one Helm chart per workload under [../../deploy/helm/](../../deploy/helm/), run locally on k3d and on Juno (compose is retired). Secret VALUES live in Infisical and inject via ESO into the cluster and `infisical run` locally; see [../runbooks/secrets-and-env.md](../runbooks/secrets-and-env.md). The full decision record is [ADR-037](../adr/037-environment-and-secrets-consolidated.md) and [ADR-038](../adr/038-deployment-parity-single-backend.md).
 
 ## Images
 
@@ -80,7 +80,7 @@ Deliberately absent: any Supabase variable (the runtime holds no database creden
 
 ## Managed Supabase bootstrap (the dev project)
 
-One-time, against a fresh managed project (synthetic data only; creating the project is a dashboard action). The managed project's values live in Infisical's `dev` environment as `SUPABASE_*` (ADR-036); the commands below show them inline for the one-time bootstrap:
+One-time, against a fresh managed project (synthetic data only; creating the project is a dashboard action). The managed project's values live in Infisical's `dev` environment as `SUPABASE_*` (ADR-038); the commands below show them inline for the one-time bootstrap:
 
 ```sh
 # 1. Schema, RLS, audit triggers (all migrations):
@@ -111,4 +111,4 @@ Generate or collect before the session; each lands in the pilot cluster's secret
 
 ## Local reference
 
-The same images run locally in k3d with `pnpm db:start && infisical run -- pnpm seed && pnpm dev` (`scripts/k3d/up.sh`). Secret values come from Infisical, not a `.env` (ADR-035); `.env.example` is the generated reference list of variables, not a file you fill in. The Helm charts are the only orchestrator, local and on Juno.
+The same images run locally in k3d: `pnpm dev` (`scripts/k3d/up.sh`) brings the backend up against the managed dev Supabase, then `pnpm seed` (it self-wraps `infisical run`). Secret values come from Infisical, not a `.env` (ADR-037); `.env.example` is the generated reference list of variables, not a file you fill in. `pnpm db:start` (the local Supabase stack) is for CI and offline tests only (ADR-038). The Helm charts are the only orchestrator, local and on Juno.
