@@ -1,6 +1,6 @@
 # QA Strategy
 
-> **Status:** canonical · **Last reviewed:** 2026-06-13
+> **Status:** canonical · **Last reviewed:** 2026-06-14
 
 QA in a contract-first, multi-tenant CRM agent is not "does the feature work." It is "do the trust invariants hold for arbitrary tenant data, and does the agent propose correctly." Those are two different problems: the first is deterministic and must never regress; the second is probabilistic and needs evaluation, not assertion. This doc describes how we test both, where the tests live, and which gate a release.
 
@@ -29,7 +29,7 @@ These are the categories a reviewer cares about. Each maps onto Tier 1 or Tier 2
 
 1. **Contract and field gates (Tier 1).** The agent-editability and type gate and the sensitivity helpers, the cheapest and most load-bearing logic tests. `tests/unit/validate.test.ts` (no human-only field, no wrong type, no bad enum, no unknown field; create requires required fields); `tests/unit/redact.test.ts` (sensitive values stay out of the model context and are masked in logs); `tests/unit/runtime.test.ts` (malformed runtime output is rejected at the adapter, never written).
 
-2. **Trust invariants (Tier 2, must never regress).** These prove the boundary, not a feature. Tenant isolation, a user in workspace B cannot read or write workspace A's rows (`tests/integration/isolation.test.ts`); the control plane is the only writer (the isolation write-denied case; the runtime gets no DB credentials in the [hermes-runtime chart](../../deploy/helm/hermes-runtime/values.yaml)); append-only audit (the isolation append-only case); the RBAC matrix, every protected endpoint times every role (`tests/integration/rbac-matrix.test.ts`); authn, every protected endpoint rejects a missing or invalid JWT.
+2. **Trust invariants (Tier 2, must never regress).** These prove the boundary, not a feature. Tenant isolation, a user in workspace B cannot read or write workspace A's rows (`tests/integration/isolation.test.ts`); the control plane is the only writer (the isolation write-denied case; the runtime gets no DB credentials in the [hermes-runtime chart](../../plugins/hermes-runtime/values.yaml)); append-only audit (the isolation append-only case); the RBAC matrix, every protected endpoint times every role (`tests/integration/rbac-matrix.test.ts`); authn, every protected endpoint rejects a missing or invalid JWT.
 
 3. **Pipeline and knowledge spine (Tier 2, against a real DB).** The full capture → validate → confirm → write → audit thread (`tests/integration/pipeline-integration.test.ts`); atomic apply and all-or-nothing rollback (`tests/integration/atomic-apply.test.ts`); the MCP tool surface, auth, allowlist, and the write gate (`tests/integration/mcp-tools.test.ts`); the contract publish gate, server-authoritative, atomic, audited, invalid and direct-call refused (`tests/integration/contract-publish.test.ts`); the learned-knowledge gate, proposed-is-invisible, approve activates and audits, revoke reopens the slot, stale items refused (`tests/integration/learning-lifecycle.test.ts`); the compiled context prefix, only active gated items, aliases resolved, sensitive values excluded, byte-stable (`tests/integration/context-compile.test.ts`); workspace purge, deliberate and service-role-only (`tests/integration/workspace-purge.test.ts`).
 

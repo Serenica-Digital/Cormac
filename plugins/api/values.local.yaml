@@ -1,5 +1,5 @@
-# Local k3d overlay for the api (ADR-035). Merge over the chart defaults:
-#   helm upgrade --install cormac-api deploy/helm/api -n cormac -f deploy/helm/api/values.local.yaml
+# Local k3d overlay for the api (ADR-039). Merge over the chart defaults:
+#   helm upgrade --install cormac-api plugins/api -n cormac -f plugins/api/values.local.yaml
 # Posture: managed dev Supabase, so APP_ENV=dev (ES256/JWKS-only, fail-closed
 # rules ON). The api therefore needs the real managed project URL/anon below and
 # the secrets in cormac-secrets to boot. The image is built locally and imported

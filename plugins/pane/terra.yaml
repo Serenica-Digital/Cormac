@@ -1,4 +1,4 @@
-# Terra plugin descriptor (ADR-036). See deploy/helm/api/terra.yaml for the model.
+# Terra plugin descriptor (ADR-039). See ../api/terra.yaml for the model.
 # GATED on the ADR-028 GO/NO-GO: the pane image (apps/pane) ships only on a GO.
 # Load-bearing constraint: the Office add-in manifest pins ingress_host nearly
 # permanently, so this host must be stable and owned. If Juno cannot serve a

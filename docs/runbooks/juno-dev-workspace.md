@@ -1,6 +1,6 @@
 # Runbook: the Juno dev-workspace contract
 
-> **Status:** draft · **Last reviewed:** 2026-06-13
+> **Status:** draft · **Last reviewed:** 2026-06-14
 
 Juno provisions the development environment, not the laptop (ADR-017): you launch a **code-server (`web-ide`) workspace** in the dev cluster and work there. This runbook is the contract for what that workspace must carry so the env/secrets shape (ADR-037/038) works in it, and how `infisical run` authenticates without an interactive browser login. It is also input for the Juno onboarding session.
 

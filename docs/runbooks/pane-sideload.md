@@ -1,6 +1,6 @@
 # Runbook: sideload the pane and run the M1 probes
 
-> **Status:** draft · **Last reviewed:** 2026-06-13
+> **Status:** draft · **Last reviewed:** 2026-06-14
 
 Scripted steps so the observation sessions are short. The goal is to fill the results table in [../adr/030-pane-go-no-go.md](../adr/030-pane-go-no-go.md) with a measured answer for each probe on each platform. Lane 0 (email/password) needs zero Azure and unblocks Probes A, C, D, E immediately; only Probes B's Microsoft lanes need the Entra steps in section 4.
 
@@ -19,7 +19,7 @@ pnpm --filter @cormac/pane certs
 pnpm seed
 ```
 
-The SSE probe route is on in the local k3d overlay ([../../deploy/helm/api/values.local.yaml](../../deploy/helm/api/values.local.yaml): `SSE_PROBE_ENABLED=true`), which also allows the pane origin via `CORS_ORIGINS`. Override either in Infisical's `dev` environment only if you need to.
+The SSE probe route is on in the local overlay ([../../plugins/api/values.local.yaml](../../plugins/api/values.local.yaml): `SSE_PROBE_ENABLED=true`), which also allows the pane origin via `CORS_ORIGINS`. Override either in Infisical's `dev` environment only if you need to.
 
 ## 2. Run the stack
 

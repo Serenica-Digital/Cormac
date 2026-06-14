@@ -45,7 +45,7 @@ Status vocabulary: `canonical` (current source of truth), `draft` (in progress),
 ## Index
 
 ### adr/ — decisions
-See [adr/README.md](adr/README.md) for the full catalog (ADR-001 through ADR-038). Start there.
+See [adr/README.md](adr/README.md) for the full catalog (ADR-001 through ADR-039). Start there.
 
 ### runbooks/ — scripted procedures
 - [runbooks/pane-sideload.md](runbooks/pane-sideload.md): sideload the pane and run the M1 probes.

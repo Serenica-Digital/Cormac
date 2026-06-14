@@ -2,12 +2,12 @@
 
 Status: drafted (partial)
 Maps to: control-register rows 12, 13, 14, 28, 29
-Last reviewed: 2026-06-13
+Last reviewed: 2026-06-14
 
 ## What is true now
 
 - Environment and secrets are one governed contract: a single manifest ([@cormac/config](../../packages/config/src/manifest.ts)) declares every variable once, classified secret or non-secret, and every workload validates its slice at boot. None are hard-coded. `.env.example` and each chart's `env`/`secretEnv` are generated from the manifest by `pnpm gen:env`; the manifest is the only declaration site (ADR-037).
-- Secrets are read from the environment and validated at boot ([config.ts](../../apps/api/src/config.ts)); on Kubernetes they are injected via `secretKeyRef` from one k8s Secret, never baked into an image or chart default ([deploy/helm/](../../deploy/helm/)).
+- Secrets are read from the environment and validated at boot ([config.ts](../../apps/api/src/config.ts)); on Kubernetes they are injected via `secretKeyRef` from one k8s Secret, never baked into an image or chart default ([plugins/](../../plugins/)).
 - Secret values have one authority: Infisical (ADR-037). Host tooling runs under `infisical run`, so no real `.env` of values sits on disk; the cluster's `cormac-secrets` is synthesized by the External Secrets Operator ([deploy/eso/](../../deploy/eso/)); CI is Infisical-free (its hermetic test database uses local Supabase). Every read is logged in Infisical.
 - The Supabase service-role key is held only by the control plane and is never shipped to the browser or given to the runtime ([app.ts](../../apps/api/src/app.ts)). The browser holds only the anon key, which is safe because RLS bounds its reach.
 - In prod-like environments (`APP_ENV`) the control plane fails closed: it refuses the public dev JWT secret, requires the runtime/MCP credentials and an explicit CORS allowlist, and verifies tokens JWKS-only (the HS256 path is disabled, so the public dev secret cannot forge a token; ADR-020/037).

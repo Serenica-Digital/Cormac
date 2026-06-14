@@ -63,4 +63,5 @@ Status values: **Proposed**, **Accepted**, **Superseded by ADR-NNN**. `Planned` 
 | [035](035-generated-env-infisical-k3d.md) | One source of truth by generation; Infisical the secret authority; Helm the only orchestrator; k3d the local environment | Superseded by ADR-037/038 | 2026-06-13 |
 | [036](036-managed-supabase-single-backend.md) | One Supabase backend (managed everywhere except CI); the Terra packaging for Juno | Superseded by ADR-037/038 | 2026-06-13 |
 | [037](037-environment-and-secrets-consolidated.md) | Environment and secrets are one generated contract; Infisical the single authority (consolidates 034/035/036) | Accepted | 2026-06-13 |
-| [038](038-deployment-parity-single-backend.md) | One orchestrator, one local-to-prod environment, one backend; the Terra packaging (consolidates 034/035/036) | Accepted | 2026-06-13 |
+| [038](038-deployment-parity-single-backend.md) | One orchestrator, one local-to-prod environment, one backend; the Terra packaging (consolidates 034/035/036) | Accepted (Terra-packaging and k3d-rehearsal sections superseded by ADR-039) | 2026-06-13 |
+| [039](039-terra-packaging-and-juno-platform-reality.md) | Terra packaging corrected to platform reality; one deploy path, one rehearsal; the secret and TLS stacks are ours | Accepted (restructure landed; kind rehearsal pending) | 2026-06-14 |

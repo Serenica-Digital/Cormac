@@ -1,6 +1,6 @@
 # Juno and Hermes Deployment Research: Verified Findings
 
-> **Status:** reference · **Last reviewed:** 2026-06-10
+> **Status:** reference · **Last reviewed:** 2026-06-14
 
 Five parallel research agents swept the Juno and Hermes documentation, GitHub source, Helm manifests, and issue trackers on 2026-06-10. Every claim below was tagged verified, inferred, or unknown by the agent that found it; this doc keeps that discipline. It feeds two things: the Juno-facing deployment plan (a refresh of [docs/prd/juno-platform-pilot.md](../prd/juno-platform-pilot.md)) and the real-Hermes integration work (ADR-021 open item 1). Where a finding supersedes an earlier research doc, that is flagged inline rather than silently edited.
 
@@ -52,7 +52,7 @@ The June 5 pilot meeting (private dev notes, `docs/notes/convos/Juno/6-5-2026.md
 
 ## Secrets, storage, observability
 
-- **Secrets reality:** standard Kubernetes Secrets and env vars. The `secret: true` field flag in `terra.yaml` is a UI mask, not a backend. External Secrets Operator / Vault / SOPS are "compatible with", not operated by, the platform; no plugin for any of them exists in the official repo. What the hosted pilot actually provides is a question for Juno. **Update 2026-06-13:** the juno-innovations.com/security page now advertises first-class External Secrets Operator integration (Vault / AWS Secrets Manager / Azure Key Vault). It changes nothing for us either way: Cormac's charts consume a plain k8s Secret via `secretKeyRef`, which an ESO `ExternalSecret` can synthesize without any chart change (ADR-034, [../../deploy/helm/secrets.example.yaml](../../deploy/helm/secrets.example.yaml)). The open part is only which backend the pilot provisions and who can read secrets back.
+- **Secrets reality:** standard Kubernetes Secrets and env vars. The `secret: true` field flag in `terra.yaml` is a UI mask, not a backend. External Secrets Operator / Vault / SOPS are "compatible with", not operated by, the platform; no plugin for any of them exists in the official repo. What the hosted pilot actually provides is a question for Juno. **Update 2026-06-13:** the juno-innovations.com/security page now advertises first-class External Secrets Operator integration (Vault / AWS Secrets Manager / Azure Key Vault). It changes nothing for us either way: Cormac's charts consume a plain k8s Secret via `secretKeyRef`, which an ESO `ExternalSecret` can synthesize without any chart change (ADR-034, [../../plugins/secrets.example.yaml](../../plugins/secrets.example.yaml)). The open part is only which backend the pilot provisions and who can read secrets back.
 - **Storage:** `local-path` (k3s default) is the default storage class; Longhorn (pinned to v1.10.x), NFS, and hostpath are available as plugins; Velero for backup. PVCs survive pod restarts per StatefulSet semantics.
 - **Observability:** kube-prometheus-stack plugin (in the orion-essentials bundle). No log-aggregation plugin exists. The security page's "immutable audit logs" and "SIEM syslog export" claims are not substantiated by manifests; webhook export is stated as roadmap. Treat platform audit logging as unproven until evidenced.
 
