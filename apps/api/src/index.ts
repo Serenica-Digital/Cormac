@@ -1,12 +1,8 @@
-import { fileURLToPath } from 'node:url';
-import dotenv from 'dotenv';
 import { loadConfig } from './config.js';
 import { buildServer } from './server.js';
 
-// Load the repo-root .env when running locally. In containers the environment
-// is injected, so a missing file is fine.
-dotenv.config({ path: fileURLToPath(new URL('../../../.env', import.meta.url)) });
-
+// Env is injected: by the container (ConfigMap + ESO) in k3d/Juno, and by
+// `infisical run` for bare-host dev (ADR-035). Nothing reads a .env file.
 const config = loadConfig();
 const server = await buildServer(config);
 

@@ -6,9 +6,9 @@ import { buildAppContext } from '../../apps/api/src/app.js';
 import { CHART_WORKLOADS, classify, reconcileChartValues, renderEnvExample } from '../../scripts/lib/env-artifacts.js';
 
 /**
- * The env contract (ADR-034). These bind the manifest to the schemas that derive
- * from it (so they cannot drift) and prove the fail-closed prod posture. The
- * cross-surface drift (manifest <-> .env.example/compose/Helm) is proven
+ * The env contract (ADR-034 -> ADR-035). These bind the manifest to the schemas
+ * that derive from it (so they cannot drift) and prove the fail-closed prod
+ * posture. The cross-surface drift (manifest <-> .env.example/Helm) is proven
  * separately by scripts/check-env.ts in CI.
  */
 

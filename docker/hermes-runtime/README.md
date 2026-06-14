@@ -1,8 +1,8 @@
 # Hermes product-runtime profile
 
-> **Status:** active · **Last reviewed:** 2026-06-10
+> **Status:** active · **Last reviewed:** 2026-06-13
 
-The versioned configuration of the Hermes product runtime (ADR-006, ADR-025): the CRM Operations Agent in its headless, contained posture. The main compose file (`docker/compose.yaml`) mounts these files read-only at the runtime's `HERMES_HOME`; the Juno deployment bakes the same files into the pinned image (`docker/Dockerfile.hermes`, plan Phase 5). Secrets never live here; `${VAR}` values are env-interpolated by Hermes at load (verified against the configuration docs, 2026-06-10).
+The versioned configuration of the Hermes product runtime (ADR-006, ADR-025): the CRM Operations Agent in its headless, contained posture. The runtime image bakes these files into the pinned image (`docker/Dockerfile.hermes`); local k3d and Juno both run that same image (ADR-035). Secrets never live here; `${VAR}` values are env-interpolated by Hermes at load (verified against the configuration docs, 2026-06-10).
 
 ## Files
 
@@ -12,12 +12,12 @@ The versioned configuration of the Hermes product runtime (ADR-006, ADR-025): th
 
 ## Posture (what is deliberately off and why)
 
-- **Messaging gateways off:** connector ingress belongs to the control plane (ADR-005, ADR-007). Gateways activate only when a platform token is present, so the compose env simply contains none.
+- **Messaging gateways off:** connector ingress belongs to the control plane (ADR-005, ADR-007). Gateways activate only when a platform token is present, so the runtime env simply contains none.
 - **Persistent memory off:** learning lives as governed contract data (ADR-009).
 - **Stateless per task:** each `/v1/runs` is a fresh session; multi-turn state is the control plane's job (ADR-025).
-- **No database credentials:** the runtime's only reach into CRM data is the MCP tool surface at `http://api:8088/mcp`, bound to one workspace by `MCP_WORKSPACE_TOKEN`. Every tool executes inside the control plane, so the write gate is intrinsic.
+- **No database credentials:** the runtime's only reach into CRM data is the MCP tool surface at `http://cormac-api:8088/mcp`, bound to one workspace by `MCP_WORKSPACE_TOKEN`. Every tool executes inside the control plane, so the write gate is intrinsic.
 
-## Env the runtime expects (set in the root `.env`, injected by compose)
+## Env the runtime expects (injected by the chart: ConfigMap + the ESO-synced secret)
 
 | Var | Purpose |
 | --- | --- |
@@ -25,7 +25,7 @@ The versioned configuration of the Hermes product runtime (ADR-006, ADR-025): th
 | `ANTHROPIC_API_KEY` | Model provider (ADR-013) |
 | `MCP_WORKSPACE_TOKEN` | Interpolated into `config.yaml`; the workspace binding |
 
-`MCP_SERVER_URL` is set by compose (`http://api:8088/mcp`) and by the Juno workload env (cluster DNS).
+`MCP_SERVER_URL` is set by the chart to the cluster Service DNS (`http://cormac-api:8088/mcp`), the same in local k3d and on Juno.
 
 ## Verify on first run (spike checklist)
 
@@ -38,4 +38,4 @@ The versioned configuration of the Hermes product runtime (ADR-006, ADR-025): th
 
 ## Pinning
 
-The image is pinned in `docker/compose.yaml` (`v2026.6.5` at last review); never `:latest`. The P1 upstream memory leak (#25315) was unpatched at last review, so long-running deployments recycle workers on a schedule; irrelevant for short local runs.
+The image is pinned in `docker/Dockerfile.hermes` and the chart values (`v2026.6.5` at last review); never `:latest`. The P1 upstream memory leak (#25315) was unpatched at last review, so long-running deployments recycle workers on a schedule; irrelevant for short local runs.

@@ -4,7 +4,7 @@
 
 The operational companion to [juno-platform-pilot.md](juno-platform-pilot.md): every deployable image, every environment variable each workload needs, which of them are secrets, and the bootstrap sequence for a managed Supabase project. This is the input to the secrets conversation at the Juno onboarding session.
 
-> **Update 2026-06-13 (ADR-034):** the env inventory below is now machine-checked, not just documented. The single source of truth is the manifest ([../../packages/config/src/manifest.ts](../../packages/config/src/manifest.ts)), and `pnpm check:env` proves the companion files agree with it: `.env.example`, every `docker/compose.yaml` service block, and the Helm charts. The Juno deployment is authored as one Helm chart per workload under [../../deploy/helm/](../../deploy/helm/); secret generation, injection, and rotation are in [../runbooks/secrets-and-env.md](../runbooks/secrets-and-env.md).
+> **Update 2026-06-13 (ADR-035):** the env inventory below is machine-checked and generated. The single source of truth is the manifest ([../../packages/config/src/manifest.ts](../../packages/config/src/manifest.ts)); `pnpm gen:env` generates `.env.example` and each Helm chart's env/secretEnv, and `pnpm check:env` fails the build if they drift. The deployment is one Helm chart per workload under [../../deploy/helm/](../../deploy/helm/), run locally on k3d and on Juno (compose is retired). Secret VALUES live in Infisical and inject via ESO into the cluster and `infisical run` locally; see [../runbooks/secrets-and-env.md](../runbooks/secrets-and-env.md). Migration status: [../env-deploy-migration-ledger.md](../env-deploy-migration-ledger.md).
 
 ## Images
 
@@ -111,4 +111,4 @@ Generate or collect before the session; each lands in the pilot cluster's secret
 
 ## Local reference
 
-The same containers run locally with `pnpm db:start && pnpm seed && pnpm dev`; root `.env` (from `.env.example`) carries every value above. `docker/compose.yaml` is the local-only orchestration; it never ships.
+The same images run locally in k3d with `pnpm db:start && infisical run -- pnpm seed && pnpm dev` (`scripts/k3d/up.sh`). Secret values come from Infisical, not a `.env` (ADR-035); `.env.example` is the generated reference list of variables, not a file you fill in. The Helm charts are the only orchestrator, local and on Juno.

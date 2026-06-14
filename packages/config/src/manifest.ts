@@ -29,7 +29,7 @@ export type Workload =
   | 'runtime-stub'
   | 'scripts';
 
-/** Workloads that ship as images and become Juno workloads; checked against compose + Helm. */
+/** Workloads that ship as images and become Juno workloads; checked against the Helm charts. */
 export const DEPLOYABLE_WORKLOADS: Workload[] = ['api', 'worker', 'web', 'pane', 'hermes-runtime'];
 
 /**
@@ -37,7 +37,7 @@ export const DEPLOYABLE_WORKLOADS: Workload[] = ['api', 'worker', 'web', 'pane',
  *   - server  : read by one of our Node processes via process.env (api, worker, scripts)
  *   - browser : a VITE_* value read by web/pane via import.meta.env (safe in the bundle)
  *   - runtime : read by the upstream Hermes container itself, not by our loaders;
- *               inventory-only, so compose/Helm wire it but no Node code parses it
+ *               inventory-only, so the Helm chart wires it but no Node code parses it
  */
 export type EnvScope = 'server' | 'browser' | 'runtime';
 
@@ -45,7 +45,7 @@ export interface EnvVar {
   /** Must be a key of `Z`. */
   name: keyof typeof Z;
   scope: EnvScope;
-  /** A credential: must never be a literal in source, compose defaults, or chart values. */
+  /** A credential: must never be a literal in source or chart values. */
   secret: boolean;
   /** Which workload containers read this exact env name. */
   workloads: Workload[];
@@ -57,8 +57,8 @@ export interface EnvVar {
 }
 
 /**
- * Treat an empty-string env value as unset. Docker compose interpolates an unset
- * `${VAR}` to "", and an empty k8s value behaves the same, so without this an
+ * Treat an empty-string env value as unset. An empty k8s ConfigMap/Secret value
+ * (and an unset `${VAR}` in any shell) resolves to "", so without this an
  * otherwise-optional variable would fail its `min(1)`/`url()` rule. Applied to
  * every optional entry below.
  */
@@ -368,7 +368,7 @@ export const ENV: EnvVar[] = [
     secret: false,
     workloads: ['hermes-runtime'],
     inEnvExample: false,
-    description: 'Hermes headless Runs API on. Wired by compose/Helm, not a root .env value.',
+    description: 'Hermes headless Runs API on. Wired by the Helm chart, not a root .env value.',
   },
   {
     name: 'API_SERVER_HOST',
@@ -376,7 +376,7 @@ export const ENV: EnvVar[] = [
     secret: false,
     workloads: ['hermes-runtime'],
     inEnvExample: false,
-    description: 'Hermes Runs API bind host. Wired by compose/Helm.',
+    description: 'Hermes Runs API bind host. Wired by the Helm chart.',
   },
   {
     name: 'API_SERVER_PORT',
@@ -384,7 +384,7 @@ export const ENV: EnvVar[] = [
     secret: false,
     workloads: ['hermes-runtime'],
     inEnvExample: false,
-    description: 'Hermes Runs API port. Wired by compose/Helm.',
+    description: 'Hermes Runs API port. Wired by the Helm chart.',
   },
   {
     name: 'API_SERVER_KEY',
@@ -400,7 +400,7 @@ export const ENV: EnvVar[] = [
     secret: false,
     workloads: ['hermes-runtime'],
     inEnvExample: false,
-    description: 'Control-plane /mcp URL interpolated into the Hermes config. Wired by compose/Helm.',
+    description: 'Control-plane /mcp URL interpolated into the Hermes config. Wired by the Helm chart.',
   },
   {
     name: 'HERMES_ACCEPT_HOOKS',
@@ -460,7 +460,7 @@ export function envVar(name: EnvName): EnvVar {
   return e;
 }
 
-/** Env names a given workload's container reads (compose/Helm must surface these). */
+/** Env names a given workload's container reads (the Helm chart must surface these). */
 export function namesForWorkload(workload: Workload): EnvName[] {
   return ENV.filter((e) => e.workloads.includes(workload)).map((e) => e.name);
 }
