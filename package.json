@@ -20,19 +20,22 @@
     "check:secrets": "tsx scripts/check-secrets.ts",
     "check:migrations": "tsx scripts/check-migrations.ts",
     "check:controls": "tsx scripts/check-control-register.ts",
+    "gen:env": "tsx scripts/gen-env.ts",
+    "check:env": "tsx scripts/check-env.ts",
     "check:eval-fixtures": "tsx scripts/check-eval-fixtures.ts",
-    "evals": "tsx evals/run.ts",
-    "evals:workbook": "tsx evals/workbook-contract/run.ts",
-    "evals:workbook:explore": "tsx evals/workbook-contract/explore.ts",
-    "seed": "tsx scripts/seed.ts",
+    "evals": "infisical run -- tsx evals/run.ts",
+    "evals:workbook": "infisical run -- tsx evals/workbook-contract/run.ts",
+    "evals:workbook:explore": "infisical run -- tsx evals/workbook-contract/explore.ts",
+    "seed": "infisical run -- tsx scripts/seed.ts",
+    "smoke": "infisical run -- tsx scripts/smoke.ts",
+    "k3d:up": "bash scripts/k3d/up.sh",
+    "k3d:down": "bash scripts/k3d/down.sh",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
-    "db:push:remote": "sh -c 'test -n \"$SUPABASE_DB_URL\" || { echo \"Set SUPABASE_DB_URL to the managed project db url\" >&2; exit 1; }; supabase db push --db-url \"$SUPABASE_DB_URL\"'",
+    "db:push:managed": "sh -c 'test -n \"$SUPABASE_DB_URL\" || { echo \"Set SUPABASE_DB_URL to the managed project db url\" >&2; exit 1; }; supabase db push --db-url \"$SUPABASE_DB_URL\"'",
     "check:remote": "vitest run tests/integration/isolation.test.ts",
-    "dev": "docker compose -f docker/compose.yaml --env-file .env up --build",
-    "dev:down": "docker compose -f docker/compose.yaml --env-file .env down",
-    "up": "pnpm db:start && pnpm check:migrations && pnpm seed && pnpm dev"
+    "dev": "bash scripts/k3d/up.sh"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -42,6 +45,7 @@
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.104.1",
     "@eslint/js": "^9.17.0",
+    "@cormac/config": "workspace:*",
     "@cormac/contract": "workspace:*",
     "@cormac/db": "workspace:*",
     "@cormac/shared": "workspace:*",
@@ -56,6 +60,7 @@
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.19.1",
     "vitest": "^2.1.8",
+    "yaml": "^2.6.1",
     "zod": "^3.25.76"
   }
 }

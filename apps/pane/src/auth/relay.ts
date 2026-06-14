@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { env } from '../env';
 
 /**
  * Lane B relay page (runs inside the Office dialog, our origin). It kicks off the
@@ -7,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
  * complete the exchange. A dedicated client with its own storageKey keeps this
  * separate from the pane's session store.
  */
-const supa = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY, {
+const supa = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
   auth: {
     detectSessionInUrl: false,
     flowType: 'pkce',

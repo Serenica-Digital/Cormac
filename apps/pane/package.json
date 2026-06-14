@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "infisical run -- vite",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@azure/msal-browser": "^3.27.0",
+    "@cormac/config": "workspace:*",
     "@microsoft/fetch-event-source": "^2.0.1",
     "@supabase/supabase-js": "^2.47.10",
     "react": "^18.3.1",

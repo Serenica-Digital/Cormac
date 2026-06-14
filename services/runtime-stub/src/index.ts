@@ -1,7 +1,9 @@
 import Fastify from 'fastify';
+import { loadServerEnv } from '@cormac/config/server';
 import { propose, type ProposeRequest } from './propose.js';
 
-const port = Number(process.env.RUNTIME_PORT ?? 8090);
+const env = loadServerEnv('runtime-stub');
+const port = env.RUNTIME_PORT as number;
 const app = Fastify({ logger: true });
 
 app.get('/health', async () => ({ status: 'ok', runtime: 'stub' }));

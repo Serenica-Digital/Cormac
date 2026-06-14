@@ -1,6 +1,6 @@
 # Compliance and Platform Registration Research
 
-Research date: June 5, 2026
+> **Status:** reference · **Last reviewed:** 2026-06-05
 
 This memo supports the AI-native CRM platform PRD. It focuses on requirements that affect architecture, sales readiness, and implementation sequencing.
 

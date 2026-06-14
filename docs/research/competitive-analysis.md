@@ -1,4 +1,7 @@
 # Competitive Market Research: Contract-First CRM Agent Platform
+
+> **Status:** reference · **Last reviewed:** 2026-06-06
+
 ## Decision Document — June 2026
 
 ---

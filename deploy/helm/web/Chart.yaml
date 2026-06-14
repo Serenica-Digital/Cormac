@@ -1,0 +1,9 @@
+apiVersion: v2
+name: web
+description: >-
+  Cormac web/PWA (admin, trust, fallback door). Auth-gated ingress; previews can
+  switch to ingress-noauth. VITE_* are baked at build, not runtime env. A Terra
+  workload template; see ../README.md.
+type: application
+version: 0.1.0
+appVersion: "0.0.0"

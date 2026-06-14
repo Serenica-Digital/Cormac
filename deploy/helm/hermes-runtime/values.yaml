@@ -1,0 +1,61 @@
+# Cormac Hermes product runtime. clusterip only: no Ingress is rendered. It holds
+# no database credentials (ADR-005/006). env/secretEnv kept in lockstep with the
+# manifest by `pnpm check:env`. The env names here are the upstream image's own
+# variables; API_SERVER_KEY must hold the same value as the api's RUNTIME_API_KEY.
+serviceName: cormac-hermes-runtime
+replicas: 1
+port: 8642
+healthPath: /health
+
+image:
+  repository: ghcr.io/serenica-digital/hermes-runtime
+  tag: latest # the image already pins nousresearch/hermes-agent:v2026.6.5
+  pullPolicy: IfNotPresent
+imagePullSecret: ghcr-pull
+
+service:
+  port: 8642
+
+# Never publicly routable: called only by the control plane in-cluster.
+networkMode: clusterip
+
+# The upstream memory leak (#25315) grows the process over ~20-37h with no fix in
+# v0.16.0, so memory.limits is an OOM-restart backstop and the recycle CronJob
+# below restarts it on a schedule (Juno has no native recycle pattern).
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 1Gi
+
+# Block startup until the control-plane api is reachable, so Hermes does not lose
+# its one-shot MCP connection to a pod-network/api startup race (ADR-035). Same
+# Service name on k3d and Juno. Set empty to skip the init container.
+waitForApiUrl: http://cormac-api:8088/health
+
+secretName: cormac-secrets
+
+env:
+  API_SERVER_ENABLED: "true"
+  API_SERVER_HOST: 0.0.0.0
+  API_SERVER_PORT: "8642"
+  MCP_SERVER_URL: http://cormac-api:8088/mcp
+  HERMES_ACCEPT_HOOKS: "1"
+
+secretEnv:
+  - API_SERVER_KEY # same value as the api's RUNTIME_API_KEY
+  - ANTHROPIC_API_KEY
+  - MCP_WORKSPACE_TOKEN
+
+# state.db is ephemeral: the control plane reads provenance synchronously after
+# each run, so the runtime keeps no durable state (research finding).
+emptyDirMounts:
+  - name: data
+    path: /opt/data
+
+# Scheduled recycle for the leak. A CronJob does `kubectl rollout restart`.
+recycle:
+  enabled: true
+  schedule: "0 */6 * * *" # every 6h
+  image: bitnami/kubectl:latest # PLACEHOLDER: pin a digest; or the cluster's kubectl image

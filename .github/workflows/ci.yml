@@ -32,6 +32,19 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+
+      - name: Lint and render the Helm charts (the deploy artifact, ADR-035)
+        run: |
+          for c in api worker web pane hermes-runtime; do
+            echo "== $c =="
+            helm lint "deploy/helm/$c"
+            helm template cormac "deploy/helm/$c" -n cormac > /dev/null
+          done
+
       - name: Check RLS on every table
         run: pnpm check:rls
 
@@ -41,6 +54,9 @@ jobs:
       - name: Check control register (claim -> control -> test chain)
         run: pnpm check:controls
 
+      - name: Check env artifacts are regenerated (manifest -> .env.example, Helm)
+        run: pnpm check:env
+
       - name: Check eval fixtures (structural, no model calls)
         run: pnpm check:eval-fixtures
 
@@ -49,13 +65,15 @@ jobs:
 
       - name: Export Supabase env
         run: |
-          set -a; source <(pnpm exec supabase status -o env); set +a
-          {
-            echo "SUPABASE_URL=$API_URL"
-            echo "SUPABASE_ANON_KEY=$ANON_KEY"
-            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
-            echo "SUPABASE_JWT_SECRET=$JWT_SECRET"
-          } >> "$GITHUB_ENV"
+          pnpm exec supabase status -o json > /tmp/sb.json
+          node -e '
+            const s = require("/tmp/sb.json"), fs = require("fs");
+            const map = { SUPABASE_URL: "API_URL", SUPABASE_ANON_KEY: "ANON_KEY", SUPABASE_SERVICE_ROLE_KEY: "SERVICE_ROLE_KEY", SUPABASE_JWT_SECRET: "JWT_SECRET" };
+            for (const [out, key] of Object.entries(map)) {
+              if (!s[key]) { console.error("supabase status -o json missing " + key); process.exit(1); }
+              fs.appendFileSync(process.env.GITHUB_ENV, out + "=" + s[key] + "\n");
+            }
+          '
 
       - name: Test (unit + cross-tenant isolation)
         run: pnpm test

@@ -1,10 +1,10 @@
 # V1 Scope and Architecture Matrix
 
-> **Status:** canonical · **Last reviewed:** 2026-06-12
+> **Status:** canonical · **Last reviewed:** 2026-06-13
 
 The scope cut for v1: what lives where, what we build versus integrate versus register, and what is explicitly not promised. v1 means the pilot live on the design partner's real business ([build-plan.md](build-plan.md), milestones M1-M8). The topology lives in [architecture.md](architecture.md); the data-and-knowledge view in [contract-model.md](contract-model.md). This doc is the cut, not the sequence or the why.
 
-The original version of this matrix predates the runtime adoption (ADR-025/026), the knowledge layer (ADR-027), and the surface pivot (ADR-028). The big moves since: Hermes is adopted, not a candidate; the internal MCP tool server exists and is the spine; the Excel task pane replaced the web app as the primary client surface; email ingestion moved out of v1; the sprint plan and estimate bands this doc once carried are superseded by the milestone plan and are gone.
+The original version of this matrix predates the runtime adoption (ADR-025/026), the knowledge layer (ADR-027), and the surface pivot (ADR-028). The big moves since: Hermes is adopted, not a candidate; the internal MCP tool server exists and is the spine; the Excel task pane replaced the web app as the primary client surface; email ingestion moved out of v1; the sprint plan and estimate bands this doc once carried are superseded by the milestone plan and are gone; and the environment, secrets, and deployment shape consolidated into one generated contract on managed Supabase, with Helm-on-k3d as the local-to-prod environment and a Terra packaging for Juno (ADR-037/038).
 
 ## What Lives Where
 

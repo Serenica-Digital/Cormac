@@ -1,0 +1,25 @@
+# Terra plugin descriptor (ADR-036). See deploy/helm/api/terra.yaml for the model.
+resource_id: cormac-worker
+name: Cormac Worker (background jobs)
+icon: ""
+description: >-
+  Background worker (weekly report, connector processors). No inbound traffic
+  (clusterip): the chart renders a Service and no Ingress, so it does not depend
+  on Juno's network_mode. CI-built image from this repo.
+category: Application
+tags:
+  - cormac
+  - serenica
+  - worker
+  - clusterip
+fields:
+  - name: image_tag
+    description: The CI-built image tag to deploy (commit sha; sets image.tag).
+    required: true
+    default: latest
+    type: string
+  - name: image_pull_secret
+    description: docker-registry Secret for GHCR; must exist BEFORE deploy.
+    required: true
+    default: ghcr-pull
+    type: string

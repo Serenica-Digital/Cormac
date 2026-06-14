@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
+import { readEnv } from '@cormac/config/server';
 import { parseContract, type Contract, type ContractField } from '@cormac/contract';
 import { authoringOutputSchema, type AuthoringOutput } from './authoring-schema.js';
 import { SYSTEM_PROMPT, buildUserPrompt } from './prompt.js';
@@ -13,9 +14,9 @@ import { SYSTEM_PROMPT, buildUserPrompt } from './prompt.js';
  * the cross-field refinements the grammar could not enforce.
  */
 
-// Sonnet by default: capable enough to read the keystone signal without burning
-// top-flight tokens. Set SPIKE_MODEL=claude-opus-4-8 for the high-fidelity pass.
-const DEFAULT_MODEL = 'claude-sonnet-4-6';
+// Sonnet by default (the SPIKE_MODEL manifest default): capable enough to read
+// the keystone signal without burning top-flight tokens. Set
+// SPIKE_MODEL=claude-opus-4-8 for the high-fidelity pass.
 
 export interface TokenUsage {
   inputTokens: number;
@@ -35,11 +36,11 @@ export interface AgentRun {
 }
 
 export function getModel(): string {
-  return process.env.SPIKE_MODEL ?? DEFAULT_MODEL;
+  return readEnv('SPIKE_MODEL');
 }
 
 export async function runAgent(detected: unknown): Promise<AgentRun> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = readEnv('ANTHROPIC_API_KEY');
   if (!apiKey) {
     throw new Error('ANTHROPIC_API_KEY is not set. Run: ANTHROPIC_API_KEY=... pnpm evals:workbook');
   }

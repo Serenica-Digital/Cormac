@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { paneStorage } from './auth/storage';
+import { env } from './env';
 
 /**
  * The pane's one Supabase client and one persistence owner. All three sign-in
@@ -12,8 +13,8 @@ import { paneStorage } from './auth/storage';
  * messageParent, which the dialog lane feeds to setSession.
  */
 export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY,
+  env.VITE_SUPABASE_URL,
+  env.VITE_SUPABASE_ANON_KEY,
   {
     auth: {
       storage: paneStorage(),

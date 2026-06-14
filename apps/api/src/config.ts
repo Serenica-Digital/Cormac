@@ -1,77 +1,49 @@
 import { z } from 'zod';
+import { Z } from '@cormac/config';
+import { enforceProdRules } from '@cormac/config/server';
 
 /**
- * Control-plane configuration. The service role key is the one secret that must
- * never leave this process (ADR-003, ADR-005); it is required with no default.
- * Local-friendly defaults are provided for everything that is not a secret.
+ * Control-plane configuration. The variable rules live once in the shared
+ * manifest (`@cormac/config`, ADR-034); this schema picks the api's slice of them
+ * so `Config` stays strongly typed and the routes keep their types. A unit test
+ * binds these keys to the manifest, and `scripts/check-env.ts` keeps compose and
+ * Helm in step, so the four declaration sites can no longer drift.
+ *
+ * The service role key is the one secret that must never leave this process
+ * (ADR-003, ADR-005); it is required with no default. The prod-only fail-closed
+ * rules (no public JWT secret, required runtime/MCP credentials, explicit CORS)
+ * are enforced by `enforceProdRules` after the parse.
  */
-const envSchema = z.object({
-  SUPABASE_URL: z.string().url().default('http://127.0.0.1:54321'),
-  /**
-   * Expected `iss` claim on user tokens. Defaults to `${SUPABASE_URL}/auth/v1`.
-   * Needed when the URL the control plane fetches Supabase at differs from the
-   * URL tokens are issued under (e.g. in Docker, where the API reaches Supabase
-   * via host.docker.internal but tokens carry the host's 127.0.0.1 issuer).
-   */
-  SUPABASE_AUTH_ISSUER: z.string().url().optional(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
-  SUPABASE_ANON_KEY: z.string().min(1).optional(),
-  SUPABASE_JWT_SECRET: z
-    .string()
-    .min(1)
-    .default('super-secret-jwt-token-with-at-least-32-characters-long'),
-  API_PORT: z.coerce.number().int().positive().default(8088),
-  /**
-   * CORS allowlist, comma-separated origins. Defaults to the local web surface
-   * (5174) and the Excel pane's HTTPS dev origin (5175; Office sideloading needs
-   * HTTPS). Any origin not on the list gets no CORS headers and is blocked by
-   * the browser (control-register known gap #3).
-   */
-  CORS_ORIGINS: z
-    .string()
-    .default(
-      'http://127.0.0.1:5174,http://localhost:5174,https://localhost:5175,https://127.0.0.1:5175',
-    ),
-  /**
-   * Which runtime the capture pipeline dispatches to. `hermes` is the product
-   * runtime (Runs API, ADR-006/ADR-025) and the default; `stub` selects the
-   * synchronous runtime-stub contract and exists for test determinism only.
-   */
-  RUNTIME_KIND: z.enum(['hermes', 'stub']).default('hermes'),
-  RUNTIME_URL: z.string().url().default('http://127.0.0.1:8642'),
-  /** Bearer key for the Hermes Runs API (API_SERVER_KEY on the runtime side). */
-  RUNTIME_API_KEY: z.string().min(1).optional(),
-  /** How long capture waits for an agent run to reach a terminal state. */
-  RUNTIME_TIMEOUT_MS: z.coerce.number().int().positive().default(90_000),
-  /**
-   * MCP tool surface for the agent runtime (ADR-025). The token is the
-   * workspace binding: every tool call authenticated with it is scoped to
-   * MCP_WORKSPACE_ID and nothing else. Static pair for the spike (one
-   * workspace, one runtime container); per-run minted tokens come later.
-   * The /mcp endpoint is disabled unless both are set.
-   */
-  MCP_WORKSPACE_ID: z.string().uuid().optional(),
-  MCP_WORKSPACE_TOKEN: z.string().min(16).optional(),
-  /**
-   * The M1 pane spike's SSE streaming probe (Probe A). Off by default so the
-   * route is inert anywhere it is not explicitly turned on, the same posture as
-   * the MCP surface. SSE_TICK_MS is the wall-clock cadence of the progress
-   * frames; Hermes streams no tokens, so these ticks are progress, not output.
-   */
-  SSE_PROBE_ENABLED: z
-    .string()
-    .default('false')
-    .transform((v) => ['true', '1', 'yes', 'on'].includes(v.toLowerCase())),
-  SSE_TICK_MS: z.coerce.number().int().positive().default(1000),
+const apiSchema = z.object({
+  APP_ENV: Z.APP_ENV,
+  SUPABASE_URL: Z.SUPABASE_URL,
+  SUPABASE_AUTH_ISSUER: Z.SUPABASE_AUTH_ISSUER,
+  SUPABASE_SERVICE_ROLE_KEY: Z.SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_ANON_KEY: Z.SUPABASE_ANON_KEY,
+  SUPABASE_JWT_SECRET: Z.SUPABASE_JWT_SECRET,
+  API_PORT: Z.API_PORT,
+  CORS_ORIGINS: Z.CORS_ORIGINS,
+  RUNTIME_KIND: Z.RUNTIME_KIND,
+  RUNTIME_URL: Z.RUNTIME_URL,
+  RUNTIME_API_KEY: Z.RUNTIME_API_KEY,
+  RUNTIME_TIMEOUT_MS: Z.RUNTIME_TIMEOUT_MS,
+  MCP_WORKSPACE_ID: Z.MCP_WORKSPACE_ID,
+  MCP_WORKSPACE_TOKEN: Z.MCP_WORKSPACE_TOKEN,
+  SSE_PROBE_ENABLED: Z.SSE_PROBE_ENABLED,
+  SSE_TICK_MS: Z.SSE_TICK_MS,
 });
 
-export type Config = z.infer<typeof envSchema>;
+/** The api's env keys, exported so a unit test can bind them to the manifest. */
+export const API_ENV_KEYS = Object.keys(apiSchema.shape);
+
+export type Config = z.infer<typeof apiSchema>;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const parsed = envSchema.safeParse(env);
+  const parsed = apiSchema.safeParse(env);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n');
     throw new Error(`Invalid control-plane configuration:\n${issues}`);
   }
+  enforceProdRules('api', env, parsed.data.APP_ENV);
   return parsed.data;
 }

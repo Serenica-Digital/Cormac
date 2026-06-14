@@ -1,0 +1,35 @@
+{{- if .Values.recycle.enabled }}
+# Least-privilege identity for the recycle CronJob: patch only this one Deployment.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.serviceName }}-recycle
+  labels:
+    app.kubernetes.io/part-of: cormac
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Values.serviceName }}-recycle
+  labels:
+    app.kubernetes.io/part-of: cormac
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    resourceNames: ["{{ .Values.serviceName }}"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Values.serviceName }}-recycle
+  labels:
+    app.kubernetes.io/part-of: cormac
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.serviceName }}-recycle
+roleRef:
+  kind: Role
+  name: {{ .Values.serviceName }}-recycle
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

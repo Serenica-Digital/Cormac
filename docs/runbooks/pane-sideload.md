@@ -1,6 +1,6 @@
 # Runbook: sideload the pane and run the M1 probes
 
-> **Status:** draft · **Last reviewed:** 2026-06-12
+> **Status:** draft · **Last reviewed:** 2026-06-13
 
 Scripted steps so the observation sessions are short. The goal is to fill the results table in [../adr/030-pane-go-no-go.md](../adr/030-pane-go-no-go.md) with a measured answer for each probe on each platform. Lane 0 (email/password) needs zero Azure and unblocks Probes A, C, D, E immediately; only Probes B's Microsoft lanes need the Entra steps in section 4.
 
@@ -8,29 +8,28 @@ The split (from the plan): the code is built and committed on `feat/m1-pane-spik
 
 ## 1. One-time local setup
 
+Secret and config values come from Infisical, not a `.env` (ADR-037), so log in once:
+
 ```sh
 pnpm install
+infisical login                                  # one-time; injects env for the commands below
 # Trust a localhost HTTPS cert for Office sideloading (writes to ~/.office-addin-dev-certs):
 pnpm --filter @cormac/pane certs
-# Bring up Supabase + seed the demo workspace/owner (owner@demo.cormac.test):
-pnpm db:start && pnpm seed
+# Seed the demo workspace/owner on the managed dev Supabase (owner@demo.cormac.test):
+pnpm seed
 ```
 
-In `.env`, turn the probe route on for the control plane and confirm the pane origin is allowed:
-
-```sh
-SSE_PROBE_ENABLED=true
-# CORS_ORIGINS default already includes https://localhost:5175; set it explicitly if you overrode it.
-```
+The SSE probe route is on in the local k3d overlay ([../../deploy/helm/api/values.local.yaml](../../deploy/helm/api/values.local.yaml): `SSE_PROBE_ENABLED=true`), which also allows the pane origin via `CORS_ORIGINS`. Override either in Infisical's `dev` environment only if you need to.
 
 ## 2. Run the stack
 
-Two terminals (the pane dev server runs on the host so it serves real HTTPS from the trusted cert; do not run the pane via Docker for sideloading):
+The backend runs in local k3d (the Helm charts); the pane dev server runs on the host so it serves real HTTPS from the trusted cert (do not run the pane in-cluster for sideloading):
 
 ```sh
-# Terminal 1: control plane + runtime (Docker)
-pnpm dev
-# Terminal 2: the pane dev server on https://localhost:5175
+# Terminal 1: control plane + runtime in k3d, then expose the api to the host
+pnpm dev                                         # scripts/k3d/up.sh: builds + installs the charts
+kubectl -n cormac port-forward svc/cormac-api 8088:8088
+# Terminal 2: the pane dev server on https://localhost:5175 (env from Infisical)
 pnpm --filter @cormac/pane dev
 ```
 
@@ -52,7 +51,7 @@ Skip this section to measure everything except the Microsoft lanes.
 
 1. Create a **sign-in-only** Entra app registration (no Graph permissions): Azure portal → App registrations → New. Add a Single-page application redirect URI `https://localhost:5175/callback.html`. Note the Application (client) ID.
 2. In the Supabase dashboard → Authentication → Providers → Azure: enable it, set the client ID and secret, and set the redirect to the Supabase callback. Add `https://localhost:5175/callback.html` to the allowed redirect URLs.
-3. Put the client id in `.env`: `VITE_ENTRA_CLIENT_ID=<id>` (and `VITE_ENTRA_AUTHORITY` if not the common endpoint). Restart the pane dev server.
+3. Put the client id in Infisical's `dev` environment: `VITE_ENTRA_CLIENT_ID=<id>` (and `VITE_ENTRA_AUTHORITY` if not the common endpoint). Restart the pane dev server (`infisical run -- vite` picks it up).
 4. In `manifest.xml`, replace the two `PANE_ENTRA_CLIENT_ID` placeholders with the client id, then re-sideload.
 
 ## 5. Run the probes and record readouts

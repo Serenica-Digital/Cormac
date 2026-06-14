@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import { readEnv } from '@cormac/config/server';
 import { EXAMPLE_PERSON_CONTRACT } from '@cormac/contract';
 import { createServiceClient } from '@cormac/db';
 
@@ -8,11 +8,9 @@ import { createServiceClient } from '@cormac/db';
  * update. Run from the repo root with `pnpm seed` after `pnpm db:start`.
  */
 
-const url = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!serviceKey) {
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY is required. Copy it from `pnpm db:start` into .env.');
-}
+const url = readEnv('SUPABASE_URL');
+// readEnv throws if the required service-role key is missing or empty.
+const serviceKey = readEnv('SUPABASE_SERVICE_ROLE_KEY');
 
 const OWNER_EMAIL = 'owner@demo.cormac.test';
 const OWNER_PASSWORD = 'demo-password-123';

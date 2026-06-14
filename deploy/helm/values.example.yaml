@@ -1,0 +1,14 @@
+# Shared overrides that apply to every workload chart. Pass with -f to each chart:
+#   helm template deploy/helm/api -f deploy/helm/values.example.yaml
+# Per-workload values (ingress.host, env.*, recycle.*) still live in each chart's
+# values.yaml or are set with --set. PLACEHOLDERs are finalized after the Juno
+# onboarding session (ADR-034 risk note).
+image:
+  tag: latest # set to the deployed commit sha
+imagePullSecret: ghcr-pull
+secretName: cormac-secrets
+ingress:
+  className: nginx
+  tls:
+    enabled: true
+    clusterIssuer: letsencrypt-prod # PLACEHOLDER: confirm a ClusterIssuer exists

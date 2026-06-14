@@ -1,0 +1,20 @@
+# Bootstrap auth for the Infisical SecretStore (ADR-035). DO NOT COMMIT REAL
+# VALUES. Create a machine identity in Infisical (Universal Auth), grant it read
+# on the project's dev environment, then create this secret out of band:
+#
+#   kubectl -n cormac create secret generic infisical-auth \
+#     --from-literal=clientId=<machine-identity-client-id> \
+#     --from-literal=clientSecret=<machine-identity-client-secret>
+#
+# ESO reads it to authenticate the SecretStore; it is the one credential the
+# cluster holds, and it never grants write. Apply secretstore.yaml and
+# externalsecret.yaml after it exists.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: infisical-auth
+  namespace: cormac
+type: Opaque
+stringData:
+  clientId: "REPLACE_ME"
+  clientSecret: "REPLACE_ME"
