@@ -1,6 +1,6 @@
 # Control Register
 
-> **Status:** canonical · **Last reviewed:** 2026-06-13
+> **Status:** canonical · **Last reviewed:** 2026-06-14
 
 The spine that keeps QA and compliance in sync. Every security claim a reviewer will ask about maps to an enforced control in code, a test that proves it, and a packet doc that summarizes it. If a claim is not in this table, the packet may not make it. If a row is `enforced` without a test, that is a QA gap, not a finished control.
 
@@ -22,7 +22,7 @@ The `Test` column cites test files as backticked paths ending `.test.ts`, comma-
 | --- | --- | --- | --- | --- | --- |
 | 1 | Tenant data is isolated by workspace | RLS + `workspace_id` on every tenant row ([0002_rls.sql](../../supabase/migrations/0002_rls.sql), [0001_init.sql](../../supabase/migrations/0001_init.sql)) | `tests/integration/isolation.test.ts` | [tenant-isolation.md](tenant-isolation.md) | enforced+tested |
 | 2 | The control plane is the only writer | No user write policies; service role is server-only; runtime has no DB creds | `tests/integration/isolation.test.ts` (write-denied case) | [tenant-isolation.md](tenant-isolation.md), [agent-runtime-security.md](agent-runtime-security.md) | enforced+tested |
-| 3 | The agent runtime cannot reach the database | Runtime workload surfaces no Supabase env ([hermes-runtime chart](../../deploy/helm/hermes-runtime/values.yaml)); only the control plane holds the service key | chart review; see row 2 | [agent-runtime-security.md](agent-runtime-security.md) | enforced |
+| 3 | The agent runtime cannot reach the database | Runtime workload surfaces no Supabase env ([hermes-runtime chart](../../plugins/hermes-runtime/values.yaml)); only the control plane holds the service key | chart review; see row 2 | [agent-runtime-security.md](agent-runtime-security.md) | enforced |
 | 4 | The agent writes only agent-editable fields | `validateProposalAgainstContract` ([validate.ts](../../packages/contract/src/validate.ts)) | `tests/unit/validate.test.ts` | [agent-runtime-security.md](agent-runtime-security.md) | enforced+tested |
 | 5 | Malformed runtime output is rejected, never written | adapter `callRuntime` ([adapter/runtime.ts](../../apps/api/src/adapter/runtime.ts)) | `tests/unit/runtime.test.ts` | [agent-runtime-security.md](agent-runtime-security.md) | enforced+tested |
 | 6 | Sensitive field values never reach the model | `buildContextDisplay` ([redact.ts](../../packages/contract/src/redact.ts)) used in [repo.ts](../../apps/api/src/repo.ts); the compiled prefix renders redacted views only | `tests/unit/redact.test.ts`, `tests/integration/context-compile.test.ts` | [ai-data-handling.md](ai-data-handling.md), [data-classification-and-handling.md](data-classification-and-handling.md) | enforced+tested |

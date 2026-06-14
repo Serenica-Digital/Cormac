@@ -2,7 +2,7 @@
 
 Status: drafted
 Maps to: control-register rows 1-5, 7-10
-Last reviewed: 2026-06-06
+Last reviewed: 2026-06-14
 
 The trust topology. The canonical diagram lives in [../prd/architecture.md](../prd/architecture.md); this doc states the boundaries in security terms.
 
@@ -18,7 +18,7 @@ The trust topology. The canonical diagram lives in [../prd/architecture.md](../p
 
 ## The one invariant
 
-The control plane is the only writer. Surfaces and the runtime never mutate business records directly, and the runtime holds no database write credentials. This is enforced three ways at once: there are no RLS write policies for users ([0002_rls.sql](../../supabase/migrations/0002_rls.sql)), the service-role key is server-only ([app.ts](../../apps/api/src/app.ts)), and the runtime workload surfaces no Supabase env ([hermes-runtime chart](../../deploy/helm/hermes-runtime/values.yaml)).
+The control plane is the only writer. Surfaces and the runtime never mutate business records directly, and the runtime holds no database write credentials. This is enforced three ways at once: there are no RLS write policies for users ([0002_rls.sql](../../supabase/migrations/0002_rls.sql)), the service-role key is server-only ([app.ts](../../apps/api/src/app.ts)), and the runtime workload surfaces no Supabase env ([hermes-runtime chart](../../plugins/hermes-runtime/values.yaml)).
 
 ## How a write happens
 

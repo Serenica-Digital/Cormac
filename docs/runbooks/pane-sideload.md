@@ -1,6 +1,6 @@
 # Runbook: sideload the pane and run the M1 probes
 
-> **Status:** draft · **Last reviewed:** 2026-06-13
+> **Status:** draft · **Last reviewed:** 2026-06-14
 
 Scripted steps so the observation sessions are short. The goal is to fill the results table in [../adr/030-pane-go-no-go.md](../adr/030-pane-go-no-go.md) with a measured answer for each probe on each platform. Lane 0 (email/password) needs zero Azure and unblocks Probes A, C, D, E immediately; only Probes B's Microsoft lanes need the Entra steps in section 4.
 
@@ -19,7 +19,7 @@ pnpm --filter @cormac/pane certs
 pnpm seed
 ```
 
-The SSE probe route is on in the local k3d overlay ([../../deploy/helm/api/values.local.yaml](../../deploy/helm/api/values.local.yaml): `SSE_PROBE_ENABLED=true`), which also allows the pane origin via `CORS_ORIGINS`. Override either in Infisical's `dev` environment only if you need to.
+The SSE probe route is on in the local overlay ([../../plugins/api/values.local.yaml](../../plugins/api/values.local.yaml): `SSE_PROBE_ENABLED=true`), which also allows the pane origin via `CORS_ORIGINS`. Override either in Infisical's `dev` environment only if you need to.
 
 ## 2. Run the stack
 
@@ -35,13 +35,32 @@ pnpm --filter @cormac/pane dev
 
 Open `https://localhost:5175/` in a browser first and accept the cert if prompted. The pane should render with "not in Excel" in the header; that confirms the assets and the build before Excel is involved.
 
+### Verify the backend posture before sideloading
+
+The pane signs into **managed** Supabase and presents an ES256 token, so the api must run in the managed/`dev` posture (not the local/CI posture) and the managed schema must be current, or every probe fails at the door. Check both first (ADR-030 "Environment readiness" carries the fixes):
+
+```sh
+# Expect APP_ENV=dev against the managed project. APP_ENV=local / host.k3d.internal:54321
+# means the api is in the CI posture and will reject the pane's managed token.
+kubectl -n cormac get configmap cormac-api-config -o jsonpath='{.data.APP_ENV}{"  "}{.data.SUPABASE_URL}{"\n"}'
+# Managed schema must include learned_knowledge (migration 0007); if missing, capture
+# fails in compileWorkspaceContext. Push migrations with: pnpm db:push:managed
+```
+
 ## 3. Sideload into Excel (per platform)
 
 The manifest is [../../apps/pane/manifest.xml](../../apps/pane/manifest.xml).
 
 - **Excel on the web (fastest):** open a workbook in the browser → Insert → Add-ins → Upload My Add-in → pick `manifest.xml`.
 - **Excel on Windows (WebView2):** put `manifest.xml` in a trusted catalog (a shared folder added under File → Options → Trust Center → Trusted Add-in Catalogs), or use `npx office-addin-debugging start apps/pane/manifest.xml`. Requires a Windows box (Parallels or a cloud VM).
-- **Excel on Mac (WKWebView):** copy `manifest.xml` into `~/Library/Containers/com.microsoft.Excel/Data/Documents/wef/` and restart Excel, or use the office-addin-debugging command above.
+- **Excel on Mac (WKWebView):** Excel for Mac desktop has **no "Upload My Add-in" UI** (that entry is Windows + web only), so sideload by placing the manifest in the per-user `wef` folder. Use the script:
+
+  ```sh
+  pnpm --filter @cormac/pane sideload:mac   # copies manifest.xml into the Excel wef container
+  # then FULLY quit Excel (Cmd-Q, not just close the window) and reopen
+  ```
+
+  After reopening, the **Open Cormac** button is on the **Home** tab; click it to open the pane. `pnpm --filter @cormac/pane sideload:mac:stop` removes the manifest. The container path is `~/Library/Containers/com.microsoft.Excel/Data/Documents/wef/` (verified on the Microsoft 365 installer build **Excel 16.109.3**; on other builds confirm with `ls ~/Library/Containers | grep -i excel`). Two preconditions: the pane dev server (`pnpm --filter @cormac/pane dev`) is running, and `https://localhost:5175` loads cleanly in **Safari first** (WKWebView shares Safari's trust store; a TLS error there means the dev cert is not trusted, not a pane bug). `office-addin-debugging start apps/pane/manifest.xml desktop` also sideloads on Mac, but it calls Microsoft's hosted manifest validator, which can return 502; the `wef` copy depends on nothing external.
 
 Open the Cormac pane from the Home tab (the "Open Cormac" button) once sideloaded.
 
