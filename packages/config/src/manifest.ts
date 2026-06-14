@@ -81,10 +81,7 @@ export const Z = {
   SUPABASE_ANON_KEY: opt(z.string().min(1).optional()),
   SUPABASE_JWT_SECRET: z.string().min(1).default(DEV_JWT_SECRET),
 
-  // --- Managed Supabase (remote dev project bootstrap; scripts only) ---
-  REMOTE_SUPABASE_URL: opt(z.string().url().optional()),
-  REMOTE_SUPABASE_ANON_KEY: opt(z.string().min(1).optional()),
-  REMOTE_SUPABASE_SERVICE_ROLE_KEY: opt(z.string().min(1).optional()),
+  // --- Managed Supabase migrations (ops only; `pnpm db:push:managed`) ---
   SUPABASE_DB_URL: opt(z.string().min(1).optional()),
   SUPABASE_DB_PASSWORD: opt(z.string().min(1).optional()),
 
@@ -191,36 +188,12 @@ export const ENV: EnvVar[] = [
     description: 'HS256 fallback for local only; prod verifies ES256 against the JWKS (ADR-020).',
   },
   {
-    name: 'REMOTE_SUPABASE_URL',
-    scope: 'server',
-    secret: false,
-    workloads: ['scripts'],
-    inEnvExample: true,
-    description: 'Managed dev project URL for the remote bootstrap. Namespaced so it never collides.',
-  },
-  {
-    name: 'REMOTE_SUPABASE_ANON_KEY',
-    scope: 'server',
-    secret: false,
-    workloads: ['scripts'],
-    inEnvExample: true,
-    description: 'Managed dev project anon key (remote bootstrap only).',
-  },
-  {
-    name: 'REMOTE_SUPABASE_SERVICE_ROLE_KEY',
-    scope: 'server',
-    secret: true,
-    workloads: ['scripts'],
-    inEnvExample: true,
-    description: 'Managed dev project service-role key (remote bootstrap only).',
-  },
-  {
     name: 'SUPABASE_DB_URL',
     scope: 'server',
     secret: true,
     workloads: ['scripts'],
     inEnvExample: true,
-    description: 'Direct Postgres URL with embedded password for `db:push:remote`.',
+    description: 'Managed project Postgres URL (embedded password) for `pnpm db:push:managed`.',
   },
   {
     name: 'SUPABASE_DB_PASSWORD',
@@ -228,7 +201,7 @@ export const ENV: EnvVar[] = [
     secret: true,
     workloads: ['scripts'],
     inEnvExample: true,
-    description: 'Managed project DB password (remote operations).',
+    description: 'Managed project DB password (migration ops).',
   },
   {
     name: 'API_PORT',

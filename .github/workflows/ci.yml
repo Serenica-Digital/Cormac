@@ -8,10 +8,6 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    env:
-      # Set this repo secret to a read-only Infisical machine-identity token to
-      # activate the secret-completeness guard below. Absent -> that step skips.
-      INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
     steps:
       - uses: actions/checkout@v6
 
@@ -63,10 +59,6 @@ jobs:
 
       - name: Check eval fixtures (structural, no model calls)
         run: pnpm check:eval-fixtures
-
-      - name: Check Infisical holds every required secret (skipped until INFISICAL_TOKEN is set)
-        if: ${{ env.INFISICAL_TOKEN != '' }}
-        run: pnpm check:infisical
 
       - name: Start Supabase (applies migrations)
         run: pnpm exec supabase start

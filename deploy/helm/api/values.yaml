@@ -56,7 +56,6 @@ env:
 # out of the Secret in prod (JWKS-only, ADR-020); its secretKeyRef is optional.
 secretEnv:
   - SUPABASE_SERVICE_ROLE_KEY
-  - SUPABASE_JWT_SECRET
   - RUNTIME_API_KEY
   - MCP_WORKSPACE_TOKEN
 
