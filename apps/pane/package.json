@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "certs": "office-addin-dev-certs install"
+    "certs": "office-addin-dev-certs install",
+    "sideload:mac": "mkdir -p \"$HOME/Library/Containers/com.microsoft.Excel/Data/Documents/wef\" && cp manifest.xml \"$HOME/Library/Containers/com.microsoft.Excel/Data/Documents/wef/cormac.manifest.xml\" && echo 'Placed in wef. Fully quit Excel (Cmd-Q), reopen, then Home tab -> Open Cormac. Pane dev server must be running.'",
+    "sideload:mac:stop": "rm -f \"$HOME/Library/Containers/com.microsoft.Excel/Data/Documents/wef/cormac.manifest.xml\" && echo 'Removed from wef. Cmd-Q and reopen Excel to clear it.'"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.27.0",
