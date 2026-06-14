@@ -1,4 +1,4 @@
-# Terra plugin descriptor (ADR-036). See deploy/helm/api/terra.yaml for the model.
+# Terra plugin descriptor (ADR-039). See ../api/terra.yaml for the model.
 resource_id: cormac-worker
 name: Cormac Worker (background jobs)
 icon: ""

@@ -1,5 +1,5 @@
 # Shared overrides that apply to every workload chart. Pass with -f to each chart:
-#   helm template deploy/helm/api -f deploy/helm/values.example.yaml
+#   helm template plugins/api -f plugins/values.example.yaml
 # Per-workload values (ingress.host, env.*, recycle.*) still live in each chart's
 # values.yaml or are set with --set. PLACEHOLDERs are finalized after the Juno
 # onboarding session (ADR-034 risk note).
