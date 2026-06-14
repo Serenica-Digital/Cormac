@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # Stand the Cormac backend up in a local k3d cluster from the Helm charts
-# (ADR-035). Builds the api/worker/hermes-runtime images arm64-native, imports
+# (ADR-039). Builds the api/worker/hermes-runtime images arm64-native, imports
 # them into k3d (no GHCR pull), and installs the charts with the local overlay.
 # Secrets are NOT created here: create `cormac-secrets` out-of-band first, either
 # via ESO/Infisical (deploy/eso/) or the bootstrap path in
-# deploy/helm/secrets.example.yaml. Frontends run on the host (pnpm --filter
+# plugins/secrets.example.yaml. Frontends run on the host (pnpm --filter
 # @cormac/{web,pane} dev), not in-cluster.
+#
+# Fast chart-correctness loop only. The faithful pre-onboarding rehearsal is the
+# Juno-shaped kind stack (ArgoCD + ingress-nginx + Terra); see ADR-039.
 set -euo pipefail
 
 CLUSTER=cormac
@@ -35,14 +38,14 @@ k3d image import -c "$CLUSTER" cormac/api:dev cormac/worker:dev cormac/hermes-ru
 
 if ! kubectl -n "$NS" get secret cormac-secrets >/dev/null 2>&1; then
   echo "!! cormac-secrets is not present in namespace '$NS'."
-  echo "   Create it first (ESO via deploy/eso/, or the bootstrap in deploy/helm/secrets.example.yaml)."
+  echo "   Create it first (ESO via deploy/eso/, or the bootstrap in plugins/secrets.example.yaml)."
   echo "   The api will not boot without it (fail-closed, APP_ENV=dev)."
 fi
 
 echo "==> installing charts"
-helm upgrade --install cormac-worker         deploy/helm/worker         -n "$NS" -f deploy/helm/worker/values.local.yaml
-helm upgrade --install cormac-hermes-runtime deploy/helm/hermes-runtime -n "$NS" -f deploy/helm/hermes-runtime/values.local.yaml
-helm upgrade --install cormac-api            deploy/helm/api            -n "$NS" -f deploy/helm/api/values.local.yaml
+helm upgrade --install cormac-worker         plugins/worker         -n "$NS" -f plugins/worker/values.local.yaml
+helm upgrade --install cormac-hermes-runtime plugins/hermes-runtime -n "$NS" -f plugins/hermes-runtime/values.local.yaml
+helm upgrade --install cormac-api            plugins/api            -n "$NS" -f plugins/api/values.local.yaml
 
 echo "==> waiting for rollouts"
 kubectl -n "$NS" rollout status deploy/cormac-worker         --timeout=120s || true

@@ -1,10 +1,10 @@
 # Deployment setup: images, env inventory, remote database
 
-> **Status:** canonical · **Last reviewed:** 2026-06-13
+> **Status:** canonical · **Last reviewed:** 2026-06-14
 
 The operational companion to [juno-platform-pilot.md](juno-platform-pilot.md): every deployable image, every environment variable each workload needs, which of them are secrets, and the bootstrap sequence for a managed Supabase project. This is the input to the secrets conversation at the Juno onboarding session.
 
-> **Update 2026-06-13 (ADR-037/038):** the env inventory below is machine-checked and generated. The single source of truth is the manifest ([../../packages/config/src/manifest.ts](../../packages/config/src/manifest.ts)); `pnpm gen:env` generates `.env.example` and each Helm chart's env/secretEnv, and `pnpm check:env` fails the build if they drift. The deployment is one Helm chart per workload under [../../deploy/helm/](../../deploy/helm/), run locally on k3d and on Juno (compose is retired). Secret VALUES live in Infisical and inject via ESO into the cluster and `infisical run` locally; see [../runbooks/secrets-and-env.md](../runbooks/secrets-and-env.md). The full decision record is [ADR-037](../adr/037-environment-and-secrets-consolidated.md) and [ADR-038](../adr/038-deployment-parity-single-backend.md).
+> **Update (ADR-037/038/039):** the env inventory below is machine-checked and generated. The single source of truth is the manifest ([../../packages/config/src/manifest.ts](../../packages/config/src/manifest.ts)); `pnpm gen:env` generates `.env.example` and each chart's env/secretEnv, and `pnpm check:env` fails the build if they drift. The deployment is one chart per workload under [../../plugins/](../../plugins/); each `plugins/<workload>/` is a Terra plugin and a plain Helm chart at once, with the bundle at [../../bundles/cormac.yaml](../../bundles/cormac.yaml) (ADR-039). The deploy path is Terra/ArgoCD; direct `helm install` stays available as a portability escape hatch. Secret VALUES live in Infisical and inject via ESO into the cluster (ESO is fully Cormac-owned; Juno ships no secret operator) and `infisical run` locally; see [../runbooks/secrets-and-env.md](../runbooks/secrets-and-env.md). The full decision record is [ADR-037](../adr/037-environment-and-secrets-consolidated.md), [ADR-038](../adr/038-deployment-parity-single-backend.md), and [ADR-039](../adr/039-terra-packaging-and-juno-platform-reality.md).
 
 ## Images
 
@@ -111,4 +111,4 @@ Generate or collect before the session; each lands in the pilot cluster's secret
 
 ## Local reference
 
-The same images run locally in k3d: `pnpm dev` (`scripts/k3d/up.sh`) brings the backend up against the managed dev Supabase, then `pnpm seed` (it self-wraps `infisical run`). Secret values come from Infisical, not a `.env` (ADR-037); `.env.example` is the generated reference list of variables, not a file you fill in. `pnpm db:start` (the local Supabase stack) is for CI and offline tests only (ADR-038). The Helm charts are the only orchestrator, local and on Juno.
+The same images run locally: `pnpm dev` (`scripts/k3d/up.sh`) brings the backend up against the managed dev Supabase, then `pnpm seed` (it self-wraps `infisical run`). Secret values come from Infisical, not a `.env` (ADR-037); `.env.example` is the generated reference list of variables, not a file you fill in. `pnpm db:start` (the local Supabase stack) is for CI and offline tests only (ADR-038). Plain k3d is a fast chart-correctness loop and is being retired; the faithful pre-onboarding rehearsal is a Juno-shaped `kind` stack that exercises the ArgoCD-synced path (ADR-039). The charts under `plugins/` are the deployable unit, local and on Juno.

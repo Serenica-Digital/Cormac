@@ -1,11 +1,11 @@
 # Runbook: secrets and environment
 
-> **Status:** canonical · **Last reviewed:** 2026-06-13
+> **Status:** canonical · **Last reviewed:** 2026-06-14
 
 How to generate, inject, and rotate the platform's secrets and environment, local
-and on Juno (ADR-037, ADR-038). The variable contract lives in the manifest
+and on Juno (ADR-037, ADR-038, ADR-039). The variable contract lives in the manifest
 ([packages/config/src/manifest.ts](../../packages/config/src/manifest.ts)), which
-generates `.env.example` and the Helm charts' `env`/`secretEnv`; `pnpm check:env`
+generates `.env.example` and the charts' `env`/`secretEnv`; `pnpm check:env`
 fails the build if they drift. Secret *values* live in Infisical, the single
 authority. The deployable env inventory is in
 [../prd/deployment-setup.md](../prd/deployment-setup.md).
@@ -14,7 +14,8 @@ authority. The deployable env inventory is in
 
 - Secret values live in one authority, Infisical (ADR-037). Nothing else keeps a
   copy. Host tooling injects them with `infisical run`; the cluster synthesizes the
-  one k8s Secret `cormac-secrets` from Infisical via the External Secrets Operator
+  one k8s Secret `cormac-secrets` from Infisical via the External Secrets Operator,
+  which we own and install ourselves since Juno ships no secret operator (ADR-039)
   ([../../deploy/eso/](../../deploy/eso/)). Every read is logged.
 - **There is no local `.env`.** A developer runs `infisical login` once; after that
   the env-needing commands pull from Infisical. `.infisical.json` (a committed
@@ -30,7 +31,7 @@ authority. The deployable env inventory is in
 Local dev, k3d, and Juno all run against the **managed dev Supabase** (ADR-038). One-time, per machine:
 
 1. `infisical login` (browser; pick **Infisical Cloud (US Region)**).
-2. Install ESO and apply [../../deploy/eso/](../../deploy/eso/) (`secretstore.yaml` + `externalsecret.yaml`) so the k3d stack reads `cormac-secrets` from Infisical. Same steps on Juno (k3d and Juno are identical); see the ESO README.
+2. Install ESO and apply [../../deploy/eso/](../../deploy/eso/) (`secretstore.yaml` + `externalsecret.yaml`) so the local stack reads `cormac-secrets` from Infisical. The same steps run on Juno, where ESO is a cluster-level concern we install ourselves (ADR-039); see the ESO README.
 
 After that, `pnpm dev` brings the backend up in k3d against managed Supabase, and the
 env-needing host commands inject from Infisical automatically because they wrap
@@ -48,13 +49,14 @@ Supabase stack (`pnpm db:start`) is for CI and offline tests only; its throwaway
 ## Juno (Kubernetes)
 
 Charts read every secret via `secretKeyRef` from one Secret, `cormac-secrets`. The
-intended path is the External Secrets Operator synthesizing it from Infisical, so no
-secret value ever lives in a cluster spec ([../../deploy/eso/](../../deploy/eso/),
-proven on local k3d, ADR-038): install ESO, create the one bootstrap auth secret
+path is the External Secrets Operator synthesizing it from Infisical, so no
+secret value ever lives in a cluster spec ([../../deploy/eso/](../../deploy/eso/)).
+ESO is fully Cormac-owned because Juno ships no secret operator (ADR-039): install
+ESO ourselves as a cluster-level concern, create the one bootstrap auth secret
 (`infisical-auth`, a machine identity's client id/secret), then apply
 `secretstore.yaml` + `externalsecret.yaml`. The hand-made `kubectl` path below is the
-bootstrap fallback; either way it must exist **before** `helm install` (a documented
-juno_k3s race deploys workloads before a later-created secret exists).
+bootstrap fallback; either way the Secret must exist **before** the workloads deploy
+(a documented juno_k3s race deploys workloads before a later-created secret exists).
 
 ```sh
 # 1. App secrets. Generate fresh values for the deployment; do not reuse local ones.
@@ -74,19 +76,21 @@ kubectl create secret docker-registry ghcr-pull -n cormac \
   --docker-password=<PAT with read:packages>
 ```
 
-Template and the optional External Secrets Operator path:
-[../../deploy/helm/secrets.example.yaml](../../deploy/helm/secrets.example.yaml).
-On Juno an ESO `ExternalSecret` can synthesize `cormac-secrets` from Vault / AWS
-Secrets Manager / Azure Key Vault, changing no chart wiring.
+Template and the External Secrets Operator path:
+[../../plugins/secrets.example.yaml](../../plugins/secrets.example.yaml).
+Our ESO `SecretStore` syncs `cormac-secrets` from Infisical; the same chart wiring
+works against any ESO backend.
 
 ### The pane's custom domain and TLS
 
 The Excel add-in manifest pins the pane's URL near-permanently, so the pane needs a
-stable custom domain with TLS. `cert-manager` is an available Terra plugin: set
+stable custom domain with TLS. We own the whole TLS stack since Juno ships no
+cert-manager and no issuer (ADR-039): install the `cert-manager` Terra plugin and
+create our own `ClusterIssuer` (Let's Encrypt, Route53 DNS-01 on AWS), set
 `ingress.host`, `ingress.tls.enabled`, and `ingress.tls.clusterIssuer` in
-[../../deploy/helm/pane/values.yaml](../../deploy/helm/pane/values.yaml), point the
-domain's DNS at the cluster ingress, and confirm a `ClusterIssuer` exists. If Juno
-cannot serve a per-workload custom host, front the pane with a CDN (Cloudflare).
+[../../plugins/pane/values.yaml](../../plugins/pane/values.yaml), and point the
+domain's DNS at the shared ingress-nginx (optionally via ExternalDNS). If a
+per-workload custom host cannot be served, front the pane with a CDN (Cloudflare).
 
 ## Rotation
 
@@ -110,6 +114,6 @@ restart the consuming workload so it re-reads the env. Specifics:
 
 The deployment-side checklist (keys to generate, GHCR PAT, hosted migration state)
 is in [../prd/deployment-setup.md](../prd/deployment-setup.md). The operational
-confirmations for Juno (ClusterIssuer, secret backend, CronJob RBAC, hostname
-stability, Hermes build) are in
-[../../deploy/helm/README.md](../../deploy/helm/README.md) and ADR-038.
+confirmations for Juno (DNS delegation for our ClusterIssuer, who can read the
+ESO-synced secret, CronJob RBAC, hostname stability, cluster egress, Hermes build)
+are in [../../plugins/README.md](../../plugins/README.md), ADR-038, and ADR-039.

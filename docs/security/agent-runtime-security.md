@@ -2,7 +2,7 @@
 
 Status: drafted
 Maps to: control-register rows 3, 4, 5, 6, 19, 20, 21, 22
-Last reviewed: 2026-06-10
+Last reviewed: 2026-06-14
 
 The hardest question a reviewer asks about an AI that proposes writes is how it is stopped from making them unsafely. This is the answer, and it is structural, not hopeful. ADR-015 names this the special workstream; ADR-025 set the posture and ADR-026 proved it live.
 
@@ -12,7 +12,7 @@ The runtime is NousResearch Hermes Agent, pinned by version, running stateless p
 
 ## The containment controls
 
-- **No database credentials.** The runtime workload surfaces no Supabase env ([hermes-runtime chart](../../deploy/helm/hermes-runtime/values.yaml)); only the control plane holds the service key. It cannot write even if it tried (register rows 2, 3).
+- **No database credentials.** The runtime workload surfaces no Supabase env ([hermes-runtime chart](../../plugins/hermes-runtime/values.yaml)); only the control plane holds the service key. It cannot write even if it tried (register rows 2, 3).
 - **The tool surface is authenticated and tenant-bound.** Every tool call carries a workspace-scoped bearer token, compared timing-safe; the token is the tenant binding, so a run can reach only its own workspace ([mcp/routes.ts](../../apps/api/src/mcp/routes.ts); register row 19, proven in [tests/integration/mcp-tools.test.ts](../../tests/integration/mcp-tools.test.ts)).
 - **Tools are allowlisted and workspace-scoped.** The runtime profile lists exactly the four operations-agent tools; the control plane serves nothing else, and every tool query filters by workspace ([config.yaml](../../docker/hermes-runtime/config.yaml), [mcp/server.ts](../../apps/api/src/mcp/server.ts); register row 20).
 - **The only write path is a gated proposal.** `submit_proposal` validates shape (Zod) and contract (every field must exist, be the right type, and be agent-editable), holds at most one `pending` proposal per task (a unique index enforces it under retries), and never applies anything. A proposal touching a human-only field is rejected and not held (register rows 4, 21; [validate.ts](../../packages/contract/src/validate.ts)).

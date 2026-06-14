@@ -1,9 +1,9 @@
-# Terra plugin descriptor (ADR-036). A Terra plugin is this Helm chart plus this
-# file; registering the repo as a Terra Source makes `helm/api` a launchable
-# workload template (Kuiper renders the chart with the field values below).
-# The chart stays plain, portable Kubernetes; this file is inert off-platform,
-# so Juno remains swappable (ADR-017). Direct `helm install` is the fallback that
-# needs none of this (see docs/runbooks/deploy-to-juno.md).
+# Terra plugin descriptor (ADR-039). A Terra plugin is this Helm chart plus this
+# file, under plugins/<name>/ at the Source repo root (Terra discovers only
+# plugins/*/terra.yaml). Terra creates one ArgoCD Application per plugin pointing
+# at this directory; ArgoCD syncs the chart. The chart stays plain, portable
+# Kubernetes and this file is inert to Helm, so a plain `helm install plugins/api`
+# still works and Juno stays swappable (ADR-017).
 resource_id: cormac-api
 name: Cormac Control Plane (api)
 icon: "" # optional; a raw image URL can be added later
@@ -17,9 +17,11 @@ tags:
   - serenica
   - control-plane
   - ingress-noauth
-# Operator install inputs. These set the same-named chart values; the exact
-# field->values injection is a Kuiper detail to confirm at onboarding, so the
-# deterministic path is `helm install --set` (the runbook's fallback track).
+# Operator install inputs. By the Terra contract a field `name` injects into a
+# chart value; the proven plugins use flat top-level keys, while our chart reads
+# nested values (image.tag, ingress.host). Whether Terra's injection resolves the
+# dotted path or needs a flat key is the one item to verify at the kind rehearsal
+# (ADR-039 open item). Each description names the value the field is meant to set.
 fields:
   - name: image_tag
     description: The CI-built image tag to deploy (commit sha; sets image.tag).

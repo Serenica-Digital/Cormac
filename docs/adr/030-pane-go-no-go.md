@@ -6,12 +6,29 @@
 
 ## Context
 
-ADR-028 accepted the Excel task pane as the primary client surface as a direction and gated the build on a measurement spike, because several platform constraints are only trustworthy when exercised in real Excel. M1 built a minimal, instrumented `apps/pane` plus one new control-plane SSE route, both on `feat/m1-pane-spike`, held unmerged until this call. This ADR records the result and re-scopes the pane issue set.
+ADR-028 accepted the Excel task pane as the primary client surface as a direction and gated the build on a measurement spike, because several platform constraints are only trustworthy when exercised in real Excel. M1 built a minimal, instrumented `apps/pane` plus one new control-plane SSE route, both on `feat/m1-pane-spike`, merged to `dev` via PR #54 ahead of this call (a recorded deviation from holding until GO; the probes run from `dev`). This ADR records the result and re-scopes the pane issue set.
 
 Two research findings shaped the spike and bound this decision:
 
 - **Hermes returns only a terminal result; there is no token stream.** So pane "streaming" is progress streaming. Probe A proves only that an SSE transport survives the webview; the production token story is out of scope for the decision.
 - **Silent Microsoft sign-in is doubly unproven** (Supabase id-token nonce/audience rejection; the NAA Mac WKWebView abort). Lane A is a measure-it question; Lane B (dialog) is the documented fallback; Lane 0 (email/password) works in-pane today and unblocks the rest.
+
+## Server-half precheck (executor, 2026-06-14)
+
+Run before any human opens Excel, to keep Probe A a pure question about the webview. Method: the control-plane api was run on the host against the **managed** dev project (the posture the pane uses), a real owner session token was minted from managed Supabase by password grant, and the SSE route was streamed with `curl -N` and per-frame arrival timestamps.
+
+- **Auth path sound.** The managed-issued **ES256** owner token (iss `…/auth/v1`, `aud=authenticated`) is accepted by the route's authz chain (`authenticate` + `requireCapability('capture_update')`). This is the same path the pane uses, so Probe A/B do not start blocked on the server.
+- **The server does not buffer to one terminal write.** `received` and `progress{tick:0}` flush immediately on open; the terminal frames arrive in a *separate, later* network write (`reply.hijack()` + `setNoDelay` + `no-transform` hold). So if a platform's webview shows a single end-of-stream burst, that is the **webview** coalescing, not the server.
+- **Not yet shown: the sustained ~1s tick train.** The capture still errors before the multi-second runtime call that would emit the spaced ticks, now on the pre-glossary contract render bug (#60), not the SSE path. Re-run after #60 to capture the tick train and make Probe A conclusive (spaced ticks vs an end burst). This is a capture-pipeline gap, not an SSE-transport defect.
+
+## Environment readiness (clear before the observation session)
+
+The spike code was green, but on `dev` @ 194c4b9 the running backend could **not** serve a pane probe. Four gaps were found; each also showed the "proven managed posture" of ADR-037/038 was not reproducible from the committed tree (the live cluster ran pre-fix artifacts). The first three are fixed (2026-06-14); the fourth is filed.
+
+1. **The live k3d api was in the local/CI posture, not managed/dev.** The `cormac-api` ConfigMap pinned `APP_ENV=local` + `host.k3d.internal:54321`, so it rejected the managed ES256 tokens the pane mints. Root cause: the ESO `ExternalSecret` had been in `SecretSyncedError` for 13h because the *live* spec mapped `SUPABASE_JWT_SECRET` (absent from Infisical `dev` by design, JWKS-only), so `cormac-secrets` was frozen on stale values; the committed `externalsecret.yaml` was already correct but never re-applied. **Resolved:** re-applied the committed ESO artifacts (sync green, `cormac-secrets` now holds the managed values) and rolled the api to `APP_ENV=dev`.
+2. **`deploy/helm/api/values.local.yaml` could not reach managed as committed** — `SUPABASE_URL`/`SUPABASE_ANON_KEY` were unfilled `SET ME` placeholders. **Resolved:** filled with the managed dev URL + publishable anon key (non-secret; `check:secrets`/`check:env` clean) and `helm upgrade`d the api. ConfigMap now `APP_ENV=dev` against the managed project, `SSE_PROBE_ENABLED=true`; the api boots clean (0 restarts) and accepts a managed ES256 owner token, so the Probe B precondition holds.
+3. **The managed dev schema was stale** (tables only through migration 0004; `0005`/`0006`/`0007` unapplied, so no `learned_knowledge`). **Resolved:** `pnpm db:push:managed` applied 0005-0007; `learned_knowledge` is live.
+4. **Pre-glossary contracts crash the context compile (#60).** With the schema current, capture now fails in `renderGlossary` because the seeded managed contract predates the glossary and `getActiveContract` casts the stored document instead of parsing it through `contractSchema` (which would apply `glossary: .default([])`). This blocks a *successful* capture and so a *conclusive* Probe A until #60 lands. Probes B/C/D/E and the SSE transport itself are unaffected.
 
 ## The five probes and the results table
 

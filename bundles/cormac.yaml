@@ -1,0 +1,104 @@
+# Terra bundle (ADR-039): the Cormac application stack as one launchable unit.
+# Lives at bundles/<name>.yaml at the Source repo root, beside plugins/. Groups
+# the workload plugins (each plugins/<workload>/ is a Helm chart + terra.yaml)
+# and fans shared bundle fields into them via `values: {<plugin_field>:
+# {reference: <bundle_field>}}`. Modeled on the public orion-essentials bundle.
+#
+# Plugins are referenced by their display `name` (the terra.yaml `name:` field),
+# not by resource_id (resource_id is deprecated in the Terra field contract).
+#
+# Not in this bundle (deliberately): managed Supabase (external system of record,
+# never a workload, ADR-003/038), our External Secrets Operator + Infisical
+# SecretStore (a cluster-level concern we install ourselves, ADR-039), and the
+# dev workloads (web-ide / Jarvis / gitea are official Juno plugins, see
+# docs/runbooks/juno-dev-workspace.md).
+name: Cormac
+icon: ""
+description: >-
+  The Cormac application stack: control plane (api), web, Excel pane (gated on
+  ADR-028), worker, and the headless Hermes product runtime. CI-built GHCR images
+  from this repo; managed Supabase is the external system of record.
+category: Bundle
+tags:
+  - cormac
+  - serenica
+  - application
+  - first time setup
+
+# The plugins this bundle launches, each by display name + a release name, with
+# the bundle fields wired into the plugin's own fields by reference. cormac-pane
+# is gated on the ADR-028 GO/NO-GO; it is left commented so a launch omits it
+# until a GO.
+plugins:
+  - plugin: Cormac Control Plane (api)
+    name: cormac-api
+    values:
+      image_tag: { reference: image_tag }
+      image_pull_secret: { reference: image_pull_secret }
+      ingress_host: { reference: api_host }
+      cluster_issuer: { reference: cluster_issuer }
+
+  - plugin: Cormac Web (admin/trust/fallback)
+    name: cormac-web
+    values:
+      image_tag: { reference: image_tag }
+      image_pull_secret: { reference: image_pull_secret }
+      ingress_host: { reference: web_host }
+      cluster_issuer: { reference: cluster_issuer }
+
+  - plugin: Cormac Worker (background jobs)
+    name: cormac-worker
+    values:
+      image_tag: { reference: image_tag }
+      image_pull_secret: { reference: image_pull_secret }
+
+  - plugin: Cormac Hermes Runtime (product)
+    name: cormac-hermes-runtime
+    values:
+      image_tag: { reference: image_tag }
+      image_pull_secret: { reference: image_pull_secret }
+
+  # - plugin: Cormac Excel Pane (static assets)   # gated on ADR-028 GO/NO-GO
+  #   name: cormac-pane
+  #   values:
+  #     image_tag: { reference: image_tag }
+  #     image_pull_secret: { reference: image_pull_secret }
+  #     ingress_host: { reference: pane_host }
+  #     cluster_issuer: { reference: cluster_issuer }
+
+# Bundle-level install fields. Shared values fan out to the plugins above; the
+# per-workload ingress hosts are surfaced separately because a reference maps a
+# value, it does not template "api." + base. These are the cluster-facts
+# confirmed at the Juno onboarding session (see ../plugins/TERRA.md and
+# docs/runbooks/deploy-to-juno.md).
+fields:
+  - name: image_tag
+    description: The CI-built image tag for every workload (commit sha).
+    required: true
+    default: latest
+    type: string
+  - name: image_pull_secret
+    description: docker-registry Secret for GHCR; must exist in the namespace BEFORE deploy (juno_k3s race).
+    required: true
+    default: ghcr-pull
+    type: string
+  - name: cluster_issuer
+    description: cert-manager ClusterIssuer name for TLS. We install cert-manager and create this Issuer ourselves (ADR-039); Juno provides neither.
+    required: true
+    default: letsencrypt-prod
+    type: string
+  - name: api_host
+    description: Public host for the control plane (Twilio/Graph webhooks).
+    required: true
+    default: api.cormac.example.com
+    type: string
+  - name: web_host
+    description: Host for the web admin/trust/fallback door.
+    required: true
+    default: app.cormac.example.com
+    type: string
+  - name: pane_host
+    description: Stable custom domain for the Excel pane (the add-in manifest pins it). Used only on an ADR-028 GO.
+    required: false
+    default: pane.cormac.example.com
+    type: string
