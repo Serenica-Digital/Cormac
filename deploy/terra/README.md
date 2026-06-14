@@ -2,10 +2,10 @@
 
 > **Status:** draft (onboarding prep) · **Last reviewed:** 2026-06-13
 
-This directory is the Juno-specific packaging of the Cormac stack (ADR-036). It is
+This directory is the Juno-specific packaging of the Cormac stack (ADR-038). It is
 thin on purpose: the deployable substance is the proven Helm charts in
 [../helm/](../helm/), which already ran the walking skeleton end to end on local
-k3d (ADR-035). Terra adds a launch UI over those charts; it changes none of them.
+k3d (ADR-038). Terra adds a launch UI over those charts; it changes none of them.
 
 ## What a Terra plugin is here
 

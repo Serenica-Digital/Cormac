@@ -1,6 +1,6 @@
 # ADR-034: Environment and secrets as one governed contract; the Kubernetes deployment shape
 
-**Status:** Accepted (the Juno-specific bindings are provisional pending the onboarding session; see Open items)
+**Status:** Superseded and consolidated by ADR-037 (environment & secrets) and ADR-038 (deployment). Kept as the granular origin of the manifest, the boot validation, and the Kubernetes shape. (Was: Accepted, the Juno-specific bindings provisional pending the onboarding session.)
 **Date:** 2026-06-13
 **Related:** Realizes the deployment direction of ADR-017 (Juno as the preferred orchestration platform, kept swappable). Enforces ADR-003/ADR-005 (the service role key is server-only; the runtime holds no database credentials) and refines ADR-020 (JWKS verification) by disabling the HS256 fallback in production. Feeds ADR-015 (the security packet): control-register rows 12 and 29.
 

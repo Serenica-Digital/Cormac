@@ -5,7 +5,7 @@
 Deploy the Cormac application stack to a Juno project. This is the deployment half
 of the ADR-017 runtime de-risk spike (#15), and it doubles as the onboarding-session
 script. The same Helm charts in [../../deploy/helm/](../../deploy/helm/) already ran
-the walking skeleton end to end on local k3d (ADR-035), so this runbook is mostly
+the walking skeleton end to end on local k3d (ADR-038), so this runbook is mostly
 "point the proven charts at the pilot cluster and fill in the cluster-facts."
 
 It carries **two tracks**. Track A is Terra-native (the Juno launch UI). Track B is
@@ -38,7 +38,7 @@ pilot cluster, not placeholders in our code:
 
 1. **CI images in GHCR.** `ghcr.io/serenica-digital/{api,web,worker,hermes-runtime}`
    (and `pane` on a GO) built for `linux/amd64` (Juno's AWS nodes; local k3d uses
-   arm64, ADR-035). CI's `publish-images` job builds these on push to `main`/`dev`.
+   arm64, ADR-038). CI's `publish-images` job builds these on push to `main`/`dev`.
 2. **Namespace + GHCR pull secret (BEFORE any workload, juno_k3s race):**
    ```sh
    kubectl create namespace cormac
@@ -47,8 +47,8 @@ pilot cluster, not placeholders in our code:
      --docker-password=<gh-PAT-with-read:packages>
    ```
 3. **Managed Supabase ready.** The managed dev project exists, is awake, and is
-   seeded (`pnpm seed`, ADR-036). Its URL + anon key (non-secret) and the secret
-   values live in Infisical's `dev` environment (ADR-035).
+   seeded (`pnpm seed`, ADR-038). Its URL + anon key (non-secret) and the secret
+   values live in Infisical's `dev` environment (ADR-037).
 4. **cert-manager.** Install the `cert-manager` Terra plugin (default v1.19.1) and
    confirm a `ClusterIssuer` exists, or plan the CDN fallback for the pane.
 
@@ -57,7 +57,7 @@ pilot cluster, not placeholders in our code:
 The charts consume one Secret, `cormac-secrets`, via `secretKeyRef`. Two ways,
 both producing the same Secret:
 
-**Preferred — ESO from Infisical** (the local proof path, ADR-035):
+**Preferred — ESO from Infisical** (the local proof path, ADR-037):
 ```sh
 # Install ESO, then point it at Infisical's dev environment:
 helm repo add external-secrets https://charts.external-secrets.io && helm repo update
@@ -118,11 +118,11 @@ helm upgrade --install cormac-hermes-runtime deploy/helm/hermes-runtime -n corma
 Also set the managed-Supabase env on the api (non-secret) via `--set env.SUPABASE_URL=...`,
 `--set env.SUPABASE_ANON_KEY=...`, `--set env.CORS_ORIGINS=...`, `--set env.MCP_WORKSPACE_ID=...`,
 or via a values overlay. The api boots under `APP_ENV=prod` (or `dev`): JWKS-only,
-fail-closed (ADR-034); it refuses to start if a required secret is missing.
+fail-closed (ADR-037); it refuses to start if a required secret is missing.
 
 ## Step 3 — acceptance gate (the walking skeleton, not green checkmarks)
 
-Per the project bar, the milestone is demonstrated, not asserted (ADR-035):
+Per the project bar, the milestone is demonstrated, not asserted (ADR-038):
 ```sh
 kubectl -n cormac get pods                 # all workloads 1/1 Running
 kubectl -n cormac logs deploy/cormac-hermes-runtime -c wait-for-api --tail=3   # "api reachable"
@@ -135,7 +135,7 @@ before/after against the deployed stack with real Hermes (ADR-026). A clean run 
 the deploy's definition of done. Then expose the web preview link and confirm the
 api's public host is stable for future Twilio webhooks.
 
-## Known deployment gotchas (found on k3d, ADR-035)
+## Known deployment gotchas (found on k3d, ADR-038)
 
 - **Hermes MCP startup race.** Hermes opens its one MCP connection at boot; the
   `wait-for-api` init container blocks until the api is reachable. If the api

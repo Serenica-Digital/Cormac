@@ -3,7 +3,7 @@
 > **Status:** canonical · **Last reviewed:** 2026-06-13
 
 How to generate, inject, and rotate the platform's secrets and environment, local
-and on Juno (ADR-034, ADR-035). The variable contract lives in the manifest
+and on Juno (ADR-037, ADR-038). The variable contract lives in the manifest
 ([packages/config/src/manifest.ts](../../packages/config/src/manifest.ts)), which
 generates `.env.example` and the Helm charts' `env`/`secretEnv`; `pnpm check:env`
 fails the build if they drift. Secret *values* live in Infisical, the single
@@ -12,7 +12,7 @@ authority. The deployable env inventory is in
 
 ## Principles
 
-- Secret values live in one authority, Infisical (ADR-035). Nothing else keeps a
+- Secret values live in one authority, Infisical (ADR-037). Nothing else keeps a
   copy. Host tooling injects them with `infisical run`; the cluster synthesizes the
   one k8s Secret `cormac-secrets` from Infisical via the External Secrets Operator
   ([../../deploy/eso/](../../deploy/eso/)). Every read is logged.
@@ -27,7 +27,7 @@ authority. The deployable env inventory is in
 
 ## Local
 
-Local dev, k3d, and Juno all run against the **managed dev Supabase** (ADR-036). One-time, per machine:
+Local dev, k3d, and Juno all run against the **managed dev Supabase** (ADR-038). One-time, per machine:
 
 1. `infisical login` (browser; pick **Infisical Cloud (US Region)**).
 2. Install ESO and apply [../../deploy/eso/](../../deploy/eso/) (`secretstore.yaml` + `externalsecret.yaml`) so the k3d stack reads `cormac-secrets` from Infisical. Same steps on Juno (k3d and Juno are identical); see the ESO README.
@@ -50,7 +50,7 @@ Supabase stack (`pnpm db:start`) is for CI and offline tests only; its throwaway
 Charts read every secret via `secretKeyRef` from one Secret, `cormac-secrets`. The
 intended path is the External Secrets Operator synthesizing it from Infisical, so no
 secret value ever lives in a cluster spec ([../../deploy/eso/](../../deploy/eso/),
-proven on local k3d, ADR-035): install ESO, create the one bootstrap auth secret
+proven on local k3d, ADR-038): install ESO, create the one bootstrap auth secret
 (`infisical-auth`, a machine identity's client id/secret), then apply
 `secretstore.yaml` + `externalsecret.yaml`. The hand-made `kubectl` path below is the
 bootstrap fallback; either way it must exist **before** `helm install` (a documented
@@ -66,7 +66,7 @@ kubectl create secret generic cormac-secrets -n cormac \
   --from-literal=MCP_WORKSPACE_TOKEN="$(openssl rand -hex 24)" \
   --from-literal=ANTHROPIC_API_KEY="<from the Anthropic console>"
 # SUPABASE_JWT_SECRET is intentionally omitted: prod verifies ES256 against the
-# JWKS, and the api refuses the public dev secret (ADR-020/034).
+# JWKS, and the api refuses the public dev secret (ADR-020/037).
 
 # 2. GHCR image pull secret (a default gh token lacks read:packages; mint a PAT).
 kubectl create secret docker-registry ghcr-pull -n cormac \
@@ -112,4 +112,4 @@ The deployment-side checklist (keys to generate, GHCR PAT, hosted migration stat
 is in [../prd/deployment-setup.md](../prd/deployment-setup.md). The operational
 confirmations for Juno (ClusterIssuer, secret backend, CronJob RBAC, hostname
 stability, Hermes build) are in
-[../../deploy/helm/README.md](../../deploy/helm/README.md) and ADR-034.
+[../../deploy/helm/README.md](../../deploy/helm/README.md) and ADR-038.

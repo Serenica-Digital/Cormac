@@ -8,15 +8,15 @@ The split (from the plan): the code is built and committed on `feat/m1-pane-spik
 
 ## 1. One-time local setup
 
-Secret and config values come from Infisical, not a `.env` (ADR-035), so log in once:
+Secret and config values come from Infisical, not a `.env` (ADR-037), so log in once:
 
 ```sh
 pnpm install
 infisical login                                  # one-time; injects env for the commands below
 # Trust a localhost HTTPS cert for Office sideloading (writes to ~/.office-addin-dev-certs):
 pnpm --filter @cormac/pane certs
-# Bring up Supabase + seed the demo workspace/owner (owner@demo.cormac.test):
-pnpm db:start && infisical run -- pnpm seed
+# Seed the demo workspace/owner on the managed dev Supabase (owner@demo.cormac.test):
+pnpm seed
 ```
 
 The SSE probe route is on in the local k3d overlay ([../../deploy/helm/api/values.local.yaml](../../deploy/helm/api/values.local.yaml): `SSE_PROBE_ENABLED=true`), which also allows the pane origin via `CORS_ORIGINS`. Override either in Infisical's `dev` environment only if you need to.
