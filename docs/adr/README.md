@@ -61,3 +61,4 @@ Status values: **Proposed**, **Accepted**, **Superseded by ADR-NNN**. `Planned` 
 | [033](033-qa-compliance-infrastructure.md) | QA and compliance infrastructure: four-tier test taxonomy, the auto-audited control chain, evals as a manual pillar | Accepted | 2026-06-13 |
 | [034](034-environment-and-secrets-management.md) | Environment and secrets as one governed contract; the Kubernetes deployment shape | Accepted (Juno bindings provisional) | 2026-06-13 |
 | [035](035-generated-env-infisical-k3d.md) | One source of truth by generation; Infisical the secret authority; Helm the only orchestrator; k3d the local environment | Accepted (live k3d/ESO proof gated) | 2026-06-13 |
+| [036](036-managed-supabase-single-backend.md) | One Supabase backend (managed everywhere except CI); the Terra packaging for Juno | Accepted (managed/ES256 proven; Juno cluster deploy gated on #15) | 2026-06-13 |
