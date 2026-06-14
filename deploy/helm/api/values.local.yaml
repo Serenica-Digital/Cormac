@@ -18,8 +18,8 @@ ingress:
 env:
   APP_ENV: dev
   # Set these to YOUR managed dev project (non-secret; the anon key is publishable).
-  SUPABASE_URL: https://PROJECT-REF.supabase.co # SET ME (managed dev project)
-  SUPABASE_ANON_KEY: sb_publishable_SET_ME # SET ME (managed dev project)
+  SUPABASE_URL: https://tcemqghhhfllvmmncshe.supabase.co # managed dev project
+  SUPABASE_ANON_KEY: sb_publishable_azl7Qv5V07FntxmSRIzrAw_-dFp4ApS # managed dev publishable key (non-secret)
   SUPABASE_AUTH_ISSUER: "" # JWKS path infers it from SUPABASE_URL
   # The host frontends (pane 5175 https, web 5174) and smoke call the api.
   CORS_ORIGINS: https://localhost:5175,https://127.0.0.1:5175,http://localhost:5174,http://127.0.0.1:5174
