@@ -1,7 +1,6 @@
 # Security Packet
 
-Status: first-class deliverable track
-Last updated: 2026-06-13
+> **Status:** canonical · **Last reviewed:** 2026-06-13
 
 This folder is the client-facing security-review evidence packet for the contract-first CRM agent platform. It is built alongside the product, not after it.
 

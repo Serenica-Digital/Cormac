@@ -1,8 +1,10 @@
 # Deployment setup: images, env inventory, remote database
 
-> **Status:** canonical · **Last reviewed:** 2026-06-12
+> **Status:** canonical · **Last reviewed:** 2026-06-13
 
 The operational companion to [juno-platform-pilot.md](juno-platform-pilot.md): every deployable image, every environment variable each workload needs, which of them are secrets, and the bootstrap sequence for a managed Supabase project. This is the input to the secrets conversation at the Juno onboarding session.
+
+> **Update 2026-06-13 (ADR-037/038):** the env inventory below is machine-checked and generated. The single source of truth is the manifest ([../../packages/config/src/manifest.ts](../../packages/config/src/manifest.ts)); `pnpm gen:env` generates `.env.example` and each Helm chart's env/secretEnv, and `pnpm check:env` fails the build if they drift. The deployment is one Helm chart per workload under [../../deploy/helm/](../../deploy/helm/), run locally on k3d and on Juno (compose is retired). Secret VALUES live in Infisical and inject via ESO into the cluster and `infisical run` locally; see [../runbooks/secrets-and-env.md](../runbooks/secrets-and-env.md). The full decision record is [ADR-037](../adr/037-environment-and-secrets-consolidated.md) and [ADR-038](../adr/038-deployment-parity-single-backend.md).
 
 ## Images
 
@@ -78,11 +80,11 @@ Deliberately absent: any Supabase variable (the runtime holds no database creden
 
 ## Managed Supabase bootstrap (the dev project)
 
-One-time, against a fresh managed project (synthetic data only; creating the project is a dashboard action). The remote values live in local `.env` under the `REMOTE_` prefix (see `.env.example`) so they never collide with the local stack:
+One-time, against a fresh managed project (synthetic data only; creating the project is a dashboard action). The managed project's values live in Infisical's `dev` environment as `SUPABASE_*` (ADR-038); the commands below show them inline for the one-time bootstrap:
 
 ```sh
 # 1. Schema, RLS, audit triggers (all migrations):
-SUPABASE_DB_URL='postgresql://postgres:...@db.<project>.supabase.co:5432/postgres' pnpm db:push:remote
+SUPABASE_DB_URL='postgresql://postgres:...@db.<project>.supabase.co:5432/postgres' pnpm db:push:managed
 
 # 2. Demo workspace, owner login, example contract, seed record:
 SUPABASE_URL='https://<project>.supabase.co' SUPABASE_SERVICE_ROLE_KEY='...' pnpm seed
@@ -105,8 +107,8 @@ Generate or collect before the session; each lands in the pilot cluster's secret
 - [ ] `SUPABASE_SERVICE_ROLE_KEY`: the dev project's `sb_secret_...` key
 - [ ] `VITE_SUPABASE_ANON_KEY` / `SUPABASE_URL`: the dev project's publishable key and URL (not secrets, but bring them)
 - [ ] GHCR `image_pull_secret`: a GitHub PAT with `read:packages` for the `Serenica-Digital` org images. Note: a default `gh` CLI token does not carry this scope; mint a fine-grained PAT deliberately.
-- [ ] Confirm the hosted project's migration state matches local (`pnpm db:push:remote`, then `pnpm check:remote`): the 2026-06-12 reseed is confirmed, but a push of `0005`-`0007` to the hosted project is not separately recorded. Run it (idempotent) rather than assume it.
+- [ ] Confirm the hosted project's migration state matches the repo (`pnpm db:push:managed`, then `pnpm check:remote`): the 2026-06-12 reseed is confirmed, but a push of `0005`-`0007` to the hosted project is not separately recorded. Run it (idempotent) rather than assume it.
 
 ## Local reference
 
-The same containers run locally with `pnpm db:start && pnpm seed && pnpm dev`; root `.env` (from `.env.example`) carries every value above. `docker/compose.yaml` is the local-only orchestration; it never ships.
+The same images run locally in k3d: `pnpm dev` (`scripts/k3d/up.sh`) brings the backend up against the managed dev Supabase, then `pnpm seed` (it self-wraps `infisical run`). Secret values come from Infisical, not a `.env` (ADR-037); `.env.example` is the generated reference list of variables, not a file you fill in. `pnpm db:start` (the local Supabase stack) is for CI and offline tests only (ADR-038). The Helm charts are the only orchestrator, local and on Juno.

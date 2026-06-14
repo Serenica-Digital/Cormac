@@ -1,5 +1,6 @@
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { supabase } from '../supabase';
+import { env } from '../env';
 
 /**
  * Probe A: does the Office webview deliver SSE frames incrementally, or buffer
@@ -36,7 +37,7 @@ export function runSseProbe(opts: {
   void (async () => {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token ?? '';
-    const url = `${import.meta.env.VITE_API_URL}/api/workspaces/${opts.workspaceId}/capture/stream?text=${encodeURIComponent(opts.text)}`;
+    const url = `${env.VITE_API_URL}/api/workspaces/${opts.workspaceId}/capture/stream?text=${encodeURIComponent(opts.text)}`;
     try {
       await fetchEventSource(url, {
         method: 'GET',

@@ -1,0 +1,43 @@
+# Terra plugin descriptor (ADR-036). A Terra plugin is this Helm chart plus this
+# file; registering the repo as a Terra Source makes `helm/api` a launchable
+# workload template (Kuiper renders the chart with the field values below).
+# The chart stays plain, portable Kubernetes; this file is inert off-platform,
+# so Juno remains swappable (ADR-017). Direct `helm install` is the fallback that
+# needs none of this (see docs/runbooks/deploy-to-juno.md).
+resource_id: cormac-api
+name: Cormac Control Plane (api)
+icon: "" # optional; a raw image URL can be added later
+description: >-
+  The control plane: the only writer of business records. Public webhook routes
+  verified in-app (ingress-noauth), sole holder of the Supabase service key,
+  serves the runtime's MCP tools at /mcp. CI-built image from this repo.
+category: Application
+tags:
+  - cormac
+  - serenica
+  - control-plane
+  - ingress-noauth
+# Operator install inputs. These set the same-named chart values; the exact
+# field->values injection is a Kuiper detail to confirm at onboarding, so the
+# deterministic path is `helm install --set` (the runbook's fallback track).
+fields:
+  - name: image_tag
+    description: The CI-built image tag to deploy (commit sha; sets image.tag).
+    required: true
+    default: latest
+    type: string
+  - name: ingress_host
+    description: Public host for the api (Twilio/Graph webhooks); sets ingress.host.
+    required: true
+    default: api.cormac.example.com
+    type: string
+  - name: cluster_issuer
+    description: cert-manager ClusterIssuer name for TLS; sets ingress.tls.clusterIssuer.
+    required: true
+    default: letsencrypt-prod
+    type: string
+  - name: image_pull_secret
+    description: docker-registry Secret for GHCR; must exist BEFORE deploy (juno_k3s race).
+    required: true
+    default: ghcr-pull
+    type: string

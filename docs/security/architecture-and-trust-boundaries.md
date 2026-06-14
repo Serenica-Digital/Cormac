@@ -18,7 +18,7 @@ The trust topology. The canonical diagram lives in [../prd/architecture.md](../p
 
 ## The one invariant
 
-The control plane is the only writer. Surfaces and the runtime never mutate business records directly, and the runtime holds no database write credentials. This is enforced three ways at once: there are no RLS write policies for users ([0002_rls.sql](../../supabase/migrations/0002_rls.sql)), the service-role key is server-only ([app.ts](../../apps/api/src/app.ts)), and the runtime is configured with no Supabase env ([compose](../../docker/compose.yaml)).
+The control plane is the only writer. Surfaces and the runtime never mutate business records directly, and the runtime holds no database write credentials. This is enforced three ways at once: there are no RLS write policies for users ([0002_rls.sql](../../supabase/migrations/0002_rls.sql)), the service-role key is server-only ([app.ts](../../apps/api/src/app.ts)), and the runtime workload surfaces no Supabase env ([hermes-runtime chart](../../deploy/helm/hermes-runtime/values.yaml)).
 
 ## How a write happens
 

@@ -19,8 +19,15 @@ export async function authenticate(request: FastifyRequest, _reply: FastifyReply
   try {
     const { payload } = await jwtVerify(
       token,
-      (protectedHeader, tok) =>
-        protectedHeader.alg === 'HS256' ? Promise.resolve(hsSecret) : jwks(protectedHeader, tok),
+      (protectedHeader, tok) => {
+        if (protectedHeader.alg === 'HS256') {
+          // hsSecret is null in prod-like environments: HS256 is refused so the
+          // public dev secret cannot forge a token (ADR-020/034).
+          if (!hsSecret) throw new Error('HS256 tokens are not accepted in this environment');
+          return Promise.resolve(hsSecret);
+        }
+        return jwks(protectedHeader, tok);
+      },
       {
         issuer: config.SUPABASE_AUTH_ISSUER ?? `${config.SUPABASE_URL}/auth/v1`,
         // Supabase user tokens always carry aud=authenticated (ADR-020, #4).

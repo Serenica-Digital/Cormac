@@ -1,0 +1,10 @@
+apiVersion: v2
+name: hermes-runtime
+description: >-
+  Cormac product runtime (Nous Hermes, pinned). Never publicly routable
+  (clusterip); called only by the control plane via the MCP tool surface; no
+  database credentials; memory off; stateless per task. Ships a CronJob recycler
+  for the upstream memory leak (#25315). A Terra workload template; see ../README.md.
+type: application
+version: 0.1.0
+appVersion: "v2026.6.5"

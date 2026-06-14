@@ -1,6 +1,6 @@
 # High-Level Architecture
 
-> **Status:** canonical · **Last reviewed:** 2026-06-12
+> **Status:** canonical · **Last reviewed:** 2026-06-13
 
 This project should be understood as a multi-surface SaaS product with one governed backend trust layer. The Excel task pane, web app, SMS, email, and Claude/MCP are all input/output surfaces; none of them owns business logic or writes directly to CRM data. Interactive clients authenticate through the app auth/session layer, while webhook-style connectors are verified by the SaaS Control Plane when requests arrive. The SaaS Control Plane enforces tenant boundaries, permissions, proposal and confirmation rules (including opt-in auto-apply), audit logging, and connector behavior before invoking the agent runtime or writing to Supabase.
 
@@ -113,6 +113,8 @@ The complete credential inventory, so it cannot sprawl silently:
 - **Workspace-scoped MCP task tokens**: minted by the control plane for its own runtime, one per task; the token is the tenant binding (ADR-025). These are internal service credentials, not user identity, and they never leave our trust boundary. Built.
 - **Webhook transport verification**: provider signatures and configuration, not tokens; carries no identity beyond the verified transport plus the sender claim. Design.
 
+Every secret behind these credentials shares one governance contract (ADR-037): each variable is declared once in a manifest, no secret value lives in source, an image, or a checked-in `.env`, Infisical is the single authority, and the External Secrets Operator injects the secrets each workload reads at runtime. Token verification is JWKS-only in production (ADR-020, ADR-037/038): the HS256 path is disabled there, so a leaked or defaulted signing secret cannot forge a session token.
+
 The future external Claude/MCP door adds no fourth system. MCP's authorization model is OAuth: when that door is built, the intent is that its authorization server is Supabase, so an external MCP client holds a Supabase-issued token that resolves to the same user, the same claims, the same membership row as a web session. That is recorded here as the intended unification so it constrains the eventual design; the decision itself is taken when the door is built.
 
 Arrival trust is weaker than session trust, and the architecture compensates downstream instead of pretending otherwise: arrival-trust doors can only feed the proposal pipeline, high-risk actions always require confirmation on a session-trust surface, and the weekly report is the safety net (ADR-010). A hijacked phone number can file proposals into a review queue; it cannot silently rewrite records, change permissions, or alter the contract.
@@ -144,7 +146,7 @@ Arrival trust is weaker than session trust, and the architecture compensates dow
 **Runtime and data**
 
 - **Nous Hermes Agent Runtime**: the adopted agent execution runtime (pinned image, Dockerized, stateless per task, swappable behind the adapter). Agents run as tool-users: they read through the MCP tools and act by submitting schema-enforced tool calls; a proposal is a tool call, never parsed free text (ADR-025/026). The runtime holds no database credentials and no persistent memory; per-tenant knowledge reaches it only through the compiled prefix and the tools. It runs two agent roles: the **CRM Operations Agent** (live, proven end to end against real Postgres) and the **Workbook Contract Agent** (in build; the authoring pipeline, #17).
-- **Supabase/Postgres**: source of truth for tenants, users, roles, contract versions (glossary included), business records, learned knowledge, source messages, proposals, audit events, and sync state.
+- **Supabase/Postgres**: source of truth for tenants, users, roles, contract versions (glossary included), business records, learned knowledge, source messages, proposals, audit events, and sync state. Managed Supabase is the single backend for dev and production; a local Supabase stack is used only as CI's hermetic test fixture (ADR-038). It stays external to the cluster, reached over the network by every workload.
 - **Supabase Auth**: handles app auth/session mechanics and brokers external identity providers; the Control Plane still owns authorization decisions (ADR-011). In the Excel pane, Microsoft Entra sign-in brokered through Supabase is the intended default for the Microsoft-resident demographic (silent via NAA where available, dialog relay as fallback); the exact pane sign-in design is part of the ADR-028 design phase. Entra is an option, never a requirement. Workspace users key to linkable identities, not to a single credential row.
 
 **Trust rules**

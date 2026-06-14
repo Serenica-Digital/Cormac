@@ -21,25 +21,26 @@ packages/
   shared   shared types and roles
 services/
   runtime-stub   deterministic test fixture for the runtime seam (tests only;
-                 the running stack uses real Hermes via docker/compose.yaml)
+                 the running stack uses real Hermes in k3d via the Helm charts)
 supabase/
   migrations     app-owned schema, RLS, append-only audit
-docker/    Dockerfiles + local compose
+deploy/    Helm charts (the orchestrator), k3d config, ESO/Infisical wiring
+docker/    Dockerfiles + the Hermes runtime profile
 ```
 
 ## Quick start (local)
 
-Requires Node 22+, pnpm 10+, and Docker.
+Requires Node 22+, pnpm 10+, Docker, the k3d/kubectl/helm and Infisical CLIs, and access to the managed dev Supabase project (ADR-038; see [docs/runbooks/secrets-and-env.md](docs/runbooks/secrets-and-env.md)).
 
 ```sh
 pnpm install
-cp .env.example .env          # then fill it: see the comments per key
-pnpm db:start                 # local Supabase (Docker); prints anon/service keys
-pnpm seed                     # demo workspace, owner login, contract, one record
-pnpm dev                      # brings up api, hermes runtime, worker, web via compose
+infisical login               # one-time; all env/secret values come from Infisical, not a .env (ADR-037)
+# one-time: install ESO + apply deploy/eso so the cluster reads cormac-secrets from Infisical
+pnpm dev                      # backend in local k3d (Helm charts) against managed Supabase
+pnpm seed                     # demo workspace, owner login, contract, one record (self-wraps infisical run)
 ```
 
-Or all four steps after install: `pnpm up`.
+The frontends run on the host against the cluster: `pnpm --filter @cormac/pane dev`. Local dev, k3d, and Juno all use the managed dev Supabase; the local Supabase stack (`pnpm db:start`) is only for CI and offline tests.
 
 Day-to-day gotcha: `pnpm db:start` reuses the running local database and does
 NOT apply migrations added since it started. `pnpm check:migrations` detects

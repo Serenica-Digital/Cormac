@@ -4,6 +4,7 @@ import {
   type IPublicClientApplication,
 } from '@azure/msal-browser';
 import { supabase } from '../supabase';
+import { env } from '../env';
 import { errMsg, type FailureMode, type Platform, type SignInLane, type SignInOutcome } from './lanes';
 
 /**
@@ -18,8 +19,8 @@ import { errMsg, type FailureMode, type Platform, type SignInLane, type SignInOu
  * own is the orchestration and classifying why it failed.
  */
 
-const clientId = import.meta.env.VITE_ENTRA_CLIENT_ID;
-const authority = import.meta.env.VITE_ENTRA_AUTHORITY ?? 'https://login.microsoftonline.com/common';
+const clientId = env.VITE_ENTRA_CLIENT_ID;
+const authority = env.VITE_ENTRA_AUTHORITY ?? 'https://login.microsoftonline.com/common';
 const SCOPES = ['openid', 'profile', 'email'];
 
 let pcaPromise: Promise<IPublicClientApplication> | null = null;
