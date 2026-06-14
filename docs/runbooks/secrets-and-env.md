@@ -27,23 +27,23 @@ authority. The deployable env inventory is in
 
 ## Local
 
-One-time, per machine:
+Local dev, k3d, and Juno all run against the **managed dev Supabase** (ADR-036). One-time, per machine:
 
 1. `infisical login` (browser; pick **Infisical Cloud (US Region)**).
-2. `pnpm db:start` brings up the local Supabase stack. Its keys are already in
-   Infisical's `dev` environment; if you rebuild the stack and they change, push the
-   new values: `infisical secrets set SUPABASE_SERVICE_ROLE_KEY=... --env=dev`.
+2. Install ESO and apply [../../deploy/eso/](../../deploy/eso/) (`secretstore.yaml` + `externalsecret.yaml`) so the k3d stack reads `cormac-secrets` from Infisical. Same steps on Juno (k3d and Juno are identical); see the ESO README.
 
-After that, the env-needing commands inject from Infisical automatically because they
-wrap `infisical run`: `pnpm seed`, `pnpm smoke`, `pnpm evals*`, and the frontends
+After that, `pnpm dev` brings the backend up in k3d against managed Supabase, and the
+env-needing host commands inject from Infisical automatically because they wrap
+`infisical run`: `pnpm seed`, `pnpm smoke`, `pnpm evals*`, and the frontends
 (`pnpm --filter @cormac/web dev`, `pnpm --filter @cormac/pane dev`). Vite reads the
-`VITE_*` from the injected process env, so the frontends need no `.env` either. The
-`check:*` scripts that read the environment (`check:rls`, `check:migrations`) take an
-explicit prefix locally: `infisical run -- pnpm check:rls`.
+`VITE_*` from the injected process env, so the frontends need no `.env`. The `check:*`
+scripts that read the environment (`check:rls`, `check:migrations`) take an explicit
+prefix locally: `infisical run -- pnpm check:rls`.
 
-The `dev` environment holds the local Supabase keys, the runtime/MCP tokens, the
-Anthropic key, the non-secret config (`SUPABASE_URL`, the `VITE_*`), and the
-namespaced `REMOTE_*`/`SUPABASE_DB_*` for the managed-Supabase bootstrap.
+The `dev` environment holds the managed Supabase keys, the runtime/MCP tokens, the
+Anthropic key, and the non-secret config (`SUPABASE_URL`, the `VITE_*`). The local
+Supabase stack (`pnpm db:start`) is for CI and offline tests only; its throwaway keys
+(`APP_ENV=local`, HS256) never enter Infisical.
 
 ## Juno (Kubernetes)
 

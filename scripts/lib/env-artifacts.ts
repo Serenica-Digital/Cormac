@@ -46,8 +46,8 @@ const SECTIONS: { title: string; vars: EnvName[] }[] = [
     vars: ['SUPABASE_URL', 'SUPABASE_AUTH_ISSUER', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_ANON_KEY', 'SUPABASE_JWT_SECRET'],
   },
   {
-    title: 'Managed Supabase (remote dev project, ADR-017)',
-    vars: ['REMOTE_SUPABASE_URL', 'REMOTE_SUPABASE_ANON_KEY', 'REMOTE_SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_DB_URL', 'SUPABASE_DB_PASSWORD'],
+    title: 'Managed Supabase migrations (ops only, `pnpm db:push:managed`)',
+    vars: ['SUPABASE_DB_URL', 'SUPABASE_DB_PASSWORD'],
   },
   { title: 'Control plane API', vars: ['API_PORT', 'CORS_ORIGINS'] },
   { title: 'Agent runtime (Hermes)', vars: ['RUNTIME_KIND', 'RUNTIME_URL', 'RUNTIME_API_KEY', 'RUNTIME_TIMEOUT_MS', 'RUNTIME_PORT'] },
@@ -67,9 +67,6 @@ type EmitMode = 'default' | 'blank' | 'commented';
 const MODE: Partial<Record<EnvName, EmitMode>> = {
   SUPABASE_JWT_SECRET: 'default', // secret, but the public dev value is shown (ADR-020/034)
   SUPABASE_AUTH_ISSUER: 'commented',
-  REMOTE_SUPABASE_URL: 'commented',
-  REMOTE_SUPABASE_ANON_KEY: 'commented',
-  REMOTE_SUPABASE_SERVICE_ROLE_KEY: 'commented',
   SUPABASE_DB_URL: 'commented',
   SUPABASE_DB_PASSWORD: 'commented',
   CORS_ORIGINS: 'commented',
@@ -89,7 +86,6 @@ const MODE: Partial<Record<EnvName, EmitMode>> = {
 const SHOWN_VALUE: Partial<Record<EnvName, string>> = {
   MCP_WORKSPACE_ID: '00000000-0000-4000-8000-000000000001',
   SUPABASE_AUTH_ISSUER: 'http://127.0.0.1:54321/auth/v1',
-  REMOTE_SUPABASE_URL: 'https://<project-ref>.supabase.co',
   SUPABASE_DB_URL: 'postgresql://postgres:...@db.<project-ref>.supabase.co:5432/postgres',
   SSE_PROBE_ENABLED: 'true',
   VITE_ENTRA_AUTHORITY: 'https://login.microsoftonline.com/common',
@@ -204,7 +200,10 @@ export function classify(workload: Workload): { env: EnvName[]; secret: EnvName[
   ).map((e) => e.name);
   return {
     env: names.filter((n) => !envVar(n).secret),
-    secret: names.filter((n) => envVar(n).secret),
+    // A secret with an in-repo default (only SUPABASE_JWT_SECRET, the local/CI
+    // HS256 value) is not injected via the chart: dev/prod are ES256-only
+    // (ADR-020), so it never belongs in a managed Secret.
+    secret: names.filter((n) => envVar(n).secret && zDefault(n) === undefined),
   };
 }
 

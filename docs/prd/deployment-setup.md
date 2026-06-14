@@ -80,11 +80,11 @@ Deliberately absent: any Supabase variable (the runtime holds no database creden
 
 ## Managed Supabase bootstrap (the dev project)
 
-One-time, against a fresh managed project (synthetic data only; creating the project is a dashboard action). The remote values live in local `.env` under the `REMOTE_` prefix (see `.env.example`) so they never collide with the local stack:
+One-time, against a fresh managed project (synthetic data only; creating the project is a dashboard action). The managed project's values live in Infisical's `dev` environment as `SUPABASE_*` (ADR-036); the commands below show them inline for the one-time bootstrap:
 
 ```sh
 # 1. Schema, RLS, audit triggers (all migrations):
-SUPABASE_DB_URL='postgresql://postgres:...@db.<project>.supabase.co:5432/postgres' pnpm db:push:remote
+SUPABASE_DB_URL='postgresql://postgres:...@db.<project>.supabase.co:5432/postgres' pnpm db:push:managed
 
 # 2. Demo workspace, owner login, example contract, seed record:
 SUPABASE_URL='https://<project>.supabase.co' SUPABASE_SERVICE_ROLE_KEY='...' pnpm seed
@@ -107,7 +107,7 @@ Generate or collect before the session; each lands in the pilot cluster's secret
 - [ ] `SUPABASE_SERVICE_ROLE_KEY`: the dev project's `sb_secret_...` key
 - [ ] `VITE_SUPABASE_ANON_KEY` / `SUPABASE_URL`: the dev project's publishable key and URL (not secrets, but bring them)
 - [ ] GHCR `image_pull_secret`: a GitHub PAT with `read:packages` for the `Serenica-Digital` org images. Note: a default `gh` CLI token does not carry this scope; mint a fine-grained PAT deliberately.
-- [ ] Confirm the hosted project's migration state matches local (`pnpm db:push:remote`, then `pnpm check:remote`): the 2026-06-12 reseed is confirmed, but a push of `0005`-`0007` to the hosted project is not separately recorded. Run it (idempotent) rather than assume it.
+- [ ] Confirm the hosted project's migration state matches the repo (`pnpm db:push:managed`, then `pnpm check:remote`): the 2026-06-12 reseed is confirmed, but a push of `0005`-`0007` to the hosted project is not separately recorded. Run it (idempotent) rather than assume it.
 
 ## Local reference
 

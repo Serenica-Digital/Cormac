@@ -30,18 +30,17 @@ docker/    Dockerfiles + the Hermes runtime profile
 
 ## Quick start (local)
 
-Requires Node 22+, pnpm 10+, Docker, and the k3d/kubectl/helm and Infisical CLIs (ADR-035; see [docs/runbooks/secrets-and-env.md](docs/runbooks/secrets-and-env.md)).
+Requires Node 22+, pnpm 10+, Docker, the k3d/kubectl/helm and Infisical CLIs, and access to the managed dev Supabase project (ADR-036; see [docs/runbooks/secrets-and-env.md](docs/runbooks/secrets-and-env.md)).
 
 ```sh
 pnpm install
-infisical login               # one-time; secret values come from Infisical, not a .env (ADR-035)
-pnpm db:start                 # local Supabase (Docker); prints anon/service keys
+infisical login               # one-time; all env/secret values come from Infisical, not a .env (ADR-036)
+# one-time: install ESO + apply deploy/eso so the cluster reads cormac-secrets from Infisical
+pnpm dev                      # backend in local k3d (Helm charts) against managed Supabase
 infisical run -- pnpm seed    # demo workspace, owner login, contract, one record
-pnpm dev                      # backend in local k3d via the Helm charts (scripts/k3d/up.sh)
 ```
 
-Or: `pnpm up` (local DB, migration check, then the k3d stack). The frontends run on
-the host against the cluster: `pnpm --filter @cormac/pane dev`.
+The frontends run on the host against the cluster: `pnpm --filter @cormac/pane dev`. Local dev, k3d, and Juno all use the managed dev Supabase; the local Supabase stack (`pnpm db:start`) is only for CI and offline tests.
 
 Day-to-day gotcha: `pnpm db:start` reuses the running local database and does
 NOT apply migrations added since it started. `pnpm check:migrations` detects
