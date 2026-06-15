@@ -162,6 +162,19 @@ ADR-028 called for a working spike; the research sharpens it into a checklist. A
 
 Operational asks that are conversations, not code: the design partner's exact M365 SKU and reseller (GoDaddy check), whether their admin can use Integrated Apps, and starting DUNS + Partner Center enrollment in parallel.
 
+## Coefficient: the comparable, sourced
+
+This doc cites Coefficient throughout as the closest comparable for the add-in shape and posture. The facts are consolidated and sourced here, because the headline's "$24.7M raised" was previously uncited and sat outside the verification pass.
+
+- **Funding (verified).** $24.7M total raised. The headline round is an $18M Series A (November 2022) led by Battery Ventures with Foundation Capital and S28 Capital, on top of earlier seed; the $24.7M cumulative figure is what funding aggregators report. Sources: [BusinessWire (Series A)](https://www.businesswire.com/news/home/20221109006158/en/Coefficient-Raises-$18M-Series-A-to-Bring-the-Power-of-Data-and-Automation-to-Spreadsheet-Users-Announces-New-Product-Plans), [TechCrunch](https://techcrunch.com/2022/11/10/coefficient-live-data-excel-google-sheets-spreadsheets/), [Clay funding dossier](https://www.clay.com/dossier/coefficient-funding).
+- **Pricing (verified, [coefficient.io/pricing](https://coefficient.io/pricing), as of June 2026; 17% off annual).**
+  - Free, $0: 1 user, 3 data sources, 5,000-row imports, 50 manual refreshes/mo, on-sheet AI functions.
+  - Starter, $49/mo: 1 user, 500 refreshes/mo (daily auto-refresh), SQL/chart/pivot builders.
+  - Pro, $99/user/mo (up to 5 users): 6 data sources, unlimited rows, 5,000 refreshes/mo (hourly), shared connections and templates.
+  - Enterprise, custom: premium connectors, unlimited refreshes, SSO, admin controls, AI dashboards, MSA. Aggregators report ~$40K/yr on real contracts ([Vendr](https://www.vendr.com/marketplace/coefficient-io)).
+- **Why Microsoft shows no price (reinforces section 5).** The add-in installs free from AppSource; Coefficient bills externally through its own SaaS account, so Microsoft never sees the transaction and surfaces no price. Pricing appears only after the add-in is connected to a coefficient.io account. This is the external-billing model the add-in path implies for us.
+- **The price signal for our pricing.** Pro is per-user, so a five-seat team pays up to ~$495/mo for a spreadsheet data-sync utility with no CRM, agent, or governance layer. It confirms the spreadsheet-bound SMB pays real money in this exact wallet, and sits above the $199 to $399 per-business range in the business plan.
+
 ## Source notes
 
 Primary: learn.microsoft.com (Office Add-ins, Excel JS API requirement sets, Dialog API, NAA, centralized deployment, Graph permissions and throttling, Marketplace certification policies; doc dates spot-checked through 2026-06-12), github.com/OfficeDev/office-js issues (#6513, #6240, #6181, #5526, #3888, #6281, #6321), devblogs.microsoft.com, github.com/hewliyang/office-agents, Coefficient public docs/reviews, practitioner accounts of Partner Center verification. Verification pass: every claim marked **verified** survived three independent refutation attempts against primary sources; corrections found by refuters are incorporated in the text above. marketplace.microsoft.com and appsource.microsoft.com block automated reading (403); listing-level facts (ratings, installs) were unobtainable and are not claimed here.
