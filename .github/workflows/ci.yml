@@ -40,9 +40,9 @@ jobs:
       - name: Lint and render the Helm charts (the deploy artifact, ADR-039)
         run: |
           for c in api worker web pane hermes-runtime; do
-            echo "== $c =="
-            helm lint "plugins/$c"
-            helm template cormac "plugins/$c" -n cormac > /dev/null
+            echo "== cormac-$c =="
+            helm lint "plugins/cormac-$c"
+            helm template cormac "plugins/cormac-$c" -n cormac > /dev/null
           done
 
       - name: Check RLS on every table

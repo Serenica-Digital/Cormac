@@ -1,14 +1,14 @@
 # Shared overrides that apply to every workload chart. Pass with -f to each chart:
-#   helm template plugins/api -f plugins/values.example.yaml
-# Per-workload values (ingress.host, env.*, recycle.*) still live in each chart's
-# values.yaml or are set with --set. PLACEHOLDERs are finalized after the Juno
-# onboarding session (ADR-034 risk note).
-image:
-  tag: latest # set to the deployed commit sha
-imagePullSecret: ghcr-pull
+#   helm template plugins/cormac-api -f plugins/values.example.yaml
+# Operator fields are FLAT top-level keys (Terra injects each terra.yaml field as a
+# top-level value; the chart reads .Values.<field> directly). Per-workload values
+# (ingress_host, env.*, recycle_schedule) live in each chart's values.yaml or are
+# set with --set. PLACEHOLDERs are finalized after the Juno onboarding session.
+image_tag: latest # set to the deployed commit sha
+image_pull_secret: ghcr-pull
+cluster_issuer: letsencrypt-prod # PLACEHOLDER: confirm a ClusterIssuer exists
 secretName: cormac-secrets
 ingress:
   className: nginx
   tls:
     enabled: true
-    clusterIssuer: letsencrypt-prod # PLACEHOLDER: confirm a ClusterIssuer exists
