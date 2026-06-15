@@ -1,0 +1,12 @@
+# Local k3d overlay for the Hermes runtime (ADR-035). The image bakes the profile
+# (docker/Dockerfile.hermes); its entrypoint copies it to /opt/data on boot. The
+# Runs API comes up without secrets (secretKeyRefs are optional); it needs
+# ANTHROPIC_API_KEY (from cormac-secrets) only to execute a run. No CronJob
+# recycler locally -- no long-running leak to chase on a laptop.
+image:
+  repository: cormac/hermes-runtime
+  pullPolicy: IfNotPresent
+image_tag: dev
+image_pull_secret: ""
+recycle:
+  enabled: false

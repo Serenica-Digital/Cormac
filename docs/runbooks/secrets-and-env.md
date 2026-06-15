@@ -87,8 +87,8 @@ The Excel add-in manifest pins the pane's URL near-permanently, so the pane need
 stable custom domain with TLS. We own the whole TLS stack since Juno ships no
 cert-manager and no issuer (ADR-039): install the `cert-manager` Terra plugin and
 create our own `ClusterIssuer` (Let's Encrypt, Route53 DNS-01 on AWS), set
-`ingress.host`, `ingress.tls.enabled`, and `ingress.tls.clusterIssuer` in
-[../../plugins/pane/values.yaml](../../plugins/pane/values.yaml), and point the
+`ingress_host`, `ingress.tls.enabled`, and `cluster_issuer` in
+[../../plugins/cormac-pane/values.yaml](../../plugins/cormac-pane/values.yaml), and point the
 domain's DNS at the shared ingress-nginx (optionally via ExternalDNS). If a
 per-workload custom host cannot be served, front the pane with a CDN (Cloudflare).
 
