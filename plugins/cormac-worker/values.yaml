@@ -1,0 +1,36 @@
+# Cormac worker. No inbound traffic, no secrets yet. env/secretEnv kept in lockstep
+# with the manifest by `pnpm check:env`.
+serviceName: cormac-worker
+replicas: 1
+port: 8070
+healthPath: /health
+
+image:
+  repository: ghcr.io/serenica-digital/worker
+  pullPolicy: IfNotPresent
+# Flat operator fields (Terra injects each terra.yaml field as a top-level value).
+image_tag: latest
+image_pull_secret: ghcr-pull
+
+service:
+  port: 8070
+
+# No public route.
+networkMode: clusterip
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
+
+secretName: cormac-secrets
+
+env:
+  APP_ENV: prod
+  WORKER_PORT: "8070"
+
+secretEnv: []
+
+emptyDirMounts: []

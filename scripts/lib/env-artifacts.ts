@@ -34,7 +34,7 @@ import {
 
 export const CHART_WORKLOADS: Workload[] = DEPLOYABLE_WORKLOADS;
 export const ENV_EXAMPLE_PATH = '.env.example';
-export const chartValuesPath = (workload: Workload): string => `plugins/${workload}/values.yaml`;
+export const chartValuesPath = (workload: Workload): string => `plugins/cormac-${workload}/values.yaml`;
 
 // --- .env.example rendering policy -------------------------------------------
 

@@ -43,9 +43,9 @@ if ! kubectl -n "$NS" get secret cormac-secrets >/dev/null 2>&1; then
 fi
 
 echo "==> installing charts"
-helm upgrade --install cormac-worker         plugins/worker         -n "$NS" -f plugins/worker/values.local.yaml
-helm upgrade --install cormac-hermes-runtime plugins/hermes-runtime -n "$NS" -f plugins/hermes-runtime/values.local.yaml
-helm upgrade --install cormac-api            plugins/api            -n "$NS" -f plugins/api/values.local.yaml
+helm upgrade --install cormac-worker         plugins/cormac-worker         -n "$NS" -f plugins/cormac-worker/values.local.yaml
+helm upgrade --install cormac-hermes-runtime plugins/cormac-hermes-runtime -n "$NS" -f plugins/cormac-hermes-runtime/values.local.yaml
+helm upgrade --install cormac-api            plugins/cormac-api            -n "$NS" -f plugins/cormac-api/values.local.yaml
 
 echo "==> waiting for rollouts"
 kubectl -n "$NS" rollout status deploy/cormac-worker         --timeout=120s || true

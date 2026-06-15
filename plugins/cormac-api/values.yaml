@@ -1,0 +1,65 @@
+# Cormac control plane (api). PLACEHOLDER values marked below are finalized after
+# the Juno onboarding session (ADR-034 risk note). env/secretEnv are kept in
+# lockstep with the manifest by `pnpm check:env`: secrets -> secretEnv (a k8s
+# Secret), the rest -> env (a ConfigMap).
+serviceName: cormac-api
+replicas: 1
+port: 8088
+healthPath: /health
+
+image:
+  repository: ghcr.io/serenica-digital/api
+  pullPolicy: IfNotPresent
+# Operator-set fields. Terra injects each terra.yaml field as a FLAT top-level
+# value (verified on live Terra v2.1.1), so these are flat keys whose names match
+# the terra.yaml fields exactly; do not nest them under image:/ingress:.
+image_tag: latest # set to the commit sha at deploy
+image_pull_secret: ghcr-pull # docker-registry Secret; create it BEFORE deploy (juno_k3s race)
+
+service:
+  port: 8088
+
+# api takes public webhooks (Twilio, later Graph) verified in-app; ingress-noauth.
+networkMode: ingress-noauth
+ingress:
+  enabled: true
+  className: nginx
+  tls:
+    enabled: true
+  annotations: {}
+ingress_host: api.cormac.example.com # PLACEHOLDER (onboarding: DNS delegation + custom host)
+cluster_issuer: letsencrypt-prod # PLACEHOLDER (onboarding: confirm a ClusterIssuer exists)
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+# The k8s Secret that holds every secretEnv value (see ../secrets.example.yaml).
+secretName: cormac-secrets
+
+# Non-secret runtime env -> ConfigMap. Cross-service URLs use in-cluster Service DNS.
+env:
+  APP_ENV: prod
+  API_PORT: "8088"
+  CORS_ORIGINS: https://app.cormac.example.com # PLACEHOLDER
+  SUPABASE_URL: https://PROJECT-REF.supabase.co # PLACEHOLDER (managed Supabase, external)
+  SUPABASE_AUTH_ISSUER: "" # unset for a managed project; JWKS path infers it
+  SUPABASE_ANON_KEY: "sb_publishable_PLACEHOLDER" # non-secret publishable key
+  RUNTIME_KIND: hermes
+  RUNTIME_URL: http://cormac-hermes-runtime:8642
+  RUNTIME_TIMEOUT_MS: "90000"
+  MCP_WORKSPACE_ID: 00000000-0000-4000-8000-000000000001 # PLACEHOLDER (seeded workspace id)
+  SSE_PROBE_ENABLED: "false"
+  SSE_TICK_MS: "1000"
+
+# Secret runtime env -> secretKeyRef into `secretName`. SUPABASE_JWT_SECRET is left
+# out of the Secret in prod (JWKS-only, ADR-020); its secretKeyRef is optional.
+secretEnv:
+  - SUPABASE_SERVICE_ROLE_KEY
+  - RUNTIME_API_KEY
+  - MCP_WORKSPACE_TOKEN
+
+emptyDirMounts: []
