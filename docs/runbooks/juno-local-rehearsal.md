@@ -100,19 +100,20 @@ Two paths, matching ADR-039.
 **Direct helm (proven, no credentials beyond image access).** Proves our charts run
 on a Juno-shaped cluster. Verified 2026-06-15: all five charts install on k8s 1.36;
 the three ingress charts (api/web/pane) pass the ingress-nginx admission webhook;
-cert-manager auto-issues TLS for each host from the chart's Ingress; a dotted
-`--set image.tag=X` correctly reaches the nested `.image.tag`. Pods sit
-`ImagePullBackOff` until a GHCR pull secret exists, which is the juno_k3s race,
-demonstrated.
+cert-manager auto-issues TLS for each host from the chart's Ingress. Pods sit
+`ImagePullBackOff` until a GHCR pull secret exists (the juno_k3s race) and, on this
+arm64 cluster, because the CI images are amd64-only. The charts use FLAT operator
+keys (`image_tag`, `image_pull_secret`, `ingress_host`, `cluster_issuer`) to match
+how Terra injects fields (see Terra-native below).
 
 ```sh
 kubectl create namespace cormac
 for c in api web pane; do
-  helm upgrade --install "cormac-$c" "plugins/$c" -n cormac \
-    --set image.tag=<sha> --set ingress.host=$c.<domain> --set ingress.tls.clusterIssuer=selfsigned
+  helm upgrade --install "cormac-$c" "plugins/cormac-$c" -n cormac \
+    --set image_tag=<sha> --set ingress_host=$c.<domain> --set cluster_issuer=selfsigned
 done
-helm upgrade --install cormac-worker         plugins/worker         -n cormac --set image.tag=<sha>
-helm upgrade --install cormac-hermes-runtime plugins/hermes-runtime -n cormac --set image.tag=<sha>
+helm upgrade --install cormac-worker         plugins/cormac-worker         -n cormac --set image_tag=<sha>
+helm upgrade --install cormac-hermes-runtime plugins/cormac-hermes-runtime -n cormac --set image_tag=<sha>
 ```
 
 **Terra-native through Genesis (needs credentials + the dashboard).** The full
@@ -156,7 +157,7 @@ Proven locally (2026-06-15):
 - ArgoCD GitOps works on the stack (a public app syncs Healthy).
 - All five Cormac charts apply on real k8s 1.36 and pass ingress-nginx admission.
 - The TLS stack we own works end to end: cert-manager + ClusterIssuer issues certs from the charts' Ingress specs.
-- Dotted Helm parameters reach nested values, so terra.yaml fields targeting `image.tag`/`ingress.host` resolve if Terra injects via ArgoCD `helm.parameters`.
+- Terra injects each terra.yaml field as a FLAT top-level value (via `spec.source.helm.values`), and it derives the plugin install path from `resource_id`. Both confirmed by registering the repo as a real Source on the live Terra (v2.1.1); the charts were flattened and the plugin dirs renamed to `plugins/cormac-<workload>/` to match (ADR-039).
 - The pull-secret-before-workload requirement (the juno_k3s race) is real and demonstrated.
 
 Still to settle (needs credentials or the real cluster):

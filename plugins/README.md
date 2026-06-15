@@ -40,13 +40,14 @@ the portability escape hatch (ADR-017), not a second maintained pipeline.
 
 ```sh
 # Render / lint without a cluster:
-helm template cormac plugins/api -f plugins/values.example.yaml
+helm template cormac plugins/cormac-api -f plugins/values.example.yaml
 helm lint plugins/*/
 
-# Ad hoc install of one chart (portability / debug), secrets created first:
-helm install cormac-api plugins/api -n cormac \
+# Ad hoc install of one chart (portability / debug), secrets created first.
+# Operator fields are flat top-level keys (matching Terra's field injection):
+helm install cormac-api plugins/cormac-api -n cormac \
   -f plugins/values.example.yaml \
-  --set ingress.host=api.<your-domain> --set image.tag=<sha>
+  --set ingress_host=api.<your-domain> --set image_tag=<sha>
 ```
 
 ## Secrets (Cormac-owned)

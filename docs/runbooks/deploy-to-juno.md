@@ -125,24 +125,24 @@ bootstrap, or to demonstrate Juno swappability (ADR-017); it is not a maintained
 second pipeline (ADR-039). Run per workload (drop `cormac-pane` pre-GO):
 
 ```sh
-# Run from the repo root.
+# Run from the repo root. Operator fields are flat top-level keys (matching Terra).
 TAG=<commit-sha>; DOMAIN=<your-domain>; ISSUER=<cluster-issuer>
-helm upgrade --install cormac-api plugins/api -n cormac \
+helm upgrade --install cormac-api plugins/cormac-api -n cormac \
   -f plugins/values.example.yaml \
-  --set image.tag=$TAG --set ingress.host=api.$DOMAIN \
-  --set ingress.tls.clusterIssuer=$ISSUER
-helm upgrade --install cormac-web plugins/web -n cormac \
+  --set image_tag=$TAG --set ingress_host=api.$DOMAIN \
+  --set cluster_issuer=$ISSUER
+helm upgrade --install cormac-web plugins/cormac-web -n cormac \
   -f plugins/values.example.yaml \
-  --set image.tag=$TAG --set ingress.host=app.$DOMAIN \
-  --set ingress.tls.clusterIssuer=$ISSUER
-helm upgrade --install cormac-worker plugins/worker -n cormac \
-  -f plugins/values.example.yaml --set image.tag=$TAG
-helm upgrade --install cormac-hermes-runtime plugins/hermes-runtime -n cormac \
-  -f plugins/values.example.yaml --set image.tag=$TAG
+  --set image_tag=$TAG --set ingress_host=app.$DOMAIN \
+  --set cluster_issuer=$ISSUER
+helm upgrade --install cormac-worker plugins/cormac-worker -n cormac \
+  -f plugins/values.example.yaml --set image_tag=$TAG
+helm upgrade --install cormac-hermes-runtime plugins/cormac-hermes-runtime -n cormac \
+  -f plugins/values.example.yaml --set image_tag=$TAG
 # pane (on ADR-028 GO; host is manifest-pinned, keep it stable):
-# helm upgrade --install cormac-pane plugins/pane -n cormac \
-#   -f plugins/values.example.yaml --set image.tag=$TAG \
-#   --set ingress.host=pane.$DOMAIN --set ingress.tls.clusterIssuer=$ISSUER
+# helm upgrade --install cormac-pane plugins/cormac-pane -n cormac \
+#   -f plugins/values.example.yaml --set image_tag=$TAG \
+#   --set ingress_host=pane.$DOMAIN --set cluster_issuer=$ISSUER
 ```
 
 Also set the managed-Supabase env on the api (non-secret) via `--set env.SUPABASE_URL=...`,

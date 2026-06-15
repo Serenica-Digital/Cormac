@@ -1,0 +1,39 @@
+# Terra plugin descriptor (ADR-039). See ../api/terra.yaml for the model.
+# GATED on the ADR-028 GO/NO-GO: the pane image (apps/pane) ships only on a GO.
+# Load-bearing constraint: the Office add-in manifest pins ingress_host nearly
+# permanently, so this host must be stable and owned. If Juno cannot serve a
+# per-workload custom host, front the pane with a CDN (deploy-to-juno.md).
+resource_id: cormac-pane
+name: Cormac Excel Pane (static assets)
+icon: ""
+description: >-
+  Static file server for the Excel task pane web assets. Public, no auth
+  (Excel loads it directly, ingress-noauth). No secrets, no database access.
+  Must NOT send X-Frame-Options SAMEORIGIN. CI-built image from this repo.
+category: Application
+tags:
+  - cormac
+  - serenica
+  - pane
+  - ingress-noauth
+fields:
+  - name: image_tag
+    description: The CI-built image tag to deploy (commit sha).
+    required: true
+    default: latest
+    type: string
+  - name: ingress_host
+    description: STABLE custom host pinned into the add-in manifest
+    required: true
+    default: pane.cormac.example.com
+    type: string
+  - name: cluster_issuer
+    description: cert-manager ClusterIssuer name for TLS
+    required: true
+    default: letsencrypt-prod
+    type: string
+  - name: image_pull_secret
+    description: docker-registry Secret for GHCR; must exist BEFORE deploy.
+    required: true
+    default: ghcr-pull
+    type: string

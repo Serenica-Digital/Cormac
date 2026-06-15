@@ -1,0 +1,31 @@
+{{- if .Values.recycle.enabled }}
+# Recycles the runtime on a schedule to bound the upstream memory leak (#25315),
+# which is unfixed in v0.16.0 and for which Juno has no native pattern. A failed
+# in-flight run is retried by the control plane, so a restart is safe.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Values.serviceName }}-recycle
+  labels:
+    app.kubernetes.io/name: {{ .Values.serviceName }}
+    app.kubernetes.io/part-of: cormac
+spec:
+  schedule: {{ .Values.recycle_schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          serviceAccountName: {{ .Values.serviceName }}-recycle
+          restartPolicy: Never
+          containers:
+            - name: kubectl
+              image: {{ .Values.recycle.image | quote }}
+              command:
+                - /bin/sh
+                - -c
+                - kubectl rollout restart deployment/{{ .Values.serviceName }}
+{{- end }}
