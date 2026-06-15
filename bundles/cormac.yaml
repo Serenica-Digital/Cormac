@@ -4,14 +4,16 @@
 # and fans shared bundle fields into them via `values: {<plugin_field>:
 # {reference: <bundle_field>}}`. Modeled on the public orion-essentials bundle.
 #
-# Plugins are referenced by their display `name` (the terra.yaml `name:` field),
-# not by resource_id (resource_id is deprecated in the Terra field contract).
+# A top-level `resource_id` is REQUIRED on the bundle (verified against live Terra
+# v2.1.1: omitting it fails BundleSchema validation). The individual plugins inside
+# are still referenced by their display `name`, not by resource_id.
 #
 # Not in this bundle (deliberately): managed Supabase (external system of record,
 # never a workload, ADR-003/038), our External Secrets Operator + Infisical
 # SecretStore (a cluster-level concern we install ourselves, ADR-039), and the
 # dev workloads (web-ide / Jarvis / gitea are official Juno plugins, see
 # docs/runbooks/juno-dev-workspace.md).
+resource_id: cormac
 name: Cormac
 icon: ""
 description: >-
