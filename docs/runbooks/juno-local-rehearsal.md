@@ -19,7 +19,7 @@ is the one piece left for the real cluster, not rehearsed locally.
 
 `pnpm rehearsal:up` runs the credential-free base stack and chart deploy below, plus two professional touches. First, browser-trusted TLS: it feeds the mkcert root CA into a cert-manager **CA** ClusterIssuer named `mkcert-ca`, so cert-manager still mints the leaf certs (faithful to the real Let's Encrypt path) and the browser trusts them with no warning. Second, `*.localtest.me` hostnames, which are public DNS that resolves to 127.0.0.1, so there is no `/etc/hosts` edit. It stops at the credential and dashboard click-through boundary and prints the manual steps. `pnpm rehearsal:down` deletes the cluster.
 
-Flags: `WITH_GENESIS=1` (the full Genesis + Terra platform), `SKIP_BUILD=1`, `DOMAIN=...` (for example `127.0.0.1.sslip.io` if localtest.me ever fails to resolve).
+Flags: `WITH_GENESIS=1` (the full Genesis + Terra platform), `DOMAIN=...` (for example `127.0.0.1.sslip.io` if localtest.me ever fails to resolve).
 
 The manual commands below remain the source of truth the script mirrors; use them to step through it or diverge. The credentialed Part 3 stays manual either way.
 
