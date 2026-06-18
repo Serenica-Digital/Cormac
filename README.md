@@ -42,6 +42,8 @@ pnpm seed                     # demo workspace, owner login, contract, one recor
 
 The frontends run on the host against the cluster: `pnpm --filter @cormac/pane dev`. Local dev, k3d, and Juno all use the managed dev Supabase; the local Supabase stack (`pnpm db:start`) is only for CI and offline tests.
 
+To rehearse the Juno deploy locally (a Juno-shaped kind cluster: ArgoCD, ingress-nginx, the Terra path, with browser-trusted TLS and `*.localtest.me` hostnames), run `pnpm rehearsal:up` (needs `mkcert` in addition to the tools above) and `pnpm rehearsal:down`. See [docs/runbooks/juno-local-rehearsal.md](docs/runbooks/juno-local-rehearsal.md).
+
 Day-to-day gotcha: `pnpm db:start` reuses the running local database and does
 NOT apply migrations added since it started. `pnpm check:migrations` detects
 this drift (CI always runs fresh, so undetected drift fails there first);

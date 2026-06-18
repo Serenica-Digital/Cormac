@@ -30,6 +30,8 @@
     "smoke": "infisical run -- tsx scripts/smoke.ts",
     "k3d:up": "bash scripts/k3d/up.sh",
     "k3d:down": "bash scripts/k3d/down.sh",
+    "rehearsal:up": "bash scripts/kind/rehearsal-up.sh",
+    "rehearsal:down": "bash scripts/kind/rehearsal-down.sh",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
