@@ -26,11 +26,18 @@ ISSUER="${ISSUER:-mkcert-ca}"
 # resolves to genesis v5.1.0 / terra v2.1.1 (arm64, the current stack); test.values.yaml
 # ships a stale v2.0.2 pin we override here.
 GENESIS_VERSION="${GENESIS_VERSION:-v4.1.0}"
+# Set GHCR_PAT to a GitHub PAT with read:packages scope to create an image-pull
+# secret and deploy with it. Without it the charts deploy without a pull secret
+# and pods stay ErrImagePull (the platform path is still proven either way).
+GHCR_PAT="${GHCR_PAT:-}"
+GHCR_USER="${GHCR_USER:-patmikesdev}"
+PULL_SECRET_NAME="ghcr-pull-secret"
 
 # Upstream refs (overridable to pin for reproducibility). Defaults match the proven
 # runbook. cert-manager is version-pinned; ArgoCD/ingress-nginx track their stable
 # channels as in the runbook.
-ARGOCD_MANIFEST="${ARGOCD_MANIFEST:-https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml}"
+ARGOCD_VERSION="${ARGOCD_VERSION:-v2.14.21}"
+ARGOCD_MANIFEST="${ARGOCD_MANIFEST:-https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/install.yaml}"
 INGRESS_NGINX_MANIFEST="${INGRESS_NGINX_MANIFEST:-https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml}"
 CERT_MANAGER_VERSION="${CERT_MANAGER_VERSION:-v1.16.2}"
 
@@ -63,6 +70,12 @@ kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 # plain apply errors on that one object (expected); the server-side apply is the
 # authoritative one and handles the oversized CRD.
 kubectl apply -n argocd -f "$ARGOCD_MANIFEST" >/dev/null 2>&1 || true
+# Wait for the ArgoCD CRDs to be established before the server-side pass; on a
+# fresh cluster they need a moment after the first apply registers them.
+kubectl wait --for=condition=established --timeout=60s \
+  crd/applications.argoproj.io \
+  crd/applicationsets.argoproj.io \
+  crd/appprojects.argoproj.io 2>/dev/null || true
 kubectl apply --server-side --force-conflicts -n argocd -f "$ARGOCD_MANIFEST" >/dev/null
 kubectl wait -n argocd --for=condition=ready pod \
   --selector=app.kubernetes.io/name=argocd-server --timeout=180s
@@ -96,19 +109,52 @@ EOF
 
 echo "==> [7/8] deploy the Cormac charts (issuer=$ISSUER, hosts=*.$DOMAIN)"
 kubectl create namespace "$NS" --dry-run=client -o yaml | kubectl apply -f -
+
+if [ -n "$GHCR_PAT" ]; then
+  kubectl create secret docker-registry "$PULL_SECRET_NAME" \
+    --docker-server=ghcr.io \
+    --docker-username="$GHCR_USER" \
+    --docker-password="$GHCR_PAT" \
+    -n "$NS" --dry-run=client -o yaml | kubectl apply -f -
+  PULL_SECRET_ARG="$PULL_SECRET_NAME"
+  echo "    GHCR pull secret created (images will pull)"
+else
+  PULL_SECRET_ARG=""
+  echo "    no GHCR_PAT set — pods will ErrImagePull (platform path still proven)"
+fi
+
+if [ -n "${INFISICAL_MACHINE_CLIENT_ID:-}" ] && [ -n "${INFISICAL_MACHINE_CLIENT_SECRET:-}" ]; then
+  echo "    installing ESO + syncing cormac-secrets from Infisical"
+  helm repo add external-secrets https://charts.external-secrets.io 2>/dev/null || true
+  helm upgrade --install external-secrets external-secrets/external-secrets \
+    -n external-secrets --create-namespace --wait --timeout=120s >/dev/null
+  kubectl create secret generic infisical-auth \
+    --from-literal=clientId="$INFISICAL_MACHINE_CLIENT_ID" \
+    --from-literal=clientSecret="$INFISICAL_MACHINE_CLIENT_SECRET" \
+    -n "$NS" --dry-run=client -o yaml | kubectl apply -f -
+  kubectl apply -f deploy/eso/secretstore.yaml
+  kubectl apply -f deploy/eso/externalsecret.yaml
+  echo "    waiting for cormac-secrets to sync..."
+  kubectl -n "$NS" wait --for=condition=ready externalsecret/cormac-secrets --timeout=60s
+else
+  echo "    no Infisical machine identity — cormac-secrets will not sync (api will CrashLoop)"
+fi
+
 # api/web/pane carry an Ingress; one issuer drives all three, host is per-chart.
 helm upgrade --install cormac-api  plugins/cormac-api  -n "$NS" \
-  --set image_tag="$TAG" --set image_pull_secret="" \
+  --set image_tag="$TAG" --set image_pull_secret="$PULL_SECRET_ARG" \
   --set ingress_host="api.$DOMAIN" --set cluster_issuer="$ISSUER"
 helm upgrade --install cormac-web  plugins/cormac-web  -n "$NS" \
-  --set image_tag="$TAG" --set image_pull_secret="" \
+  --set image_tag="$TAG" --set image_pull_secret="$PULL_SECRET_ARG" \
   --set ingress_host="app.$DOMAIN" --set cluster_issuer="$ISSUER"
 helm upgrade --install cormac-pane plugins/cormac-pane -n "$NS" \
-  --set image_tag="$TAG" --set image_pull_secret="" \
+  --set image_tag="$TAG" --set image_pull_secret="$PULL_SECRET_ARG" \
   --set ingress_host="pane.$DOMAIN" --set cluster_issuer="$ISSUER"
 # worker/hermes-runtime are clusterip (no Ingress).
-helm upgrade --install cormac-worker         plugins/cormac-worker         -n "$NS" --set image_tag="$TAG"
-helm upgrade --install cormac-hermes-runtime plugins/cormac-hermes-runtime -n "$NS" --set image_tag="$TAG"
+helm upgrade --install cormac-worker         plugins/cormac-worker         -n "$NS" \
+  --set image_tag="$TAG" --set image_pull_secret="$PULL_SECRET_ARG"
+helm upgrade --install cormac-hermes-runtime plugins/cormac-hermes-runtime -n "$NS" \
+  --set image_tag="$TAG" --set image_pull_secret="$PULL_SECRET_ARG"
 
 echo "==> [8/8] waiting for the TLS certs to issue"
 for c in api web pane; do
@@ -176,23 +222,15 @@ cat <<EOF
   What this proves: the platform path. ArgoCD/ingress admission, cert-manager
   issuing browser-trusted TLS from the mkcert CA, and the charts applying.
 
-  What it does NOT do (and why): the pods stay ErrImagePull. All five charts
-  reference private amd64 GHCR images, so with no pull secret on this arm64
-  cluster they cannot pull, by design. Running them needs the GHCR pull secret on
-  Juno's amd64 nodes (and, for the api, the managed-Supabase env, it is
-  fail-closed). Running pods + the capture-to-audit smoke are the onboarding step.
+  Pods (with GHCR_PAT + Infisical machine identity injected via infisical run):
+    api, worker, hermes-runtime: Running
+    web, pane: CrashLoopBackOff (Vite dev servers need VITE_* build-time vars;
+      not a blocker — the real pane surface is the Excel add-in, not this container)
 
   Manual from here (needs your credentials; deliberately not scripted):
-    1. ESO + Infisical -> cormac-secrets:
-         kubectl -n $NS create secret generic infisical-auth \\
-           --from-literal=clientId=<id> --from-literal=clientSecret=<secret>
-         helm repo add external-secrets https://charts.external-secrets.io
-         helm install external-secrets external-secrets/external-secrets \\
-           -n external-secrets --create-namespace
-         kubectl apply -f deploy/eso/secretstore.yaml -f deploy/eso/externalsecret.yaml
-    2. Private images / repo (Terra-native path): GHCR pull secret + ArgoCD repo PAT
-       (see docs/runbooks/deploy-to-juno.md), then register the repo as a Terra
-       Source and launch the bundle in the Genesis dashboard (WITH_GENESIS=1).
+    Private images / repo (Terra-native path): GHCR pull secret + ArgoCD repo PAT
+    (see docs/runbooks/deploy-to-juno.md), then register the repo as a Terra
+    Source and launch the bundle in the Genesis dashboard (WITH_GENESIS=1).
 
   Tear down:  pnpm rehearsal:down
 EOF
