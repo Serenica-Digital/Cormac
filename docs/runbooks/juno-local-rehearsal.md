@@ -1,6 +1,6 @@
 # Juno-shaped local rehearsal
 
-> **Status:** canonical · **Last reviewed:** 2026-06-15
+> **Status:** canonical · **Last reviewed:** 2026-06-18
 
 The faithful pre-onboarding rehearsal for the Juno deploy (ADR-039). It stands up a
 Juno-shaped Kubernetes stack on a laptop and runs the real GitOps path the platform
@@ -14,6 +14,14 @@ Desktop 11.67 GiB allocation) on 2026-06-15. The Juno control-plane images are
 multi-arch with native arm64 builds, so the platform runs without emulation. The
 Helios workstation images are amd64-only (no arm64 build), so the dev workstation
 is the one piece left for the real cluster, not rehearsed locally.
+
+## Scripted (recommended)
+
+`pnpm rehearsal:up` runs the credential-free base stack and chart deploy below, plus two professional touches. First, browser-trusted TLS: it feeds the mkcert root CA into a cert-manager **CA** ClusterIssuer named `mkcert-ca`, so cert-manager still mints the leaf certs (faithful to the real Let's Encrypt path) and the browser trusts them with no warning. Second, `*.localtest.me` hostnames, which are public DNS that resolves to 127.0.0.1, so there is no `/etc/hosts` edit. It stops at the credential and dashboard click-through boundary and prints the manual steps. `pnpm rehearsal:down` deletes the cluster.
+
+Flags: `WITH_GENESIS=1` (the full Genesis + Terra platform), `SKIP_BUILD=1`, `DOMAIN=...` (for example `127.0.0.1.sslip.io` if localtest.me ever fails to resolve).
+
+The manual commands below remain the source of truth the script mirrors; use them to step through it or diverge. The credentialed Part 3 stays manual either way.
 
 ## What this maps to
 
@@ -34,7 +42,7 @@ on top; our workloads stay plain Kubernetes, which is why Juno is swappable (ADR
 
 ## Prerequisites
 
-`docker` (running), `kind`, `kubectl`, `helm`. No credentials are needed for the
+`docker` (running), `kind`, `kubectl`, `helm`, `mkcert`. No credentials are needed for the
 base stack or for the Genesis platform. Credentials are needed only to deploy
 Cormac itself (private repo, private GHCR images, Infisical), see the last section.
 
