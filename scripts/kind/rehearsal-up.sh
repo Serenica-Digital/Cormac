@@ -22,6 +22,10 @@ TAG="${TAG:-dev}"
 # edits. If localtest.me ever fails to resolve, set DOMAIN=127.0.0.1.sslip.io.
 DOMAIN="${DOMAIN:-localtest.me}"
 ISSUER="${ISSUER:-mkcert-ca}"
+# Genesis/Terra version for the optional WITH_GENESIS step. v4.1.0 (the chart ref)
+# resolves to genesis v5.1.0 / terra v2.1.1 (arm64, the current stack); test.values.yaml
+# ships a stale v2.0.2 pin we override here.
+GENESIS_VERSION="${GENESIS_VERSION:-v4.1.0}"
 
 # Upstream refs (overridable to pin for reproducibility). Defaults match the proven
 # runbook. cert-manager is version-pinned; ArgoCD/ingress-nginx track their stable
@@ -114,12 +118,51 @@ done
 # Optional: the full Genesis + Terra platform (the dashboard, the Terra catalog).
 # Needs the Juno-Bootstrap repo; the base stack above already exercises the GitOps path.
 if [ "${WITH_GENESIS:-}" = "1" ]; then
-  echo "==> [opt] Genesis + Terra platform"
+  GENESIS_HOST="${GENESIS_HOST:-genesis.$DOMAIN}"
+  CERTNAME="default-${DOMAIN//./-}"
+  echo "==> [opt] Genesis + Terra platform ($GENESIS_VERSION) at https://$GENESIS_HOST/"
   BOOT="${BOOT:-/tmp/Juno-Bootstrap}"
   [ -d "$BOOT" ] || git clone https://github.com/juno-fx/Juno-Bootstrap "$BOOT"
-  helm upgrade -n argocd -i -f "$BOOT/test.values.yaml" genesis "$BOOT/chart/"
+
+  # Genesis's upstream ingress declares no TLS of its own, so it rides ingress-nginx's
+  # DEFAULT certificate (a built-in self-signed one = the browser warning). Make that
+  # default a trusted *.$DOMAIN cert from the mkcert CA, so the dashboard loads trusted
+  # on a real host instead of bare localhost.
+  kubectl apply -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ${CERTNAME}
+  namespace: ingress-nginx
+spec:
+  secretName: ${CERTNAME}-tls
+  dnsNames: ["*.${DOMAIN}", "${DOMAIN}"]
+  issuerRef:
+    name: ${ISSUER}
+    kind: ClusterIssuer
+EOF
+  kubectl -n ingress-nginx wait --for=condition=ready certificate "$CERTNAME" --timeout=120s || true
+  # Point ingress-nginx at it as the default cert (idempotent: add the arg only once).
+  if ! kubectl -n ingress-nginx get deploy ingress-nginx-controller \
+       -o jsonpath='{.spec.template.spec.containers[0].args}' | grep -q default-ssl-certificate; then
+    kubectl -n ingress-nginx patch deploy ingress-nginx-controller --type=json \
+      -p="[{\"op\":\"add\",\"path\":\"/spec/template/spec/containers/0/args/-\",\"value\":\"--default-ssl-certificate=ingress-nginx/${CERTNAME}-tls\"}]"
+    kubectl -n ingress-nginx rollout status deploy/ingress-nginx-controller --timeout=120s || true
+  fi
+
+  # test.values.yaml pins a stale v2.0.2 and host=localhost; override both.
+  helm upgrade -n argocd -i -f "$BOOT/test.values.yaml" \
+    --set genesis.version="$GENESIS_VERSION" --set genesis.config.host="$GENESIS_HOST" \
+    genesis "$BOOT/chart/"
   kubectl get deployments -n argocd -o name | xargs -n1 kubectl rollout restart -n argocd
-  echo "    Genesis dashboard: https://localhost/  (login test@email.com / juno)"
+  echo "    waiting for ArgoCD to sync Genesis..."
+  for _ in $(seq 1 60); do
+    if kubectl -n argocd get deploy genesis >/dev/null 2>&1; then break; fi
+    sleep 3
+  done
+  kubectl -n argocd rollout status deploy/genesis --timeout=150s || true
+  kubectl -n argocd rollout status deploy/terra   --timeout=150s || true
+  echo "    Genesis dashboard: https://$GENESIS_HOST/  (login test@email.com / juno, trusted, no warning)"
 fi
 
 cat <<EOF
