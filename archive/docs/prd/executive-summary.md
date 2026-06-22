@@ -29,7 +29,6 @@ First, it lifts the workbooks a business is already running on into a proper gov
     - Allow Cormac to upate the CRM directly vs. Require manual confirmation ?
 3. Cormac formalizes this plan into a proper database-level "contract" and uses that to steer all the day to day operations. 
 
-The is a one time, token-heavy and time consuming task, DELIBERATELY, and draws upon principles from emerging best practices for context-engineering at [Anthropic](https://claude.com/blog/how-anthropic-enables-self-service-data-analytics-with-claude) and [Attio](https://attio.com/engineering/blog/introducing-universal-context)
 
 ### Everyday Use Channels
 
@@ -57,7 +56,7 @@ We went looking for anyone doing all three at once: works in your own spreadshee
 **1. Smart spreadsheets — Excel-native, but not a CRM and no text-to-update**
 - *Who:* Copilot in Excel, Coefficient, Rows, Equals, Sourcetable, Paradigm, Quadratic, Numerous / SheetAI.
 - *What we'd want from them:* Live right in your spreadsheet and make it smarter.
-- *What's missing:* none is a CRM, and none takes an update you text in. They make your sheet better at analysis and reporting; you'd still have to build your entire CRM-agent layer yourself.
+- *What's missing:* none is a CRM, and none takes an update you text in. They make your sheet better at analysis and reporting; you'd still have to build your entire CRM-agent and capture/entry layer yourself.
 
 **2. No-setup AI CRMs — auto data-entry, but their app and no text-to-update**
 - *Who:* Coffee AI, Streak, Close.
@@ -80,7 +79,7 @@ What upper bound do we put on the complexity of a workbook a user tries to bring
 ### Price Point: 
 
 - TBD, an open research question. Requires calibration against actual inference costs for the fully developed agent
-- Some Features may be planned for v2, later targeting a two tiered distribution model. (Pro vs. Enterprise). V2 would explore developing additional connectors to
+- Some Features may be planned for v2, potentially targeting a two tiered distribution model. (Pro vs. Enterprise). V2 would explore developing additional connectors to
     - Video Calls (Teams? Zoom? Google Meet?)
     - Calendars
     - Microsoft Power apps

@@ -44,6 +44,9 @@ docker buildx build \
 docker buildx build \
   --platform linux/arm64 \
   -f docker/Dockerfile.web \
+  --build-arg VITE_API_URL="${VITE_API_URL:-}" \
+  --build-arg VITE_SUPABASE_URL="${VITE_SUPABASE_URL:-}" \
+  --build-arg VITE_SUPABASE_ANON_KEY="${VITE_SUPABASE_ANON_KEY:-}" \
   -t "$REGISTRY/web:$TAG-arm64" \
   --push .
 
@@ -61,11 +64,28 @@ docker buildx build \
 
 echo "==> Merging into multi-arch manifests at :$TAG"
 
+# Always merge from two clean single-arch sources: the amd64 digest from CI's
+# push and the arm64 image we just built. Never feed the existing merged manifest
+# back in — imagetools create accumulates entries rather than replacing them, so
+# repeated runs would add a second arm64 entry instead of replacing the first.
 for name in api worker web pane hermes-runtime; do
-  docker buildx imagetools create \
-    -t "$REGISTRY/$name:$TAG" \
-    "$REGISTRY/$name:$TAG" \
-    "$REGISTRY/$name:$TAG-arm64"
+  amd64_digest=$(docker buildx imagetools inspect "$REGISTRY/$name:$TAG" --raw \
+    | python3 -c "
+import json, sys
+m = json.load(sys.stdin)
+for e in m.get('manifests', []):
+    if e.get('platform', {}).get('architecture') == 'amd64':
+        print(e['digest']); break
+")
+  if [ -z "$amd64_digest" ]; then
+    echo "    $name: no amd64 entry found in :$TAG — skipping merge, pushing arm64 only"
+    docker buildx imagetools create -t "$REGISTRY/$name:$TAG" "$REGISTRY/$name:$TAG-arm64"
+  else
+    docker buildx imagetools create \
+      -t "$REGISTRY/$name:$TAG" \
+      "$REGISTRY/$name:$TAG@$amd64_digest" \
+      "$REGISTRY/$name:$TAG-arm64"
+  fi
   echo "    $name: merged"
 done
 

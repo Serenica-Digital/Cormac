@@ -163,7 +163,7 @@ done
 
 # Optional: the full Genesis + Terra platform (the dashboard, the Terra catalog).
 # Needs the Juno-Bootstrap repo; the base stack above already exercises the GitOps path.
-if [ "${WITH_GENESIS:-}" = "1" ]; then
+if [ "${WITH_GENESIS:-1}" != "0" ]; then
   GENESIS_HOST="${GENESIS_HOST:-genesis.$DOMAIN}"
   CERTNAME="default-${DOMAIN//./-}"
   echo "==> [opt] Genesis + Terra platform ($GENESIS_VERSION) at https://$GENESIS_HOST/"
