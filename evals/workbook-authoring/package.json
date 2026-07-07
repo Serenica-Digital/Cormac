@@ -1,0 +1,16 @@
+{
+  "name": "workbook-authoring-spike",
+  "private": true,
+  "type": "module",
+  "description": "Spike #64: authoring-agent keystone. Contract schema, fixtures, validation and stability tooling.",
+  "scripts": {
+    "validate": "tsx scripts/validate-contract.ts",
+    "diff": "tsx scripts/diff-contracts.ts"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}

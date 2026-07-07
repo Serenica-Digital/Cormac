@@ -1,0 +1,38 @@
+# Workbook authoring spike (#64)
+
+The keystone spike: a Hermes profile (`cormac-authoring`) runs the consultative contract
+interview over a real workbook fixture until it produces a valid, stable, published
+contract. Brief: `.jarvis/tmp/plans/spike-64-authoring-agent.md`. Gate: ADR-0002.
+
+## Layout
+
+- `src/contract.ts` — the contract meta-schema (Zod) and `parseContract`. Ported from
+  v0 (`archive/packages/contract/src/contract.ts`); code unchanged below the header.
+- `fixture/*.detected.json` — workbook detection profiles (sheets, headers, inferred
+  types, sample rows). `relationship-crm` is anonymized from a real client workbook and
+  is the primary fixture; it broke v0's one-shot authoring. `contacts-deals` is synthetic.
+- `golden/*.contract.json` — one defensible contract reading per fixture, reference only.
+  The GO criteria are validity + stability + consultative feel, not golden match.
+- `scripts/validate-contract.ts` — schema gate. `npm run validate <file|->`. Prints Zod
+  issues verbatim on failure; backs the profile's `submit_contract` tool.
+- `scripts/diff-contracts.ts` — structural stability check across N produced contracts.
+  `npm run diff <a.json> <b.json> ...`. Naming variance tolerated, structural variance not.
+- `profile/` — source of truth for the `cormac-authoring` Hermes profile (SOUL, interview
+  skill, tool scripts, config). `profile/sync.sh` copies it into
+  `~/.hermes/profiles/cormac-authoring/`.
+
+## Running an interview
+
+```bash
+cd evals/workbook-authoring        # process cwd matters: Hermes file tool resolves here
+./profile/sync.sh                  # after any SOUL/skill edit
+hermes -p cormac-authoring chat    # human plays the client
+```
+
+Produced contracts and per-run judgment notes land in
+`.jarvis/tmp/notes/authoring-runs/` (gitignored scratch). Between runs:
+
+```bash
+npm run validate .jarvis/tmp/notes/authoring-runs/<run>/contract.json
+npm run diff <run1>/contract.json <run2>/contract.json <run3>/contract.json
+```

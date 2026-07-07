@@ -1,0 +1,66 @@
+{
+  "workbookName": "relationship-tracker.xlsx",
+  "note": "Anonymized detection profile modeled closely on a real client workbook (ADR-023 §2). All names, firms, and notes are fabricated; the structure, column shapes, and messiness mirror the original. Three sheets that are arguably the same entity in different segments, an internal owner column, a computed days-since column, a status hidden in a company name, two people in one row, deals named only in free text, and no email/phone anywhere.",
+  "sheets": [
+    {
+      "name": "Sports Operators",
+      "headerRow": 5,
+      "rowCount": 6,
+      "comment": "Rows 1-4 are a title banner; real headers on row 5. Sparsely filled.",
+      "columns": [
+        { "header": "Main Contact", "nonEmpty": 3, "distinctCount": 3, "inferredType": "string", "samples": ["Marcus Tate", "Diego Salas", "Priya Raman"] },
+        { "header": "Company", "nonEmpty": 4, "distinctCount": 4, "inferredType": "string", "samples": ["Summit League", "Former Apex Sports", "Cedar Athletics", "Former Vertex Lax"] },
+        { "header": "Relationship Lead", "nonEmpty": 4, "distinctCount": 1, "inferredType": "string", "samples": ["Avi"] },
+        { "header": "Sport", "nonEmpty": 3, "distinctCount": 3, "inferredType": "string", "samples": ["Baseball", "Lacrosse", "Various"] },
+        { "header": "Date Last Contacted", "nonEmpty": 2, "distinctCount": 2, "inferredType": "date", "samples": ["2026-05-04", "2026-04-20"] },
+        { "header": "Days Since Contact", "nonEmpty": 4, "distinctCount": 3, "inferredType": "string", "samples": ["31", "45", "—"], "comment": "Looks formula-driven; some cells empty/dash." },
+        { "header": "Follow-Up Date", "nonEmpty": 4, "distinctCount": 3, "inferredType": "date", "samples": ["2026-07-03", "2026-07-10", "2026-06-30"] },
+        { "header": "Notes", "nonEmpty": 1, "distinctCount": 1, "inferredType": "string", "samples": ["Looking at a venue in Cedar Park, TX"] }
+      ],
+      "sampleRows": [
+        { "Main Contact": "Marcus Tate", "Company": "Summit League", "Relationship Lead": "Avi", "Sport": "Baseball", "Date Last Contacted": "2026-05-04", "Days Since Contact": "31", "Follow-Up Date": "2026-07-03", "Notes": "Looking at a venue in Cedar Park, TX" },
+        { "Main Contact": "Diego Salas", "Company": "Former Apex Sports", "Relationship Lead": "Avi", "Sport": "Lacrosse", "Date Last Contacted": "", "Days Since Contact": "—", "Follow-Up Date": "2026-07-10", "Notes": "" }
+      ]
+    },
+    {
+      "name": "Bankers & Brokers",
+      "headerRow": 5,
+      "rowCount": 16,
+      "comment": "The most populated sheet. Same shape as the others, different label for the person/firm columns.",
+      "columns": [
+        { "header": "Name", "nonEmpty": 13, "distinctCount": 13, "inferredType": "string", "samples": ["Owen Hart", "Jordan Blake & Casey Lin", "Lena Ortiz", "Sam Whitfield"] },
+        { "header": "Firm", "nonEmpty": 14, "distinctCount": 12, "inferredType": "string", "samples": ["Crestline", "Eastgate Partners", "Northbridge", "Crestline"] },
+        { "header": "Coverage Area", "nonEmpty": 14, "distinctCount": 7, "inferredType": "string", "samples": ["Platforms / Alts", "RE IB", "Alts Financing", "Sports", "Leisure Appraisals", "Platforms"] },
+        { "header": "Relationship Lead", "nonEmpty": 14, "distinctCount": 2, "inferredType": "string", "samples": ["Dana", "Avi"] },
+        { "header": "Date Last Contacted", "nonEmpty": 13, "distinctCount": 9, "inferredType": "date", "samples": ["2026-04-27", "2026-05-11", "2026-03-30"] },
+        { "header": "Days Since Contact", "nonEmpty": 16, "distinctCount": 9, "inferredType": "number", "samples": ["38", "24", "12", "61"] },
+        { "header": "Follow-Up Date", "nonEmpty": 16, "distinctCount": 10, "inferredType": "date", "samples": ["2026-06-26", "2026-07-01", "2026-06-19"] },
+        { "header": "Notes", "nonEmpty": 10, "distinctCount": 10, "inferredType": "string", "samples": ["Doing a lot in housing, but all platform deals", "Handling the Birchwood assignment", "Working the Northgate financing"] }
+      ],
+      "sampleRows": [
+        { "Name": "Owen Hart", "Firm": "Crestline", "Coverage Area": "Platforms / Alts", "Relationship Lead": "Dana", "Date Last Contacted": "2026-04-27", "Days Since Contact": "38", "Follow-Up Date": "2026-06-26", "Notes": "Doing a lot in housing, but all platform deals" },
+        { "Name": "Jordan Blake & Casey Lin", "Firm": "Eastgate Partners", "Coverage Area": "RE IB", "Relationship Lead": "Avi", "Date Last Contacted": "2026-05-11", "Days Since Contact": "24", "Follow-Up Date": "2026-07-01", "Notes": "Handling the Birchwood assignment" }
+      ]
+    },
+    {
+      "name": "Capital Partners",
+      "headerRow": 5,
+      "rowCount": 8,
+      "comment": "Has an Opportunities Shown column the other sheets lack. One row has a firm but no main contact.",
+      "columns": [
+        { "header": "Firm", "nonEmpty": 6, "distinctCount": 6, "inferredType": "string", "samples": ["Granite Peak Capital", "Harbor Point", "Meridian Holdings"] },
+        { "header": "Main Contact", "nonEmpty": 5, "distinctCount": 5, "inferredType": "string", "samples": ["Shawn Delaney", "Erin Cole", "Tomas Reuben"] },
+        { "header": "Relationship Lead", "nonEmpty": 6, "distinctCount": 2, "inferredType": "string", "samples": ["Avi", "Dana"] },
+        { "header": "Date Last Contacted", "nonEmpty": 2, "distinctCount": 2, "inferredType": "date", "samples": ["2026-04-29", "2026-05-02"] },
+        { "header": "Days Since Contact", "nonEmpty": 4, "distinctCount": 3, "inferredType": "string", "samples": ["36", "33", "—"] },
+        { "header": "Follow-Up Date", "nonEmpty": 4, "distinctCount": 3, "inferredType": "date", "samples": ["2026-06-28", "2026-07-05", "2026-06-22"] },
+        { "header": "Opportunities Shown", "nonEmpty": 2, "distinctCount": 2, "inferredType": "number", "samples": ["2", "1"] },
+        { "header": "Notes", "nonEmpty": 4, "distinctCount": 4, "inferredType": "string", "samples": ["Shared a memo on legislation risk for youth sports", "Intro'd to the Birchwood team", "Passed on the Northgate raise"] }
+      ],
+      "sampleRows": [
+        { "Firm": "Granite Peak Capital", "Main Contact": "Shawn Delaney", "Relationship Lead": "Avi", "Date Last Contacted": "2026-04-29", "Days Since Contact": "36", "Follow-Up Date": "2026-06-28", "Opportunities Shown": "2", "Notes": "Shared a memo on legislation risk for youth sports" },
+        { "Firm": "Harbor Point", "Main Contact": "", "Relationship Lead": "Dana", "Date Last Contacted": "", "Days Since Contact": "—", "Follow-Up Date": "2026-07-05", "Opportunities Shown": "1", "Notes": "Passed on the Northgate raise" }
+      ]
+    }
+  ]
+}

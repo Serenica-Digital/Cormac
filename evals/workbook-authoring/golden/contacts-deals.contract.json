@@ -1,0 +1,135 @@
+{
+  "name": "Coastline Realty (golden)",
+  "version": 1,
+  "objects": [
+    {
+      "objectId": "obj_person",
+      "apiName": "person",
+      "label": "Person",
+      "identity": { "displayFields": ["full_name", "email"] },
+      "aliases": [
+        { "canonical": "person", "variants": ["Client", "Clients", "Contact", "Customer", "Lead"] }
+      ],
+      "fields": [
+        {
+          "fieldId": "fld_full_name",
+          "apiName": "full_name",
+          "label": "Full name",
+          "type": "string",
+          "required": true,
+          "editableByUser": true,
+          "editableByAgent": true,
+          "excelColumn": "Name"
+        },
+        {
+          "fieldId": "fld_email",
+          "apiName": "email",
+          "label": "Email",
+          "type": "email",
+          "editableByUser": true,
+          "editableByAgent": true,
+          "sensitive": true,
+          "excelColumn": "Email"
+        },
+        {
+          "fieldId": "fld_phone",
+          "apiName": "phone",
+          "label": "Phone",
+          "type": "phone",
+          "editableByUser": true,
+          "editableByAgent": true,
+          "sensitive": true,
+          "excelColumn": "Cell"
+        },
+        {
+          "fieldId": "fld_status",
+          "apiName": "status",
+          "label": "Status",
+          "type": "enum",
+          "enumOptions": ["lead", "prospect", "active", "cold"],
+          "editableByUser": true,
+          "editableByAgent": true,
+          "excelColumn": "Status"
+        },
+        {
+          "fieldId": "fld_notes",
+          "apiName": "notes",
+          "label": "Notes",
+          "type": "text",
+          "editableByUser": true,
+          "editableByAgent": true,
+          "excelColumn": "Notes"
+        },
+        {
+          "fieldId": "fld_priority",
+          "apiName": "priority",
+          "label": "Priority",
+          "type": "enum",
+          "enumOptions": ["high", "medium", "low"],
+          "editableByUser": true,
+          "editableByAgent": false,
+          "excelColumn": "Priority"
+        }
+      ]
+    },
+    {
+      "objectId": "obj_deal",
+      "apiName": "deal",
+      "label": "Deal",
+      "identity": { "displayFields": ["address"] },
+      "aliases": [
+        { "canonical": "deal", "variants": ["Listing", "Listings", "Property"] }
+      ],
+      "fields": [
+        {
+          "fieldId": "fld_address",
+          "apiName": "address",
+          "label": "Property address",
+          "type": "string",
+          "required": true,
+          "editableByUser": true,
+          "editableByAgent": true,
+          "excelColumn": "Property Address"
+        },
+        {
+          "fieldId": "fld_price",
+          "apiName": "price",
+          "label": "List price",
+          "type": "number",
+          "editableByUser": true,
+          "editableByAgent": true,
+          "excelColumn": "List Price"
+        },
+        {
+          "fieldId": "fld_stage",
+          "apiName": "stage",
+          "label": "Stage",
+          "type": "enum",
+          "enumOptions": ["showing", "offer", "under_contract", "closed", "lost"],
+          "editableByUser": true,
+          "editableByAgent": true,
+          "excelColumn": "Stage"
+        },
+        {
+          "fieldId": "fld_close_date",
+          "apiName": "close_date",
+          "label": "Close date",
+          "type": "date",
+          "editableByUser": true,
+          "editableByAgent": true,
+          "excelColumn": "Close Date"
+        },
+        {
+          "fieldId": "fld_contact",
+          "apiName": "contact",
+          "label": "Contact",
+          "type": "relationship",
+          "relationshipTargetType": "person",
+          "editableByUser": true,
+          "editableByAgent": true,
+          "excelColumn": "Client"
+        }
+      ]
+    }
+  ]
+}
