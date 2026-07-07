@@ -198,6 +198,20 @@ v2 rule: the authoring agent is built first or in parallel, never after infrastr
 - Unbuilt then, unbuilt now: the authoring agent, multi-turn conversation state, real record
   search, the pane GO/NO-GO measurements.
 
+## Addendum (2026-07-07): the sibling project already proved the v2 transport
+
+The Jarvis project's transcripts (digested separately in `jarvis-project-digest.md`) close the
+loop on this retrospective's two open threads. The Hermes API-server transport that
+`diagrams1.md` sketches was stood up and proven live in the Jarvis repo on 2026-06-20/21:
+`hermes gateway` + OpenAI-compatible API server, `POST /v1/responses` with named server-side
+conversations, async runs with SSE events and a working approval endpoint, and the operational
+gates that pure doc-reading missed (API server opt-in via `.env`, terminal off per-platform by
+default, approvals timeout human-paced at 1800s). `hermes mcp serve` was confirmed to be a
+messaging bridge that never runs the agent loop — the definitive burial of the v0 MCP-as-channel
+premise. The open data-access seam, the privilege-split question, and the eval pattern for the
+authoring agent all have working reference implementations over there. Read that digest before
+writing the first v2 ADR.
+
 ## The throughline
 
 v0 died of two early, cheap-feeling commitments made on day one: a transport mistaken for a
