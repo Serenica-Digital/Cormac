@@ -254,7 +254,7 @@ These are the corrections and rulings from the transcripts, in his framing. They
 ## What this means for Cormac (fold-in to v0-retrospective.md)
 
 1. **The v2 transport is already proven, in production form, in the sibling repo.** Everything
-   `diagrams1.md` sketches as "control plane calls Hermes API server privately" was stood up
+   `diagrams1.md` (now `.jarvis/prd/architecture.md`) sketches as "control plane calls Hermes API server privately" was stood up
    live in Jarvis on 2026-06-20/21: gateway + API server, `POST /v1/responses` with named
    conversations (server-side state = the compiled-prefix caching story), async runs + SSE +
    approvals endpoint, bearer-key auth on loopback. Cormac's control plane is "a client of a

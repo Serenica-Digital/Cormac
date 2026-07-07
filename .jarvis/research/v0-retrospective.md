@@ -55,7 +55,7 @@ rest of the tool surface.
   book of business" (issue #36), and the alternative (a real read path for the agent) was never
   proposed because the MCP tool surface was the only access path considered.
 
-**The corrected model** (already sketched in `diagrams1.md`, confirmed by the 6-18 and 6-22 Juno
+**The corrected model** (already sketched in `diagrams1.md` (now `.jarvis/prd/architecture.md`), confirmed by the 6-18 and 6-22 Juno
 calls): the control plane calls the **Hermes API server directly and privately**
 (`POST /v1/runs`, `API_SERVER_KEY`, mTLS, SSE back). Hermes is private and reachable only from
 the control plane; surfaces never touch it. MCP is at most an outward-facing surface (Claude
@@ -189,7 +189,8 @@ v2 rule: the authoring agent is built first or in parallel, never after infrastr
 ## Where it landed (2026-07-07)
 
 - `archive/` holds all of v0 at `95c65e3`; safety tags `v0`, `v0-main`, `v0-dev` on the remote.
-- `v2-architecture/` holds the two corrected diagrams (`diagrams1.md`) and nothing else. No v2
+- (Historical: `v2-architecture/` held the two corrected diagrams; on 2026-07-07 its content
+  was folded into `.jarvis/prd/` and the directory removed.) At the time of writing, no v2
   ADRs, no PRD, no code.
 - The one explicitly open architectural seam: agent data access during a run — MCP tool
   callback to the control plane vs tools bundled in the Hermes profile. Decide first.
@@ -202,7 +203,7 @@ v2 rule: the authoring agent is built first or in parallel, never after infrastr
 
 The Jarvis project's transcripts (digested separately in `jarvis-project-digest.md`) close the
 loop on this retrospective's two open threads. The Hermes API-server transport that
-`diagrams1.md` sketches was stood up and proven live in the Jarvis repo on 2026-06-20/21:
+`diagrams1.md` (now `.jarvis/prd/architecture.md`) sketches was stood up and proven live in the Jarvis repo on 2026-06-20/21:
 `hermes gateway` + OpenAI-compatible API server, `POST /v1/responses` with named server-side
 conversations, async runs with SSE events and a working approval endpoint, and the operational
 gates that pure doc-reading missed (API server opt-in via `.env`, terminal off per-platform by
