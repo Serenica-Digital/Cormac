@@ -54,12 +54,69 @@ stdlib-only Python/bash scripts **inside** the skills (ADR-0002).
   `/v1/responses` with a project-named conversation, print the reply, `--show-artifact` to
   surface any report the run wrote)
 
-**The per-project shared surface: `.jarvis/`** (ADR-0006). Tracked: `prd/` (current truth),
-`adr/` (settled forks), `research/` (topic reference, pulled on demand, never read at
-orientation). Gitignored runtime: `tmp/` — the transcript ledger + copies, `handoff.md` (the
-rolling operational-continuity record, written at review end, read first by the next orient),
-notes, plans. Canonical truth in repo + GitHub, never in Hermes memory (ADR-0004, scoped by
-0009).
+**The per-project shared surface: the `.jarvis/` contract** (ADR-0006). This and its
+tracked/gitignored split are the load-bearing design decisions — the shared working surface for
+Claude Code, Codex, Jarvis, and the developer, over the same files. Verified from disk
+2026-07-07 (both Jarvis's own dogfooded tree and the `project-init` template stamped into
+managed repos):
+
+```
+<repo>/
+├── .hermes.md                  TRACKED   Jarvis's project-local context (Hermes context file)
+├── AGENTS.md                   TRACKED   portable entrypoint for any coding agent
+├── .gitignore                  TRACKED   scaffold appends one rule: `.jarvis/tmp/`
+└── .jarvis/
+    ├── prd/                    TRACKED   current truth ("the living state of the project")
+    │   ├── README.md                     the lane's contract
+    │   ├── executive-summary.md          what this is
+    │   ├── requirements.md               durable outcomes + constraints to preserve
+    │   └── architecture.md               how it is built NOW
+    ├── adr/                    TRACKED   settled forks; numbered, never deleted;
+    │   └── README.md + NNNN-*.md         supersede/amend, don't edit history
+    ├── research/               TRACKED   reusable topic knowledge, organized by
+    │   └── README.md + <topic>.md        technology/domain not by session; pulled on
+    │                                     demand during work, never read at orientation
+    └── tmp/                    IGNORED   runtime evidence/scratch — never project truth
+        ├── README.md                     (the one tmp file that ships via template)
+        ├── handoff.md                    rolling operational-continuity record: written at
+        │                                 review end, read FIRST by the next orient;
+        │                                 machine-local, deliberately not pushed
+        ├── transcripts/                  raw session copies (claude-*.jsonl, codex-*.jsonl),
+        │                                 projected *.spine.md, index.json checkpoint ledger
+        │                                 (source_lines/reviewed_lines/status), latest.json
+        ├── notes/                        review reports, spike findings, scratch
+        ├── plans/                        draft guarded github-planning JSON (pre-apply)
+        └── graphify/                     graph output
+```
+
+The split, as a rule: **tracked `.jarvis/` = what's decided; `tmp/` = what's happening.**
+Everything a mutating stage produces (validated reports, handoffs, spines, draft plans) lands in
+`tmp/` first; only the approved apply step promotes content into the tracked lanes or GitHub.
+The template's own words: tmp "is part of the standard project contract, but it is not durable
+project memory... the entire folder is gitignored and not regarded as a primary source of
+project truth."
+
+Three deliberate consequences of the split:
+- **The read-only/mutating seam is enforced by the filesystem**: review stages may write freely
+  because they can only touch ignored paths; git diff of tracked paths is the audit of apply.
+- **handoff.md being gitignored is a choice, not an accident**: it's machine-local continuity
+  shared across parallel local sessions via the filesystem, explicitly NOT durable truth — the
+  gap a future shared memory provider would close (ADR-0009). Its known hazard: single-file
+  state that parallel sessions can clobber, and the contamination vector if a review writes
+  false beliefs into it.
+- **One known tension left open**: the transcript ledger (`index.json`) lives in ignored tmp/,
+  which is what let the first live review dismiss it as "old cruft"; Jarvis issue #17 proposes
+  promoting the ledger to a tracked, schema-validated entity while the raw `.jsonl` bodies stay
+  ignored (they embed absolute local paths and are machine-local by nature). The scenarios/
+  harness already models this split: fixture ledgers/prompts/rubrics tracked, raw `.jsonl`
+  bodies ignored.
+
+Also in the repo-level split (Jarvis's own .gitignore): `archive/` (poisoned v1) never tracked;
+`scenarios/.runs/` (disposable sandboxes) ignored; `scenarios/*/state/.jarvis/tmp/transcripts/*.jsonl`
+ignored while the rest of each frozen scenario state is tracked.
+
+Canonical truth in repo + GitHub, never in Hermes memory (ADR-0004, scoped by 0009). GitHub
+holds execution state (issues, board #6); the repo holds knowledge.
 
 **The Claude Code companion: a plugin, not commands, not subskills** (ADR-0011).
 `.claude/plugins/jarvis/` with `orient`, `digest`, `save-transcript`, `consult` skills —
