@@ -18,6 +18,7 @@ import {
 const captureBody = z.object({ text: z.string().min(1).max(4000) });
 const decisionBody = z.object({ decision: z.enum(['approve', 'reject']) });
 const publishBody = z.object({ contract: z.unknown() });
+const authoringTurnBody = z.object({ text: z.string().min(1).max(8000) });
 const workbookBody = z.object({
   name: z
     .string()
@@ -133,6 +134,24 @@ export function registerHumanRoutes(app: FastifyInstance): void {
         { workspaceId: ctx.workspaceId, actorId: ctx.userId },
         parsed,
       );
+    },
+  );
+
+  // One authoring-interview turn (ADR-0001/0004). The surface calls the
+  // control plane; the control plane drives the named conversation
+  // `authoring:<workspaceId>` on Hermes. Gated like the contract the interview
+  // produces: publish_contract.
+  app.post(
+    '/api/workspaces/:workspaceId/authoring/turn',
+    { preHandler: [authenticate, requireCapability('publish_contract')] },
+    async (request) => {
+      const ctx = requireCtx(request);
+      const { runtime } = request.server.app;
+      if (!runtime) {
+        throw new ProblemError(503, 'runtime_unavailable', 'The agent runtime is not configured');
+      }
+      const { text } = authoringTurnBody.parse(request.body);
+      return runtime.sendAuthoringTurn({ workspaceId: ctx.workspaceId, text });
     },
   );
 
