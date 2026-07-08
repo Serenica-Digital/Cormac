@@ -1,32 +1,30 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { createServiceClient } from '../apps/control-plane/src/db.js';
 import { hashAgentToken } from '../apps/control-plane/src/auth.js';
 
 /**
- * Stand up the #66 phase-5 E2E workspace: a workspace + owner, the
+ * Stand up the authoring E2E workspace: a workspace + owner, the
  * relationship-crm fixture uploaded as its workbook snapshot (note/comment
  * meta stripped — fixture hygiene, the agent must not see the planted
- * ambiguities named), and an authoring agent token minted into the Hermes
- * profile .env (derived copy; put the authority copy in Infisical when logged
- * in). Prints the workspace id and owner id; never prints the token.
+ * ambiguities named), and the authoring agent token bound to it.
  *
- * Usage: tsx scripts/seed-authoring-e2e.ts [--profile cormac-authoring] [--control-plane-url http://127.0.0.1:8787]
- * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (via infisical run or the shell).
+ * Token handling is vault-first (ADR-0005 as amended): this script runs under
+ * `infisical run`, so the slot's CORMAC_AGENT_TOKEN is already in the process
+ * env. If present, its hash is (re)bound to the new workspace — the raw value
+ * never changes, so a running gateway keeps working with no restart. Only if
+ * the slot has no token yet does the script mint one and write it to
+ * Infisical (that first time, relaunch the gateway).
+ *
+ * Usage: pnpm seed:authoring-e2e   (INFISICAL_ENV selects the slot, default dev)
+ * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, CORMAC_AGENT_TOKEN (optional).
  */
-
-function arg(name: string, fallback?: string): string | undefined {
-  const i = process.argv.indexOf(`--${name}`);
-  return i >= 0 ? process.argv[i + 1] : fallback;
-}
-
-const profile = arg('profile', 'cormac-authoring')!;
-const controlPlaneUrl = arg('control-plane-url', 'http://127.0.0.1:8787')!;
 
 const url = process.env.SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !serviceKey) {
-  console.error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY unset.');
+  console.error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY unset; run under `infisical run`.');
   process.exit(2);
 }
 const db = createServiceClient(url, serviceKey);
@@ -71,26 +69,34 @@ const snap = await db
   .single();
 if (snap.error) throw new Error(snap.error.message);
 
-// Authoring agent token -> hash in DB, raw into the profile .env only.
-const raw = randomBytes(32).toString('hex');
+// Authoring agent token: vault-first.
+let raw = process.env.CORMAC_AGENT_TOKEN;
+let minted = false;
+if (!raw) {
+  raw = randomBytes(32).toString('hex');
+  const slot = process.env.INFISICAL_ENV ?? 'dev';
+  const inf = spawnSync('infisical', ['secrets', 'set', `CORMAC_AGENT_TOKEN=${raw}`, `--env=${slot}`], {
+    stdio: ['ignore', 'ignore', 'inherit'],
+  });
+  if (inf.status !== 0) {
+    console.error(`could not write CORMAC_AGENT_TOKEN to Infisical ${slot}; aborting before any DB token row.`);
+    process.exit(1);
+  }
+  minted = true;
+}
+
+// (Re)bind the token's hash to this workspace. token_hash is unique, so an
+// upsert moves the binding from any prior seed's workspace — the raw value
+// (and therefore the running gateway's env) stays stable.
 const tok = await db
   .from('agent_tokens')
-  .insert({ workspace_id: workspaceId, agent: 'authoring', token_hash: hashAgentToken(raw) })
+  .upsert(
+    { workspace_id: workspaceId, agent: 'authoring', token_hash: hashAgentToken(raw), revoked_at: null },
+    { onConflict: 'token_hash' },
+  )
   .select('id')
   .single();
 if (tok.error) throw new Error(tok.error.message);
-
-const envPath = `${process.env.HOME}/.hermes/profiles/${profile}/.env`;
-if (!existsSync(envPath)) {
-  console.error(`WARNING: ${envPath} missing; token minted but not delivered. Revoke ${tok.data.id} or add the vars manually.`);
-} else {
-  const lines = readFileSync(envPath, 'utf8')
-    .split('\n')
-    .filter((l) => !l.startsWith('CORMAC_AGENT_TOKEN=') && !l.startsWith('CORMAC_CONTROL_PLANE_URL='));
-  while (lines.length && lines[lines.length - 1] === '') lines.pop();
-  lines.push(`CORMAC_CONTROL_PLANE_URL=${controlPlaneUrl}`, `CORMAC_AGENT_TOKEN=${raw}`, '');
-  writeFileSync(envPath, lines.join('\n'), { mode: 0o600 });
-}
 
 console.log(
   JSON.stringify(
@@ -100,8 +106,10 @@ console.log(
       ownerEmail: email,
       snapshotId: snap.data.id,
       tokenId: tok.data.id,
-      profileEnvUpdated: existsSync(envPath),
-      next: 'restart the Hermes hub so tool scripts see the new env, then drive /api/workspaces/:id/authoring/turn',
+      tokenMinted: minted,
+      next: minted
+        ? 'token newly minted into Infisical — (re)launch the gateway (pnpm agent:hub run), then drive /api/workspaces/:id/authoring/turn'
+        : 'existing vault token rebound to this workspace — no gateway restart needed; drive /api/workspaces/:id/authoring/turn',
     },
     null,
     2,

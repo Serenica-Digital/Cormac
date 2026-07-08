@@ -73,8 +73,12 @@ mechanics and cost evidence live in `.jarvis/research/authoring-spike-findings.m
 
 Bundled tools authenticate to the control plane's `/agent/*` surface with
 workspace-scoped agent tokens: hashed at rest, revocable, per-agent-kind privilege
-split (ADR-0005). Infisical is the authority copy of every secret; the Hermes profile
-`.env` is the one sanctioned derived copy.
+split (ADR-0005). Infisical holds the only copy of every secret; the gateway launches
+under `infisical run` (`pnpm agent:hub run`) so credentials reach Hermes and its tool
+subprocesses as injected process env, never through a file (ADR-0005 as amended
+2026-07-08). Billing mode rides the ADR-0006 environment: `dev` carries no
+`ANTHROPIC_API_KEY` (subscription), `staging` does (metered — the only source of cost
+evidence).
 
 ## Environments
 

@@ -18,7 +18,7 @@ if [[ ! -f "$DRAFT_ABS" ]]; then
 fi
 
 if [[ -n "${CORMAC_CONTROL_PLANE_URL:-}" ]]; then
-  : "${CORMAC_AGENT_TOKEN:?CORMAC_AGENT_TOKEN missing from the profile .env}"
+  : "${CORMAC_AGENT_TOKEN:?CORMAC_AGENT_TOKEN missing from environment (launch the gateway via pnpm agent:hub)}"
   BODY="$(python3 -c 'import json,sys; print(json.dumps({"contract": json.load(open(sys.argv[1]))}))' "$DRAFT_ABS")"
   HTTP_CODE=0
   RESPONSE="$(curl -sS -m 120 -w '\n%{http_code}' \

@@ -31,14 +31,18 @@ around it.
   it (`platform_toolsets`). Never track or sync that file; apply settings only
   as idempotent `hermes config set` / `hermes tools enable` calls. (A sync
   script clobbering it cost the spike a run's submit path.)
-- **Credentials are per-profile.** The profile `.env`
-  (`~/.hermes/profiles/<name>/.env`, chmod 600) is the runtime credential
-  source; it beats the seeded OAuth credential once the gateway restarts.
-  Without `ANTHROPIC_API_KEY` there, calls bill the claude.ai login and die on
-  its usage cap. Per ADR-0005 the same file carries the two Cormac vars
-  (`CORMAC_CONTROL_PLANE_URL`, `CORMAC_AGENT_TOKEN`) as a **derived copy**;
-  Infisical holds the authority copy. Env changes need a gateway restart to
-  reach tool scripts.
+- **Credentials arrive as injected process env; the profile holds no `.env`**
+  (ADR-0005 as amended 2026-07-08). Launch the gateway with
+  `pnpm agent:hub run` — `infisical run` injects the slot, `hub.sh` maps
+  `API_SERVER_KEY` from `HERMES_API_KEY`, and the tool subprocesses inherit
+  `CORMAC_CONTROL_PLANE_URL`/`CORMAC_AGENT_TOKEN`. Never create a profile
+  `.env`: Hermes copies file values into `os.environ`, silently overriding the
+  slot (hub.sh refuses to start while one exists). Env changes still need a
+  gateway relaunch to reach tool scripts.
+- **Billing = the launch slot** (ADR-0006): `dev` has no `ANTHROPIC_API_KEY`,
+  so calls bill the profile's seeded claude.ai login (subject to its usage
+  cap); `INFISICAL_ENV=staging pnpm agent:hub run` bills the metered key and
+  is the only source of cost evidence.
 - **`approvals.timeout` must be human-paced** for gated runs: 1800s, not the
   60s default (expiry DENIES the pending command).
 

@@ -43,9 +43,10 @@ Durable outcomes and constraints the rebuild must preserve. Each carries its ori
 - Managed Supabase/Postgres is the system of record (JSONB-hybrid, RLS, ES256/JWKS auth,
   proven in v0 and re-proven on v2 in #66 phase 7). One Supabase project per tier; the
   local CLI stack is the dev/test tier, never the system of record (ADR-0006).
-- Secrets: Infisical as authority, ESO into clusters, per-profile `.env` chmod 600 on dev
-  machines. No secrets in git (a Juno Genesis token transited this repo's history on
-  2026-07-07 and must be rotated).
+- Secrets: Infisical as sole authority (ADR-0006 environments), ESO into clusters. On dev
+  machines every secret consumer launches under `infisical run`; Hermes profiles hold no
+  `.env` (ADR-0005 as amended 2026-07-08). No secrets in git (a Juno Genesis token
+  transited this repo's history on 2026-07-07 and must be rotated).
 
 ## Open questions
 

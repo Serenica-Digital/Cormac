@@ -20,6 +20,8 @@
     "db:reset": "pnpm exec supabase db reset",
     "db:push:managed": "infisical run --env=staging -- sh -c 'test -n \"$SUPABASE_DB_URL\" || { echo \"SUPABASE_DB_URL missing from Infisical staging\" >&2; exit 1; }; pnpm exec supabase db push --db-url \"$SUPABASE_DB_URL\"'",
     "mint:agent-token": "sh -c 'infisical run --env=\"${INFISICAL_ENV:-dev}\" -- pnpm exec tsx scripts/mint-agent-token.ts \"$@\"' --",
+    "seed:authoring-e2e": "sh -c 'infisical run --env=\"${INFISICAL_ENV:-dev}\" -- pnpm exec tsx scripts/seed-authoring-e2e.ts \"$@\"' --",
+    "agent:hub": "sh -c 'infisical run --env=\"${INFISICAL_ENV:-dev}\" -- evals/workbook-authoring/profile/hub.sh \"$@\"' --",
     "check:remote": "infisical run --env=staging -- vitest run apps/control-plane/tests/isolation.test.ts"
   },
   "pnpm": {

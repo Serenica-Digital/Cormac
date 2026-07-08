@@ -58,6 +58,16 @@ session unless marked assumed.
   (ours holds no Anthropic entry at all). Without `ANTHROPIC_API_KEY` in the profile
   `.env`, calls bill the claude.ai subscription login and die on its usage cap.
   `.env` beats the seeded OAuth credential once the gateway restarts (verified).
+
+  > **Correction (2026-07-08):** the spike tested profile-`.env`-vs-seeded-OAuth
+  > precedence only, and ADR-0005 over-generalized it to "Hermes reads credentials only
+  > from the profile `.env`". False: `get_env_value` checks the process environment and
+  > falls back to the file (`hermes_cli/config.py:6366`), and `reload_env` copies file
+  > values into `os.environ` — so a profile `.env` *overrides* injected env rather than
+  > being the only source. Verified live: with no profile `.env`, the gateway and its
+  > tool scripts run entirely on `infisical run`-injected env (full turn +
+  > `read_workbook` → control plane 200), and with `ANTHROPIC_API_KEY` absent the call
+  > reached Anthropic on the subscription credential. See ADR-0005 §4 as amended.
 - **Cache visibility:** the `/v1/responses` usage block reports only
   input/output/total; the cache read split appears only in the gateway log
   (`cache=X/Y`). Cost accounting must read the logs.

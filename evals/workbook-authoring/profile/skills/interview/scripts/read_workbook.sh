@@ -11,7 +11,7 @@ set -euo pipefail
 WORKBOOK="${1:-relationship-crm}"
 
 if [[ -n "${CORMAC_CONTROL_PLANE_URL:-}" ]]; then
-  : "${CORMAC_AGENT_TOKEN:?CORMAC_AGENT_TOKEN missing from the profile .env}"
+  : "${CORMAC_AGENT_TOKEN:?CORMAC_AGENT_TOKEN missing from environment (launch the gateway via pnpm agent:hub)}"
   curl -fsS -m 60 \
     "$CORMAC_CONTROL_PLANE_URL/agent/workbook?name=$WORKBOOK" \
     -H "Authorization: Bearer $CORMAC_AGENT_TOKEN"

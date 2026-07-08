@@ -40,20 +40,35 @@ guard (`apps/control-plane/src/shared.ts`):
 An authoring token cannot submit proposals; an operations token cannot publish contracts.
 Tested explicitly (`agent-tokens.test.ts`).
 
-**4. Delivery and the secret authority chain.** Infisical (project `cormac`, env `dev`)
-holds the authority copy of every Cormac secret; the repo never holds a `.env`. The one
-sanctioned exception is the Hermes profile `.env` (`~/.hermes/profiles/<name>/.env`,
-chmod 600), because Hermes owns that file and reads credentials only from it (verified,
-authoring-spike findings). Rule: the profile `.env` is a **derived copy**; the mint script
-writes the raw token to Infisical and (with `--profile`) to the profile `.env`, never to a
-repo file and never to stdout in the clear. Consequence: one profile instance per
-(workspace, agent kind) at deploy time.
+**4. Delivery and the secret authority chain** *(amended 2026-07-08; supersedes the
+original derived-copy exception)*. Infisical (project `cormac`, ADR-0006 environments)
+holds the only copy of every Cormac secret; the repo never holds a `.env` and **neither
+does the Hermes profile**. The gateway launches under `infisical run`
+(`pnpm agent:hub run`; `evals/workbook-authoring/profile/hub.sh`), so secrets flow
+vault → process env → Hermes and its tool subprocesses. The original exception rested on
+a false premise: Hermes does not read credentials only from the profile `.env` —
+`get_env_value` checks the process environment and falls back to the file
+(`hermes_cli/config.py:6366`), and worse, `reload_env` copies file values **into**
+`os.environ`, overriding the injected slot. A profile `.env` is therefore not a derived
+copy but a silent override, and `hub.sh` refuses to start while one exists. **Verified
+live 2026-07-08** with no profile `.env` on disk: dev-slot launch → full turn +
+`read_workbook` → control plane `GET /agent/workbook` 200 with the vault-injected token.
+
+**Billing rides the ADR-0006 environments:** `staging` carries `ANTHROPIC_API_KEY`
+(metered — the only source of cost evidence); `dev` carries none, so the Anthropic
+credential chain (`ANTHROPIC_API_KEY → ANTHROPIC_TOKEN → CLAUDE_CODE_OAUTH_TOKEN`,
+`hermes_cli/auth.py:496`) falls through to the profile's seeded claude.ai subscription
+login. Both paths verified live 2026-07-08: key-less dev launch reached Anthropic on the
+subscription credential (cap-exhaustion response proves the path); staging launch
+completed a metered turn. Subscription mode is subject to the plan's usage caps.
 
 ## Consequences
 
 - Revoking an agent's access is a database write, not a redeploy.
-- The #66 bindings swap needs exactly two env vars in the profile:
-  `CORMAC_CONTROL_PLANE_URL`, `CORMAC_AGENT_TOKEN`.
+- The #66 bindings swap needs exactly two env vars in the gateway's injected
+  environment: `CORMAC_CONTROL_PLANE_URL`, `CORMAC_AGENT_TOKEN`. A newly minted token
+  takes effect at the next gateway relaunch (env is injected at launch); the E2E seed
+  avoids restarts by rebinding the existing vault token's hash to the fresh workspace.
 - Multi-workspace operation means one Hermes profile per (workspace, agent kind); a
   shared-profile design would need per-run token injection, which has no verified
   mechanism (toolsets and env freeze at conversation start).
