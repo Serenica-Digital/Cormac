@@ -44,7 +44,11 @@ HS256 refused / ES256-JWKS accepted live). Environment model settled (ADR-0006);
 secrets are Infisical-only end to end (the Hermes profile `.env` is retired) and agent
 runs are two-lane — dev = gpt-5.5 on the Codex plan for iteration, staging = metered
 Sonnet for evidence (ADR-0007, verified by a full dev-lane interview E2E with 77-97%
-prompt-cache hits). Open: phase 6 (the operations data-access seam experiment, which
-ends in an ADR), the interview-skill patches, and the human-played interview before any
-design-partner session. Next major piece under discussion: the Excel pane GO/NO-GO
+prompt-cache hits). Phase 6 settled the operations data-access seam (ADR-0008): the ops
+agent runs three typed plugin tools over `/agent/*` — no shell, no MCP callback — on a
+locked-down profile (memory and curator off), proven by the 8-utterance protocol on the
+metered lane (8/8 outcome classes, 8/8 first-submit valid, ~$0.015/capture at 82% cache,
+control-plane restart survived). Open: authoring's migration off its shell binding
+(ADR-0008 follow-up), the interview-skill patches, and the human-played interview before
+any design-partner session. Next major piece under discussion: the Excel pane GO/NO-GO
 probes (#67).

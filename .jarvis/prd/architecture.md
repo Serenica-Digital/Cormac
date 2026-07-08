@@ -38,7 +38,7 @@ flowchart TB
   supaAuth --> cp
   cp -->|"submit run + compiled context, SSE back"| hermes
   hermes -->|"LLM calls"| model
-  hermes -.->|"data access: bundled profile tools<br/>(authoring, ADR-0004); operations seam<br/>open, owned by #66"| cp
+  hermes -.->|"data access: profile tools over /agent/*<br/>(ops: typed plugin tools, ADR-0008;<br/>authoring: scripts, migration pending)"| cp
   cp -->|"the only writer"| db
 ```
 
@@ -61,15 +61,20 @@ flowchart TB
 - **System of record**: managed Supabase/Postgres, JSONB-hybrid with generated hot
   columns, RLS, ES256/JWKS.
 
-## Data-access seam (half settled)
+## Data-access seam (settled)
 
-For the **authoring agent** the seam is settled: tools bundled in the Hermes profile,
-with names and shapes that mirror the future control-plane interface (ADR-0004; the #66
-swap is bindings, not cognition). For the **operations agent** it stays open, owned by
-the walking skeleton (#66). The write gate stays a schema-enforced proposal either way;
-the boundary is authority (credentials, RLS, the validated gate), not transport. The
-authoring profile's tracked source is `evals/workbook-authoring/profile/`; spike
-mechanics and cost evidence live in `.jarvis/research/authoring-spike-findings.md`.
+Both agents reach data through the control plane's `/agent/*` API; the seam question was
+only ever how a tool call leaves the model. For the **operations agent** it is settled
+(ADR-0008): typed tools registered by the per-profile `cormac-ops` plugin
+(`evals/ops-capture/plugin/`), handlers making stateless HTTP calls — no shell, no MCP
+callback, no connection state. The ops profile is locked down to exactly those three
+tools, with memory, user profile, and curator off, and its whole procedure in SOUL.md
+(no skills toolset). The **authoring agent** still runs its ADR-0004 shell-script
+binding (`evals/workbook-authoring/profile/`); migrating it to typed tools and retiring
+its terminal is follow-up work under ADR-0008. The write gate stays a schema-enforced
+proposal either way; the boundary is authority (credentials, RLS, the validated gate),
+not transport. Evidence: `.jarvis/research/ops-seam-findings.md` and
+`.jarvis/research/authoring-spike-findings.md`.
 
 Bundled tools authenticate to the control plane's `/agent/*` surface with
 workspace-scoped agent tokens: hashed at rest, revocable, per-agent-kind privilege
