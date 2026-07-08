@@ -38,7 +38,7 @@ flowchart TB
   supaAuth --> cp
   cp -->|"submit run + compiled context, SSE back"| hermes
   hermes -->|"LLM calls"| model
-  hermes -.->|"data access: profile tools over /agent/*<br/>(ops: typed plugin tools, ADR-0008;<br/>authoring: scripts, migration pending)"| cp
+  hermes -.->|"data access: profile tools over /agent/*<br/>(ops: typed plugin tools, ADR-0008;<br/>authoring: typed plugin tools, ADR-0008)"| cp
   cp -->|"the only writer"| db
 ```
 
@@ -61,7 +61,7 @@ flowchart TB
 - **System of record**: managed Supabase/Postgres, JSONB-hybrid with generated hot
   columns, RLS, ES256/JWKS.
 
-## Data-access seam (settled for ops; authoring migration pending)
+## Data-access seam (settled for both agents)
 
 Both agents reach data through the control plane's `/agent/*` API; the seam question was
 only ever how a tool call leaves the model. For the **operations agent** it is settled
@@ -69,9 +69,13 @@ only ever how a tool call leaves the model. For the **operations agent** it is s
 (`evals/ops-capture/plugin/`), handlers making stateless HTTP calls — no shell, no MCP
 callback, no connection state. The ops profile is locked down to exactly those three
 tools, with memory, user profile, and curator off, and its whole procedure in SOUL.md
-(no skills toolset). The **authoring agent** still runs its ADR-0004 shell-script
-binding (`evals/workbook-authoring/profile/`); migrating it to typed tools and retiring
-its terminal is follow-up work under ADR-0008. The write gate stays a schema-enforced
+(no skills toolset). The **authoring agent** now runs the same shape (ADR-0008, landed
+2026-07-08, PR #75): a typed `cormac-authoring` plugin (`read_workbook`,
+`submit_contract`) over `/agent/*`, terminal and all default toolsets off. It **keeps**
+the skills toolset — the interview is a skill — and neutralizes self-modification with
+`curator.enabled false` + `skills.write_approval true` + `skills opt-out --remove`,
+where the injection-facing ops agent takes the stronger posture of disabling skills
+entirely. The write gate stays a schema-enforced
 proposal either way; the boundary is authority (credentials, RLS, the validated gate),
 not transport. Evidence: `.jarvis/research/ops-seam-findings.md` and
 `.jarvis/research/authoring-spike-findings.md`.

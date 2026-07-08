@@ -80,3 +80,22 @@ session unless marked assumed.
   not measured; the operations agent (#66) owns that comparison.
 - `hermes chat` iteration lane was never exercised (all runs rode the API server); the
   brief's assumption that it behaves identically is untested.
+
+## Hardening pass mechanics (2026-07-08, verified — Hermes v0.17 source, NousResearch docs, live gateway logs; PR #75)
+
+Recorded so no future profile-hardening pass re-derives them.
+
+- **The skills toolset is three tools:** `skills_list`, `skill_view`, `skill_manage`.
+  `hermes tools enable/disable` is toolset-level, all-or-nothing: there is no native way
+  to keep `skill_view` while dropping `skill_manage`.
+- **`curator.enabled false` kills only the background curator.** In-session
+  `skill_manage` remains callable; curator-off alone does not close self-modification.
+- **`skills.write_approval true` is what gates it:** every skill write is staged under
+  `~/.hermes/pending/skills/` for out-of-band review, non-blocking to the session.
+- **Bundled-skill removal:** `hermes skills opt-out --remove` strips installed bundled
+  skills; `profile create --no-skills` starts a profile without them.
+- **Toolset lockdown is also an economics lever:** the default api_server toolset
+  schemas cost ~9-10k input tokens per call. Disabling everything but the
+  `cormac-authoring` plugin + skills dropped the hardened interview to ~$0.12 at 96-99%
+  steady-state cache (86k input total, 10.6k uncached, 4.5k output), ~4x under the
+  ~$0.50 spike baseline.

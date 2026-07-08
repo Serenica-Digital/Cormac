@@ -73,9 +73,33 @@ accepted the runtime coupling (we do not require the tools to be runtime-agnosti
 - Toolset lockdown verified from the CLI's own listing: the profile's api_server surface
   is the three plugin tools and nothing else.
 
+## Amendment (2026-07-08): authoring landed on typed tools, keeping a hardened skills toolset
+
+The authoring migration named in Consequences below is done (PR #75): the
+`cormac-authoring` plugin (`read_workbook`, `submit_contract`) over `/agent/*`, terminal
+and every other default toolset off, memory/user-profile/curator off. One deliberate
+divergence from the ops posture: **authoring keeps the skills toolset.** Rationale:
+
+- Hermes `tools enable/disable` is toolset-level; there is no native way to keep read
+  (`skill_view`) while dropping write (`skill_manage`).
+- The interview procedure genuinely is a skill the agent reads each turn; folding it into
+  SOUL.md (the ops pattern) was rejected as heavier and unnecessary once the hardened
+  pattern was verified.
+- Self-modification is closed instead with `curator.enabled false` +
+  `skills.write_approval true` (stages any in-session `skill_manage` write for
+  out-of-band review) + `skills opt-out --remove` (no bundled skills). Verified live:
+  no skill drift, zero staged writes after a full metered interview.
+
+The asymmetry is deliberate: the injection-facing ops agent takes the minimal surface
+(no skills at all); authoring (trusted owner, supervised session) keeps the skill
+mechanism hardened. Metered re-proof of the hardened profile: first-submit valid,
+~$0.12/interview at 96-99% steady-state cache (the lockdown halved per-call input by
+stripping ~9-10k tokens of default toolset schemas).
+
 ## Consequences
 
-- **Authoring migrates off the shell as follow-up work.** The security argument is weaker
+- **Authoring migrates off the shell as follow-up work.** *(Done 2026-07-08; see the
+  amendment above.)* The security argument is weaker
   there (trusted owner, supervised session) but the end state is both agents on typed
   tools with terminal disabled; rides the authoring-profile hardening issue together with
   disabling its curator/memory (the still-open incident) and the ADR-0004 skill patches.

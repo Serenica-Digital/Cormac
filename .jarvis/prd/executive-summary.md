@@ -33,8 +33,8 @@ that is the bet the product lives or dies on.
 ## Current stage (2026-07-08)
 
 Keystone GO (ADR-0004) and the #66 walking skeleton built. Phases 1-2 on dev (pnpm
-monorepo, @cormac/contract extracted); phases 3-5 proven and riding the #69→#71 PR
-stack into dev: v2 migrations + integration harness (31/31 on the local stack), the
+monorepo, @cormac/contract extracted); phases 3-5 merged to `dev` (#69→#71): v2
+migrations + integration harness (31/31 on the local stack), the
 Fastify control plane (pipeline, human `/api/*` and agent `/agent/*` surfaces,
 workspace-scoped agent tokens per ADR-0005), the ADR-0001 runtime module, and the
 authoring bindings swap, proven by a live 14-turn agent-played interview publishing
@@ -49,7 +49,12 @@ agent runs three typed plugin tools over `/agent/*` — no shell, no MCP callbac
 locked-down profile (memory and curator off), proven by the 8-utterance protocol on the
 metered lane (8/8 outcome classes, 8/8 first-submit valid, ~$0.015/capture at 82% cache,
 control-plane restart survived; one known behavior gap, relative numeric updates, is
-contained by the review queue). Open: authoring's migration off its shell binding
-(ADR-0008 follow-up), the interview-skill patches, and the human-played interview before
-any design-partner session. Next major piece under discussion: the Excel pane GO/NO-GO
-probes (#67).
+contained by the review queue). Authoring hardening landed (#72/PR #75): the agent
+migrated off its shell binding to typed `cormac-authoring` plugin tools, terminal off,
+curator/memory off, `skills.write_approval` on, three ADR-0004 interview patches
+applied; metered re-proof holds (first-submit valid, ~$0.12/interview at 96-99%
+steady-state cache, ~4x under the ~$0.50 baseline; the lockdown itself halved per-call
+input). Both product agents now run the ADR-0008 typed-tool pattern. Open: the
+human-played interview (ADR-0004 criterion 3), owner-deferred until an interview UI
+exists (candidate vehicle #67); a skill-wording tightening pass from two graded metered
+deviations. Next major piece under discussion: the Excel pane GO/NO-GO probes (#67).
