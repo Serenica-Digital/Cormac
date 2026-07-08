@@ -40,7 +40,11 @@ workspace-scoped agent tokens per ADR-0005), the ADR-0001 runtime module, and th
 authoring bindings swap, proven by a live 14-turn agent-played interview publishing
 through the real gate (interview economics hold: ~$0.50 at high cache hit, per the
 spike baseline). Phase 7 proved the skeleton on managed Supabase (isolation 7/7,
-HS256 refused / ES256-JWKS accepted live). Environment model settled (ADR-0006).
-Open: phase 6 (the operations data-access seam experiment, which ends in an ADR),
-the interview-skill patches, and the human-played interview before any design-partner
-session. Next major piece under discussion: the Excel pane GO/NO-GO probes (#67).
+HS256 refused / ES256-JWKS accepted live). Environment model settled (ADR-0006);
+secrets are Infisical-only end to end (the Hermes profile `.env` is retired) and agent
+runs are two-lane — dev = gpt-5.5 on the Codex plan for iteration, staging = metered
+Sonnet for evidence (ADR-0007, verified by a full dev-lane interview E2E with 77-97%
+prompt-cache hits). Open: phase 6 (the operations data-access seam experiment, which
+ends in an ADR), the interview-skill patches, and the human-played interview before any
+design-partner session. Next major piece under discussion: the Excel pane GO/NO-GO
+probes (#67).
