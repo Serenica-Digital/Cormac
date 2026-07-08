@@ -1,0 +1,19 @@
+{
+  "name": "@cormac/control-plane",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The Cormac control plane: the trust layer and the only writer of business records.",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cormac/contract": "workspace:*",
+    "@supabase/supabase-js": "^2.47.10",
+    "jose": "^5.9.6",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8"
+  }
+}
