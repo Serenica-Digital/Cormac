@@ -22,11 +22,12 @@ const OBJECT_SYNONYMS: string[][] = [
 ];
 const FIELD_SYNONYMS: string[][] = [
   ['name', 'fullname', 'clientname', 'contactname', 'organizationname', 'companyname', 'firmname'],
+  ['contact', 'maincontact', 'contactperson', 'pointofcontact'],
   ['notes', 'note', 'comments', 'comment'],
   ['organization', 'company', 'firm', 'account'],
   ['datelastcontacted', 'lastcontacted', 'lastcontactdate', 'lastcontact'],
   ['followupdate', 'followup', 'nextfollowup', 'nextfollowupdate'],
-  ['relationshiplead', 'lead', 'owner', 'internalowner'],
+  ['relationshiplead', 'relationshipowner', 'lead', 'owner', 'internalowner'],
 ];
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');

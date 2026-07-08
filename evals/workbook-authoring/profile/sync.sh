@@ -12,10 +12,11 @@ if [[ ! -d "$DEST" ]]; then
   exit 1
 fi
 
+# config.yaml is deliberately NOT synced: it is machine-generated, and Hermes
+# mutates it (e.g. `tools enable`). Settings are applied via setup.sh instead.
 cp "$SRC/SOUL.md" "$DEST/SOUL.md"
-cp "$SRC/config.yaml" "$DEST/config.yaml"
 mkdir -p "$DEST/skills"
 rm -rf "$DEST/skills/interview"
 cp -R "$SRC/skills/interview" "$DEST/skills/interview"
 
-echo "synced SOUL.md, config.yaml, skills/interview -> $DEST"
+echo "synced SOUL.md, skills/interview -> $DEST"

@@ -33,14 +33,22 @@ Your terminal already runs in the spike workspace; use these paths as written.
    whatever order the conversation makes natural:
    - the details worth tracking (fields), their kind (dates, numbers, fixed choices,
      free text), and which are must-have
-   - fixed-choice values, from the workbook's actual contents plus what they say
-   - how they refer to a record when they talk about it (identity)
+   - fixed-choice values, from the workbook's actual contents plus what they say. When
+     a column shows only a few distinct values (an owner column, a category), ask
+     whether that set is closed ("is it always one of these, or could it be anything?")
+     rather than defaulting to free text
+   - how they refer to a record when they talk about it (identity). Record what they
+     actually say, including the backup ("by name, firm if I forget") — the backup
+     belongs in the identity fields too
    - other names the thing goes by day to day (aliases)
-   - for each detail: may the assistant update it on its own, or only suggest? Is it
-     sensitive?
+   - for each detail: may the assistant update it on its own, or only suggest?
+   - sensitivity, asked explicitly at least once per object, in plain terms ("anything
+     here you'd rather not have show up in a text or a shared screen?"). Do not skip
+     this and do not default everything to not sensitive
    Checkpoint when each object feels settled; recap it back in plain language.
 5. **Review (checkpoint).** Walk the whole contract back in plain language: every object,
-   its details, choices, identity, aliases, and the assistant's write permissions.
+   its details, choices, identity, aliases, the assistant's write permissions, and what
+   is marked sensitive.
    Anything they correct, fix and re-recap. Only on clear agreement, move to submit.
 6. **Submit.** Build the JSON, submit, run the repair loop silently if needed, then
    confirm to the client in one plain sentence what was published.
