@@ -1,0 +1,41 @@
+{
+  "name": "cormac",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Cormac: a contract-first CRM agent platform, by Serenica Digital. v2 rebuild; v0 lives under archive/.",
+  "type": "module",
+  "packageManager": "pnpm@10.10.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "infisical run --env=dev -- vitest run",
+    "test:watch": "infisical run --env=dev -- vitest",
+    "db:start": "pnpm exec supabase start",
+    "db:stop": "pnpm exec supabase stop",
+    "db:reset": "pnpm exec supabase db reset",
+    "db:push:managed": "infisical run --env=dev -- sh -c 'test -n \"$SUPABASE_DB_URL\" || { echo \"SUPABASE_DB_URL missing from Infisical dev\" >&2; exit 1; }; pnpm exec supabase db push --db-url \"$SUPABASE_DB_URL\"'",
+    "check:remote": "infisical run --env=dev -- vitest run apps/control-plane/tests/isolation.test.ts"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "supabase"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.5",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "supabase": "^2.2.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.19.1",
+    "vitest": "^2.1.8"
+  }
+}

@@ -1,3 +1,17 @@
 
 # Jarvis runtime evidence/scratch (not durable project truth)
 .jarvis/tmp/
+
+# Dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+
+# Secrets never live in the repo; Infisical is the authority (see .jarvis/prd/requirements.md).
+.env
+.env.*
+
+# Supabase CLI local-stack scratch
+supabase/.branches/
+supabase/.temp/
