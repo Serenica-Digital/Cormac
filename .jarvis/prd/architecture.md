@@ -61,7 +61,7 @@ flowchart TB
 - **System of record**: managed Supabase/Postgres, JSONB-hybrid with generated hot
   columns, RLS, ES256/JWKS.
 
-## Data-access seam (settled)
+## Data-access seam (settled for ops; authoring migration pending)
 
 Both agents reach data through the control plane's `/agent/*` API; the seam question was
 only ever how a tool call leaves the model. For the **operations agent** it is settled

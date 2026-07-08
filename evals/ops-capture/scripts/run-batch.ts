@@ -77,6 +77,7 @@ for (const utterance of utterances) {
   process.stderr.write(`>> ${utterance.id}: ${utterance.text}\n`);
   const started = Date.now();
   let record: RunRecord;
+  let httpStatus = 0;
   try {
     const res = await fetch(`${controlPlane}/api/workspaces/${workspaceId}/capture`, {
       method: 'POST',
@@ -84,6 +85,7 @@ for (const utterance of utterances) {
       body: JSON.stringify({ text: utterance.text }),
       signal: AbortSignal.timeout(600_000),
     });
+    httpStatus = res.status;
     const body = (await res.json()) as Record<string, unknown>;
     record = {
       id: utterance.id,
@@ -101,14 +103,16 @@ for (const utterance of utterances) {
           }
         : { error: body }),
     };
-    // Pull the held payload so the judge sees the actual changes.
+    // Pull the held proposal (the proposalsView shape: changes with
+    // current-value context, notes, uncertain) so the judge sees what a
+    // reviewer would see.
     if (res.ok && body.proposalId) {
       const proposals = await fetch(
         `${controlPlane}/api/workspaces/${workspaceId}/proposals?status=pending`,
         { headers: { authorization: `Bearer ${token}` } },
       );
       if (proposals.ok) {
-        const list = (await proposals.json()) as { proposals: { id: string; payload?: unknown; changes?: unknown }[] };
+        const list = (await proposals.json()) as { proposals: { id: string }[] };
         record.payload = list.proposals.find((p) => p.id === body.proposalId);
       }
     }
@@ -118,7 +122,7 @@ for (const utterance of utterances) {
       text: utterance.text,
       expect: utterance.expect,
       wallMs: Date.now() - started,
-      httpStatus: 0,
+      httpStatus,
       error: err instanceof Error ? err.message : String(err),
     };
   }

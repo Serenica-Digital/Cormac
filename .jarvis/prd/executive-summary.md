@@ -48,7 +48,8 @@ prompt-cache hits). Phase 6 settled the operations data-access seam (ADR-0008): 
 agent runs three typed plugin tools over `/agent/*` — no shell, no MCP callback — on a
 locked-down profile (memory and curator off), proven by the 8-utterance protocol on the
 metered lane (8/8 outcome classes, 8/8 first-submit valid, ~$0.015/capture at 82% cache,
-control-plane restart survived). Open: authoring's migration off its shell binding
+control-plane restart survived; one known behavior gap, relative numeric updates, is
+contained by the review queue). Open: authoring's migration off its shell binding
 (ADR-0008 follow-up), the interview-skill patches, and the human-played interview before
 any design-partner session. Next major piece under discussion: the Excel pane GO/NO-GO
 probes (#67).
