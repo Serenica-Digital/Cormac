@@ -1,6 +1,7 @@
 # Excel pane probe plan (#67 stage 1)
 
-> **Status:** plan · **Written:** 2026-07-08 · **Companion:**
+> **Status:** plan, deferred (ADR-0010 sequences the web app first; this runs when the
+> pane's turn comes) · **Written:** 2026-07-08 · **Companion:**
 > `microsoft-excel-integration.md` (the platform facts), ADR-0009 (the GO/NO-GO record
 > this plan fills). v0 references: `archive/docs/adr/030` (the unfilled results table),
 > `archive/docs/adr/031` (the pane architecture), `archive/docs/runbooks/pane-sideload.md`

@@ -1,7 +1,9 @@
 # 0009 — Excel pane GO/NO-GO (skeleton; decided from live probe results only)
 
-- **Status:** Proposed (skeleton; the decision is written once the results table below
-  is filled from live runs)
+- **Status:** Proposed, deferred (skeleton; the decision is written once the results
+  table below is filled from live runs. ADR-0010 sequences the web app first; these
+  probes run when the pane's turn comes. Kill criteria and plan stay binding as
+  written.)
 - **Builds on:** ADR-0002 (gates cleared: keystone GO'd, skeleton built), ADR-0003 (the
   pilot's stable-domain/TLS prerequisite), ADR-0004 (the interview this pane will
   eventually host)

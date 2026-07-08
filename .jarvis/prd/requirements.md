@@ -26,9 +26,14 @@ Durable outcomes and constraints the rebuild must preserve. Each carries its ori
 - Sub-$40/seat price ceiling for the target segment. AI inference is the dominant variable
   cost, so per-run cost and caching are first-class design inputs (v0 measured: the
   compiled cached prefix cut runs from ~21s / $0.045 to ~8-15s / $0.03).
-- Excel task pane is the primary client surface; web is admin/trust/fallback; SMS is field
-  capture. The pane's manifest pins its domain near-permanently, so a stable custom domain
-  plus TLS is a deployment prerequisite, not a later step.
+- The web app is the first client surface built (ADR-0010): interview, capture, review
+  queue, records, per-record timeline. It renders tables but never rebuilds a
+  spreadsheet grid. The Excel task pane is the flagship enhancement for tenants that can
+  install add-ins; an unsized share of the segment cannot (verified: GoDaddy-resold
+  tenants block every add-in path), so tenant qualification (reseller, SKU, desktop vs
+  web) is routine at sales time. SMS is field capture. When the pane ships, its manifest
+  pins its domain near-permanently, so a stable custom domain plus TLS is a pane-track
+  prerequisite (ADR-0009/#67, deferred).
 - The authoring interview is consultative and free-form with checkpoints (structure
   agreed, fill, review), not batched question rounds. One-shot contract authoring is
   proven insufficient on real workbooks (v0 spike: invalid and unstable across runs).

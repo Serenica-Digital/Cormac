@@ -7,7 +7,7 @@ Excel task pane, reading the open workbook directly, to lift it into a published
 semantic contract: their objects, fields, identity rules, aliases, and permissions. That
 contract is the product's keystone IP and the shared source of truth. Day to day, an
 operations agent takes natural-language input from whatever door the client prefers (the
-Excel pane first, then web, SMS, and email) and turns it into proposed changes: "just closed
+web app first, then the Excel pane, SMS, and email) and turns it into proposed changes: "just closed
 the deal with Carter, met his partner Susan" becomes structured record updates the user
 confirms with a tap. Every mutation flows through one pipeline: capture, proposal against
 the contract, confirmation per the workspace's trust policy, atomic apply, append-only
@@ -56,5 +56,9 @@ applied; metered re-proof holds (first-submit valid, ~$0.12/interview at 96-99%
 steady-state cache, ~4x under the ~$0.50 baseline; the lockdown itself halved per-call
 input). Both product agents now run the ADR-0008 typed-tool pattern. Open: the
 human-played interview (ADR-0004 criterion 3), owner-deferred until an interview UI
-exists (candidate vehicle #67); a skill-wording tightening pass from two graded metered
-deviations. Next major piece under discussion: the Excel pane GO/NO-GO probes (#67).
+exists (vehicle: the web prototype, ADR-0010); a skill-wording tightening pass from two
+graded metered deviations. Next major piece: the web-app prototype (ADR-0010; the first
+client surface: interview, capture, review queue, records, per-record timeline). The
+Excel pane probes (#67, ADR-0009) are deferred to the pane's turn after a verified
+add-in distribution hole (GoDaddy-resold tenants) repositioned the pane as a flagship
+enhancement rather than the primary surface.
