@@ -19,6 +19,7 @@
     "db:stop": "pnpm exec supabase stop",
     "db:reset": "pnpm exec supabase db reset",
     "db:push:managed": "infisical run --env=dev -- sh -c 'test -n \"$SUPABASE_DB_URL\" || { echo \"SUPABASE_DB_URL missing from Infisical dev\" >&2; exit 1; }; pnpm exec supabase db push --db-url \"$SUPABASE_DB_URL\"'",
+    "mint:agent-token": "infisical run --env=dev -- tsx scripts/mint-agent-token.ts",
     "check:remote": "infisical run --env=dev -- vitest run apps/control-plane/tests/isolation.test.ts"
   },
   "pnpm": {
