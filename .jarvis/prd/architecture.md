@@ -75,6 +75,14 @@ workspace-scoped agent tokens: hashed at rest, revocable, per-agent-kind privile
 split (ADR-0005). Infisical is the authority copy of every secret; the Hermes profile
 `.env` is the one sanctioned derived copy.
 
+## Environments
+
+One Supabase project per tier, with the Infisical environment slug as the single switch
+(ADR-0006): `dev` = the local CLI stack (tests, everyday dev), `staging` = the managed
+project (remote proofs, later the deployment rehearsal target), `prod` = reserved for the
+production project at deployment time. `APP_ENV` rides in each vault environment, so the
+prod auth posture flips with the environment, never by hand.
+
 ## Deployment shape
 
 Plain OCI images + Helm charts; local proof on a kind rehearsal cluster (mkcert TLS,
