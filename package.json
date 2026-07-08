@@ -11,6 +11,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json && pnpm --filter @cormac/web typecheck",
     "web:dev": "sh -c 'infisical run --env=\"${INFISICAL_ENV:-dev}\" -- pnpm --filter @cormac/web dev \"$@\"' --",
+    "cp:dev": "infisical run --env=dev -- pnpm --filter @cormac/control-plane dev",
+    "cp:dev:ops": "infisical run --env=dev -- sh -c 'HERMES_URL=http://127.0.0.1:8645 pnpm --filter @cormac/control-plane dev'",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

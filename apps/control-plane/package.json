@@ -5,6 +5,7 @@
   "type": "module",
   "description": "The Cormac control plane: the trust layer and the only writer of business records.",
   "scripts": {
+    "dev": "tsx src/index.ts",
     "test": "vitest run"
   },
   "dependencies": {

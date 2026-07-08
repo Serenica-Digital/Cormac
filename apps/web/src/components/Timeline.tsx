@@ -28,13 +28,17 @@ export function Timeline({ entries }: { entries: TimelineEntry[] }) {
         <li key={e.id} className="relative animate-rise">
           <span
             className={`absolute -left-[30px] top-1 size-2.5 rounded-full ring-4 ring-paper ${
-              e.action === 'create' ? 'bg-ledger-600' : 'bg-sky-600'
+              e.action === 'record_created' ? 'bg-ledger-600' : 'bg-sky-600'
             }`}
             aria-hidden
           />
           <div className="flex flex-wrap items-center gap-2 text-xs text-stone-400">
             <span className="font-medium text-stone-600">
-              {e.action === 'create' ? 'Record created' : 'Record updated'}
+              {e.action === 'record_created'
+                ? 'Record created'
+                : e.action === 'record_updated'
+                  ? 'Record updated'
+                  : e.action.replaceAll('_', ' ')}
             </span>
             <span>·</span>
             <span>{formatWhen(e.at)}</span>

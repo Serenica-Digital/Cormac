@@ -91,7 +91,8 @@ describe.skipIf(!env.ready)('web read routes', () => {
       workspace_id: workspaceId,
       actor_type: 'user',
       actor_id: userId,
-      action: 'create',
+      // The real pipeline's action string (migration 0003 apply_proposal).
+      action: 'record_created',
       object_api_name: 'person',
       record_id: recordId,
       before: null,
@@ -151,7 +152,7 @@ describe.skipIf(!env.ready)('web read routes', () => {
     expect(body.record.data).toMatchObject({ name: 'Carter' });
     expect(body.entries).toHaveLength(1);
     expect(body.entries[0]).toMatchObject({
-      action: 'create',
+      action: 'record_created',
       actorType: 'user',
       utterance: 'Just closed the deal with Carter',
       channel: 'web',
