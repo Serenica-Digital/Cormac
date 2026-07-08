@@ -57,3 +57,39 @@ named conversations per ADR-0001. Contracts and per-run judgment notes in
 Apply the three skill patches (mandatory per-object probe list with a states/stages
 question; closed-set-to-enum encoding rule; non-skippable final review) and run one
 human-played interview.
+
+> 2026-07-08: the three patches are applied and re-proven metered (below). The
+> human-played run is deferred by the owner until an interview UI exists; it remains
+> the gate before any design-partner session.
+
+## Hardened-profile re-proof — 2026-07-08 (metered Sonnet, ADR-0007 mixed mode)
+
+One agent-played interview on the PR #75 profile: typed plugin tools (`read_workbook`,
+`submit_contract` over `/agent/*`), no terminal, curator/memory off, skill patches
+applied. Full product path: human JWT → `/authoring/turn` → gateway → plugin tools →
+publish gate. Same fixture, same client persona.
+
+| Run | Turns | Valid | Tool calls | Cost | Cache |
+|-----|-------|-------|------------|------|-------|
+| hardened-1 | 9 | first submit | exactly 2 (`read_workbook`, `submit_contract`) | ~$0.12 | 87% overall, 96–99% steady-state |
+
+- **Validity: PASS.** First-submit valid through the real gate; repair loop never fired.
+  `contract_versions` v1 active, `parseContract` valid, 3 objects.
+- **Economics: ~4x under the spike baseline** (~$0.12 vs ~$0.50). The lockdown removed
+  the default toolset schemas from every call (~17–20k input tokens/call in the spike,
+  ~8.6–12.7k now); Anthropic cache-read pricing does the rest. 86k input tokens total,
+  10.6k uncached, 4.5k output.
+- **Patches, honestly graded:** closed-set→enum held (`relationship_lead` enum
+  `["Avi","Dana"]` on all objects; free-form coverage correctly left `string`). The
+  lifecycle probe fired once (operators) and generalized from the client's "no stages"
+  pushback rather than re-asking per object — defensible conversationally, short of the
+  skill's per-object letter. The full review checkpoint ran unprompted; a last-minute
+  client correction (sport → "Sport or League") was applied correctly in the published
+  contract but submitted without the re-recap the skill requires, under "call in five"
+  pressure. Both deviations are elicitation-sharpness, not validity or trust-rule
+  failures.
+- **Notably strong:** the agent caught that capital partners are firm-first identity
+  (reversed from the other objects) and elicited it; flagged the combined-names row as a
+  glossary entry instead of inventing records.
+- **Hardening held:** installed skill byte-identical to tracked source after the run;
+  no staged skill writes.
