@@ -11,5 +11,8 @@
     "scripts/**/*.ts",
     "evals/*/scripts/**/*.ts",
     "evals/*/src/**/*.ts"
-  ]
+  ],
+  // apps/web is a browser package (JSX, DOM libs, bundler resolution); it
+  // typechecks with its own tsconfig, chained from the root typecheck script.
+  "exclude": ["apps/web"]
 }

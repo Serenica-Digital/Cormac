@@ -1,0 +1,34 @@
+{
+  "name": "@cormac/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The Cormac web app: the first client surface (ADR-0010). A thin adapter over the control-plane pipeline; renders tables, never a spreadsheet grid.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cormac/contract": "workspace:*",
+    "@supabase/supabase-js": "^2.47.10",
+    "@tanstack/react-query": "^5.62.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router": "^7.1.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@testing-library/react": "^16.1.0",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.1",
+    "tailwindcss": "^4.0.0",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
+}

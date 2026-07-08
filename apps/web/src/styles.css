@@ -1,0 +1,68 @@
+@import 'tailwindcss';
+
+/*
+ * Cormac's ledger aesthetic: warm paper, ink, one deep ledger green.
+ * Fraunces (serif, for the wordmark and page titles) over IBM Plex Sans for
+ * the working surface; IBM Plex Mono wherever a value is quoted verbatim.
+ */
+@theme {
+  --font-display: 'Fraunces', ui-serif, Georgia, serif;
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  --color-paper: #faf9f7;
+  --color-ink: #211d19;
+
+  --color-ledger-50: #f2f7f3;
+  --color-ledger-100: #e0ede3;
+  --color-ledger-200: #c2dbc9;
+  --color-ledger-300: #97c0a4;
+  --color-ledger-400: #679f7b;
+  --color-ledger-500: #45825c;
+  --color-ledger-600: #326847;
+  --color-ledger-700: #29533a;
+  --color-ledger-800: #224330;
+  --color-ledger-900: #1d3728;
+}
+
+::selection {
+  background: var(--color-ledger-200);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+.animate-rise {
+  animation: rise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.thinking-dot {
+  animation: dot 1.2s infinite;
+}
+.thinking-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.thinking-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}

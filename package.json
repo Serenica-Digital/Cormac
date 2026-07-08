@@ -9,7 +9,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json && pnpm --filter @cormac/web typecheck",
+    "web:dev": "sh -c 'infisical run --env=\"${INFISICAL_ENV:-dev}\" -- pnpm --filter @cormac/web dev \"$@\"' --",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
