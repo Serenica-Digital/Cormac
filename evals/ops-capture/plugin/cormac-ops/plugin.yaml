@@ -1,0 +1,14 @@
+name: cormac-ops
+version: 0.1.0
+description: >-
+  The Cormac operations agent's tool surface: search_records, get_record,
+  submit_proposal, each a typed tool whose handler calls the control plane's
+  /agent/* API with the workspace-scoped agent token (ADR-0005). Installed
+  per-profile on purpose (~/.hermes/profiles/cormac-operations/plugins/, via
+  profile/sync.sh): only the ops profile's gateway ever loads it.
+author: Serenica Digital
+manifest_version: 1
+provides_tools:
+  - search_records
+  - get_record
+  - submit_proposal

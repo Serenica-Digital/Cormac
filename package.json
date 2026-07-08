@@ -18,9 +18,14 @@
     "db:start": "pnpm exec supabase start",
     "db:stop": "pnpm exec supabase stop",
     "db:reset": "pnpm exec supabase db reset",
-    "db:push:managed": "infisical run --env=dev -- sh -c 'test -n \"$SUPABASE_DB_URL\" || { echo \"SUPABASE_DB_URL missing from Infisical dev\" >&2; exit 1; }; pnpm exec supabase db push --db-url \"$SUPABASE_DB_URL\"'",
-    "mint:agent-token": "infisical run --env=dev -- tsx scripts/mint-agent-token.ts",
-    "check:remote": "infisical run --env=dev -- vitest run apps/control-plane/tests/isolation.test.ts"
+    "db:push:managed": "infisical run --env=staging -- sh -c 'test -n \"$SUPABASE_DB_URL\" || { echo \"SUPABASE_DB_URL missing from Infisical staging\" >&2; exit 1; }; pnpm exec supabase db push --db-url \"$SUPABASE_DB_URL\"'",
+    "mint:agent-token": "sh -c 'infisical run --env=\"${INFISICAL_ENV:-dev}\" -- pnpm exec tsx scripts/mint-agent-token.ts \"$@\"' --",
+    "seed:authoring-e2e": "sh -c 'infisical run --env=\"${INFISICAL_ENV:-dev}\" -- pnpm exec tsx scripts/seed-authoring-e2e.ts \"$@\"' --",
+    "seed:ops-e2e": "sh -c 'infisical run --env=\"${INFISICAL_ENV:-dev}\" -- pnpm exec tsx scripts/seed-ops-e2e.ts \"$@\"' --",
+    "agent:hub": "sh -c 'infisical run --env=\"${INFISICAL_ENV:-dev}\" -- evals/workbook-authoring/profile/hub.sh \"$@\"' --",
+    "ops:hub": "sh -c 'infisical run --env=\"${INFISICAL_ENV:-dev}\" -- evals/ops-capture/profile/hub.sh \"$@\"' --",
+    "ops:batch": "sh -c 'infisical run --env=dev -- pnpm exec tsx evals/ops-capture/scripts/run-batch.ts \"$@\"' --",
+    "check:remote": "infisical run --env=staging -- vitest run apps/control-plane/tests/isolation.test.ts"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -32,6 +37,7 @@
     "@eslint/js": "^9.17.0",
     "@types/node": "^22.10.5",
     "eslint": "^9.17.0",
+    "jose": "^5.9.6",
     "prettier": "^3.4.2",
     "supabase": "^2.2.1",
     "tsx": "^4.19.2",

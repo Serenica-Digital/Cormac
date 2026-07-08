@@ -1,16 +1,28 @@
 #!/usr/bin/env bash
 # read_workbook — the authoring agent's view of the client workbook.
-# Spike binding: serves a detection profile from fixture/. The production
-# implementation is a control-plane read with the same name and output shape
-# (#66); only this file changes at the swap.
+# Two bindings, same name and output shape (ADR-0004: the swap is bindings,
+# not cognition):
+#   - HTTP (production, #66): CORMAC_CONTROL_PLANE_URL set -> the control
+#     plane serves the workspace's latest detection profile; the agent token
+#     is the tenant binding (ADR-0005).
+#   - Fixture (offline iteration): serves a detection profile from fixture/.
 set -euo pipefail
 
 WORKBOOK="${1:-relationship-crm}"
+
+if [[ -n "${CORMAC_CONTROL_PLANE_URL:-}" ]]; then
+  : "${CORMAC_AGENT_TOKEN:?CORMAC_AGENT_TOKEN missing from environment (launch the gateway via pnpm agent:hub)}"
+  curl -fsS -m 60 \
+    "$CORMAC_CONTROL_PLANE_URL/agent/workbook?name=$WORKBOOK" \
+    -H "Authorization: Bearer $CORMAC_AGENT_TOKEN"
+  exit 0
+fi
 
 # The workspace is wherever fixture/ lives: the terminal cwd when the profile is
 # run as configured, else the repo checkout this script belongs to (covers the
 # copy synced into ~/.hermes, which has no fixtures next to it).
 resolve_ws() {
+  if [[ -d "$PWD/evals/workbook-authoring/fixture" ]]; then echo "$PWD/evals/workbook-authoring"; return; fi
   if [[ -d "$PWD/fixture" ]]; then echo "$PWD"; return; fi
   local here; here="$(cd "$(dirname "$0")/../../../.." && pwd)"
   if [[ -d "$here/fixture" ]]; then echo "$here"; return; fi

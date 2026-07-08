@@ -1,8 +1,9 @@
 # Architecture
 
-How Cormac v2 is structured. This is the target shape; as of 2026-07-07 the authoring
-agent exists (keystone spike, ADR-0004) and nothing else is built. Diagrams originated
-in the June 2026 post-archive sessions (formerly `v2-architecture/diagrams1.md`).
+How Cormac v2 is structured. This is the current shape as of the #66 walking skeleton
+(2026-07-08): the authoring agent (ADR-0004), the control plane, the v2 schema, and the
+runtime module exist; the operations agent, surfaces, and deployment do not. Diagrams
+originated in the June 2026 post-archive sessions (formerly `v2-architecture/diagrams1.md`).
 
 ## The product
 
@@ -37,7 +38,7 @@ flowchart TB
   supaAuth --> cp
   cp -->|"submit run + compiled context, SSE back"| hermes
   hermes -->|"LLM calls"| model
-  hermes -.->|"data access: bundled profile tools<br/>(authoring, ADR-0004); operations seam<br/>open, owned by #66"| cp
+  hermes -.->|"data access: profile tools over /agent/*<br/>(ops: typed plugin tools, ADR-0008;<br/>authoring: scripts, migration pending)"| cp
   cp -->|"the only writer"| db
 ```
 
@@ -60,20 +61,37 @@ flowchart TB
 - **System of record**: managed Supabase/Postgres, JSONB-hybrid with generated hot
   columns, RLS, ES256/JWKS.
 
-## Data-access seam (half settled)
+## Data-access seam (settled for ops; authoring migration pending)
 
-For the **authoring agent** the seam is settled: tools bundled in the Hermes profile,
-with names and shapes that mirror the future control-plane interface (ADR-0004; the #66
-swap is bindings, not cognition). For the **operations agent** it stays open, owned by
-the walking skeleton (#66). The write gate stays a schema-enforced proposal either way;
-the boundary is authority (credentials, RLS, the validated gate), not transport. The
-authoring profile's tracked source is `evals/workbook-authoring/profile/`; spike
-mechanics and cost evidence live in `.jarvis/research/authoring-spike-findings.md`.
+Both agents reach data through the control plane's `/agent/*` API; the seam question was
+only ever how a tool call leaves the model. For the **operations agent** it is settled
+(ADR-0008): typed tools registered by the per-profile `cormac-ops` plugin
+(`evals/ops-capture/plugin/`), handlers making stateless HTTP calls — no shell, no MCP
+callback, no connection state. The ops profile is locked down to exactly those three
+tools, with memory, user profile, and curator off, and its whole procedure in SOUL.md
+(no skills toolset). The **authoring agent** still runs its ADR-0004 shell-script
+binding (`evals/workbook-authoring/profile/`); migrating it to typed tools and retiring
+its terminal is follow-up work under ADR-0008. The write gate stays a schema-enforced
+proposal either way; the boundary is authority (credentials, RLS, the validated gate),
+not transport. Evidence: `.jarvis/research/ops-seam-findings.md` and
+`.jarvis/research/authoring-spike-findings.md`.
 
 Bundled tools authenticate to the control plane's `/agent/*` surface with
 workspace-scoped agent tokens: hashed at rest, revocable, per-agent-kind privilege
-split (ADR-0005). Infisical is the authority copy of every secret; the Hermes profile
-`.env` is the one sanctioned derived copy.
+split (ADR-0005). Infisical holds the only copy of every secret; the gateway launches
+under `infisical run` (`pnpm agent:hub run`) so credentials reach Hermes and its tool
+subprocesses as injected process env, never through a file (ADR-0005 as amended
+2026-07-08). Billing and model ride the ADR-0006 environment (ADR-0007): `dev` = gpt-5.5
+on the Codex OAuth plan (cheap iteration), `staging` = metered Sonnet 4.6 (the only
+source of cost and behavior evidence).
+
+## Environments
+
+One Supabase project per tier, with the Infisical environment slug as the single switch
+(ADR-0006): `dev` = the local CLI stack (tests, everyday dev), `staging` = the managed
+project (remote proofs, later the deployment rehearsal target), `prod` = reserved for the
+production project at deployment time. `APP_ENV` rides in each vault environment, so the
+prod auth posture flips with the environment, never by hand.
 
 ## Deployment shape
 

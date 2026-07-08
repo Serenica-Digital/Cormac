@@ -1,6 +1,5 @@
 import { randomBytes } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServiceClient } from '../apps/control-plane/src/db.js';
 import { hashAgentToken } from '../apps/control-plane/src/auth.js';
 import { AGENT_KINDS, type AgentKind } from '../apps/control-plane/src/shared.js';
@@ -8,13 +7,17 @@ import { AGENT_KINDS, type AgentKind } from '../apps/control-plane/src/shared.js
 /**
  * Mint a workspace-scoped agent token (ADR-0005). The raw token is generated
  * once, its SHA-256 hash lands in agent_tokens, and the raw value is delivered
- * to its two sanctioned homes: Infisical (the authority copy) and, when
- * --profile is given, the Hermes profile .env (the derived copy Hermes
- * requires). The raw token is never written to a repo file and never printed
- * in the clear.
+ * to exactly one place: Infisical, in the environment this script ran under
+ * (ADR-0006 slots; INFISICAL_ENV, default dev). It is never written to any
+ * file and never printed in the clear.
+ *
+ * The gateway receives the token as injected process env at launch
+ * (`pnpm agent:hub run`), so a newly minted token takes effect on the next
+ * gateway relaunch.
  *
  * Usage (env via infisical run):
- *   pnpm mint:agent-token -- --workspace <uuid> --agent authoring [--profile cormac-authoring]
+ *   pnpm mint:agent-token -- --workspace <uuid> --agent authoring
+ *   INFISICAL_ENV=staging pnpm mint:agent-token -- --workspace <uuid> --agent authoring
  */
 
 function arg(name: string): string | undefined {
@@ -24,12 +27,9 @@ function arg(name: string): string | undefined {
 
 const workspaceId = arg('workspace');
 const agent = arg('agent') as AgentKind | undefined;
-const profile = arg('profile');
 
 if (!workspaceId || !agent || !(AGENT_KINDS as readonly string[]).includes(agent)) {
-  console.error(
-    'usage: mint-agent-token.ts --workspace <uuid> --agent <authoring|operations> [--profile <hermes profile>]',
-  );
+  console.error('usage: mint-agent-token.ts --workspace <uuid> --agent <authoring|operations>');
   process.exit(2);
 }
 
@@ -53,34 +53,20 @@ if (error) {
   process.exit(1);
 }
 
-// Authority copy: Infisical dev. Secret name is stable per (workspace, agent).
-const secretName = `CORMAC_AGENT_TOKEN_${agent.toUpperCase()}_${workspaceId.slice(0, 8)}`;
-const inf = spawnSync('infisical', ['secrets', 'set', `${secretName}=${raw}`, '--env=dev'], {
+// Authority (and only) copy: Infisical, same slot this run was injected from.
+const slot = process.env.INFISICAL_ENV ?? 'dev';
+const inf = spawnSync('infisical', ['secrets', 'set', `CORMAC_AGENT_TOKEN=${raw}`, `--env=${slot}`], {
   stdio: ['ignore', 'ignore', 'inherit'],
 });
 if (inf.status !== 0) {
   console.error(
-    `WARNING: could not write ${secretName} to Infisical (not logged in?). ` +
+    'WARNING: could not write CORMAC_AGENT_TOKEN to Infisical (not logged in?). ' +
       'The token row exists; revoke it and re-mint after `infisical login`, or set the secret manually.',
   );
-}
-
-// Derived copy: the Hermes profile .env (Hermes owns that file's format; we
-// only upsert the one key). chmod stays whatever the profile setup made it.
-if (profile) {
-  const envPath = `${process.env.HOME}/.hermes/profiles/${profile}/.env`;
-  if (!existsSync(envPath)) {
-    console.error(`WARNING: ${envPath} does not exist; skipped the profile copy.`);
-  } else {
-    const lines = readFileSync(envPath, 'utf8').split('\n');
-    const filtered = lines.filter((l) => !l.startsWith('CORMAC_AGENT_TOKEN='));
-    while (filtered.length && filtered[filtered.length - 1] === '') filtered.pop();
-    filtered.push(`CORMAC_AGENT_TOKEN=${raw}`, '');
-    writeFileSync(envPath, filtered.join('\n'), { mode: 0o600 });
-  }
+  process.exit(1);
 }
 
 console.log(
   `minted ${agent} token ${data.id} for workspace ${workspaceId}; ` +
-    `authority copy: Infisical dev/${secretName}${profile ? `; derived copy: profile ${profile} .env` : ''}`,
+    `authority copy: Infisical ${slot}/CORMAC_AGENT_TOKEN. Relaunch the gateway to pick it up.`,
 );

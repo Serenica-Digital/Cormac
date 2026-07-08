@@ -1,0 +1,12 @@
+{
+  "name": "ops-capture-eval",
+  "private": true,
+  "type": "module",
+  "description": "#66 phase 6: the ops data-access seam eval. The cormac-operations profile source, the fixed utterance protocol, and the batch harness; the agent's tools are the cormac-ops project plugin (.hermes/plugins/cormac-ops).",
+  "dependencies": {
+    "jose": "^5.9.6"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}
