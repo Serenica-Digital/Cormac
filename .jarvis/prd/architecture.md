@@ -70,6 +70,11 @@ the boundary is authority (credentials, RLS, the validated gate), not transport.
 authoring profile's tracked source is `evals/workbook-authoring/profile/`; spike
 mechanics and cost evidence live in `.jarvis/research/authoring-spike-findings.md`.
 
+Bundled tools authenticate to the control plane's `/agent/*` surface with
+workspace-scoped agent tokens: hashed at rest, revocable, per-agent-kind privilege
+split (ADR-0005). Infisical is the authority copy of every secret; the Hermes profile
+`.env` is the one sanctioned derived copy.
+
 ## Deployment shape
 
 Plain OCI images + Helm charts; local proof on a kind rehearsal cluster (mkcert TLS,
