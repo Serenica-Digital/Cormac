@@ -41,7 +41,8 @@ Durable outcomes and constraints the rebuild must preserve. Each carries its ori
   on a kind rehearsal cluster. Juno is a development substrate only and must remain
   swappable (ADR-0003).
 - Managed Supabase/Postgres is the system of record (JSONB-hybrid, RLS, ES256/JWKS auth,
-  all proven in v0). Local Supabase is a CI fixture only.
+  proven in v0 and re-proven on v2 in #66 phase 7). One Supabase project per tier; the
+  local CLI stack is the dev/test tier, never the system of record (ADR-0006).
 - Secrets: Infisical as authority, ESO into clusters, per-profile `.env` chmod 600 on dev
   machines. No secrets in git (a Juno Genesis token transited this repo's history on
   2026-07-07 and must be rotated).
@@ -51,5 +52,6 @@ Durable outcomes and constraints the rebuild must preserve. Each carries its ori
 - Operations-agent data access during a run (bundled tools vs MCP callback): the
   authoring half is settled on bundled tools (ADR-0004); the operations half is owned by
   the walking skeleton (#66).
-- Operations-vs-authoring privilege split in the runtime profile(s); forced by #66.
+- (settled) The ops/authoring privilege split is per-agent-kind capability sets on
+  `/agent/*`, one profile instance per (workspace, agent kind) — ADR-0005.
 - A2P 10DLC registration timing for the SMS door.

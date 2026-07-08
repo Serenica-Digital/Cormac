@@ -30,13 +30,17 @@ one-to-one to EKS, so Juno remains a swappable substrate rather than a dependenc
 order honors the v0 lesson: the authoring agent and its interview loop come first, because
 that is the bet the product lives or dies on.
 
-## Current stage (2026-07-07)
+## Current stage (2026-07-08)
 
-Keystone spike complete with a GO verdict (ADR-0004). v0 (June 2026) is archived whole
-under `archive/`; its retrospective and the sibling Jarvis project digest live in
-`.jarvis/research/`. Settled: transport (ADR-0001), build order (ADR-0002), deployment
-posture (ADR-0003), keystone GO and authoring data access (ADR-0004). The
-`cormac-authoring` profile and the `evals/workbook-authoring/` workspace are built and
-proven: three agent-played interviews on the real fixture, all schema-valid, core
-structure stable across runs, ~$0.50 per interview. The ADR-0002 gate is cleared; next is
-the control-plane walking skeleton (#66).
+Keystone GO (ADR-0004) and the #66 walking skeleton built. Phases 1-2 on dev (pnpm
+monorepo, @cormac/contract extracted); phases 3-5 proven and riding the #69→#71 PR
+stack into dev: v2 migrations + integration harness (31/31 on the local stack), the
+Fastify control plane (pipeline, human `/api/*` and agent `/agent/*` surfaces,
+workspace-scoped agent tokens per ADR-0005), the ADR-0001 runtime module, and the
+authoring bindings swap, proven by a live 14-turn agent-played interview publishing
+through the real gate (interview economics hold: ~$0.50 at high cache hit, per the
+spike baseline). Phase 7 proved the skeleton on managed Supabase (isolation 7/7,
+HS256 refused / ES256-JWKS accepted live). Environment model settled (ADR-0006).
+Open: phase 6 (the operations data-access seam experiment, which ends in an ADR),
+the interview-skill patches, and the human-played interview before any design-partner
+session. Next major piece under discussion: the Excel pane GO/NO-GO probes (#67).

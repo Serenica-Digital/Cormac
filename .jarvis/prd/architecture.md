@@ -1,8 +1,9 @@
 # Architecture
 
-How Cormac v2 is structured. This is the target shape; as of 2026-07-07 the authoring
-agent exists (keystone spike, ADR-0004) and nothing else is built. Diagrams originated
-in the June 2026 post-archive sessions (formerly `v2-architecture/diagrams1.md`).
+How Cormac v2 is structured. This is the current shape as of the #66 walking skeleton
+(2026-07-08): the authoring agent (ADR-0004), the control plane, the v2 schema, and the
+runtime module exist; the operations agent, surfaces, and deployment do not. Diagrams
+originated in the June 2026 post-archive sessions (formerly `v2-architecture/diagrams1.md`).
 
 ## The product
 
