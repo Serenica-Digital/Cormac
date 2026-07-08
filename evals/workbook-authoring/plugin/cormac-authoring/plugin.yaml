@@ -1,0 +1,14 @@
+name: cormac-authoring
+version: 0.1.0
+description: >-
+  The Cormac authoring agent's tool surface: read_workbook and submit_contract,
+  each a typed tool whose handler calls the control plane's /agent/* API with
+  the workspace-scoped agent token (ADR-0005). Replaces the ADR-0004 shell
+  binding (terminal + scripts) with the ADR-0008 typed-plugin pattern. Installed
+  per-profile on purpose (~/.hermes/profiles/cormac-authoring/plugins/, via
+  profile/sync.sh): only the authoring profile's gateway ever loads it.
+author: Serenica Digital
+manifest_version: 1
+provides_tools:
+  - read_workbook
+  - submit_contract

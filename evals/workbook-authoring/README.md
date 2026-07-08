@@ -15,25 +15,36 @@ contract. Brief: `.jarvis/tmp/plans/spike-64-authoring-agent.md`. Gate: ADR-0002
 - `golden/*.contract.json` — one defensible contract reading per fixture, reference only.
   The GO criteria are validity + stability + consultative feel, not golden match.
 - `scripts/validate-contract.ts` — schema gate. `npm run validate <file|->`. Prints Zod
-  issues verbatim on failure; backs the profile's `submit_contract` tool.
+  issues verbatim on failure; the same gate the control plane runs behind `submit_contract`.
 - `scripts/diff-contracts.ts` — structural stability check across N produced contracts.
   `npm run diff <a.json> <b.json> ...`. Naming variance tolerated, structural variance not.
 - `profile/` — source of truth for the `cormac-authoring` Hermes profile (SOUL, interview
-  skill, tool scripts, config). `profile/sync.sh` copies it into
+  skill, hardening config). `profile/sync.sh` copies it into
   `~/.hermes/profiles/cormac-authoring/`.
+- `plugin/cormac-authoring/` — the profile's tool surface: `read_workbook` and
+  `submit_contract` as typed plugin tools calling the control plane's `/agent/*` (ADR-0008;
+  replaces the old shell scripts). `sync.sh` installs it into the profile's `plugins/`.
 
 ## Running an interview
 
+The tools are HTTP-only (typed plugin over `/agent/*`), so an interview requires a running
+control plane and a gateway launched under the vault slot (which injects
+`CORMAC_CONTROL_PLANE_URL` + `CORMAC_AGENT_TOKEN`). There is no offline/fixture path and no
+`hermes … chat` shortcut with working tools.
+
 ```bash
-cd evals/workbook-authoring        # process cwd matters: Hermes file tool resolves here
-./profile/sync.sh                  # after any SOUL/skill edit
-hermes -p cormac-authoring chat    # human plays the client
+cd evals/workbook-authoring        # process cwd matters: Hermes resolves relative paths here
+./profile/sync.sh                  # after any SOUL/skill/plugin edit
+./profile/setup.sh                 # idempotent; applies the hardened tool + config posture
+pnpm agent:hub run                 # dev — gpt-5.5 on the Codex plan (cheap iteration)
+# then drive turns against the gateway:
+./scripts/send-turn.sh <conversation-name> "<client message>"
 ```
 
-Over the HTTP path (through the control plane), the gateway launches under the vault
-slot: `pnpm agent:hub run` (dev — gpt-5.5 on the Codex plan, cheap iteration) or
-`INFISICAL_ENV=staging pnpm agent:hub run` (metered Sonnet 4.6). The profile holds no
-`.env`; see `profile/hub.sh` and ADR-0005/0006.
+Use `INFISICAL_ENV=staging pnpm agent:hub run` for the metered Sonnet 4.6 lane (evidence
+only). The human-played interview runs the same gateway path (not `chat`), so it exercises
+the hardened `api_server` surface. The profile holds no `.env`; see `profile/hub.sh` and
+ADR-0005/0006/0007.
 
 **Evidence rule:** cost, verdict, and interview-behavior evidence comes from metered
 (`staging`, Sonnet) runs only. Dev-slot runs are a different model on the Codex plan —
