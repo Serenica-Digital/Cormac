@@ -55,6 +55,7 @@ live 2026-07-08** with no profile `.env` on disk: dev-slot launch → full turn 
 `read_workbook` → control plane `GET /agent/workbook` 200 with the vault-injected token.
 
 **Billing rides the ADR-0006 environments, and the slot selects the model too**
+*(decision record: ADR-0007, which is canonical for the run lanes and the evidence rule)*
 (`hub.sh` pins model/provider via idempotent `hermes config set` before launch, since
 model choice is config state, not env): `dev` runs **gpt-5.5 on the Codex OAuth plan**
 (flat-rate, cheap iteration); `staging` carries `ANTHROPIC_API_KEY` and runs **metered

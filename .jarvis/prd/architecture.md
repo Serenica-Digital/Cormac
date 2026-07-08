@@ -76,9 +76,9 @@ workspace-scoped agent tokens: hashed at rest, revocable, per-agent-kind privile
 split (ADR-0005). Infisical holds the only copy of every secret; the gateway launches
 under `infisical run` (`pnpm agent:hub run`) so credentials reach Hermes and its tool
 subprocesses as injected process env, never through a file (ADR-0005 as amended
-2026-07-08). Billing and model ride the ADR-0006 environment: `dev` = gpt-5.5 on the
-Codex OAuth plan (cheap iteration), `staging` = metered Sonnet 4.6 (the only source of
-cost and behavior evidence).
+2026-07-08). Billing and model ride the ADR-0006 environment (ADR-0007): `dev` = gpt-5.5
+on the Codex OAuth plan (cheap iteration), `staging` = metered Sonnet 4.6 (the only
+source of cost and behavior evidence).
 
 ## Environments
 
