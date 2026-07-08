@@ -22,6 +22,8 @@ describe.skipIf(!env.ready)('workbook snapshots: upload + agent read', () => {
 
   const profileV1 = { workbookName: 'tracker.xlsx', sheets: [{ name: 'One', headerRow: 1 }] };
   const profileV2 = { workbookName: 'tracker.xlsx', sheets: [{ name: 'One' }, { name: 'Two' }] };
+  /** Uploaded last, under a different name: the no-name read must serve this. */
+  const clientProfile = { workbookName: 'client-workbook.xlsx', sheets: [{ name: 'Deals' }] };
 
   beforeAll(async () => {
     service = createServiceClient(env.url, env.serviceKey);
@@ -44,6 +46,13 @@ describe.skipIf(!env.ready)('workbook snapshots: upload + agent read', () => {
       });
       expect(res.statusCode).toBe(200);
     }
+    const client = await server.inject({
+      method: 'POST',
+      url: `/api/workspaces/${seed.workspaceId}/workbook`,
+      headers: { authorization: `Bearer ${ownerToken}`, 'content-type': 'application/json' },
+      payload: { name: 'client-workbook', profile: clientProfile },
+    });
+    expect(client.statusCode).toBe(200);
   });
 
   afterAll(async () => {
@@ -61,19 +70,22 @@ describe.skipIf(!env.ready)('workbook snapshots: upload + agent read', () => {
     expect(res.json()).toEqual(profileV2);
   });
 
-  it('404s an unknown workbook name and 400s a missing one', async () => {
+  it('with no name, serves the workspace latest upload across names (the web-app path)', async () => {
+    const res = await server.inject({
+      method: 'GET',
+      url: '/agent/workbook',
+      headers: { authorization: `Bearer ${agentToken}` },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual(clientProfile);
+  });
+
+  it('404s an unknown workbook name', async () => {
     const unknown = await server.inject({
       method: 'GET',
       url: '/agent/workbook?name=nope',
       headers: { authorization: `Bearer ${agentToken}` },
     });
     expect(unknown.statusCode).toBe(404);
-
-    const missing = await server.inject({
-      method: 'GET',
-      url: '/agent/workbook',
-      headers: { authorization: `Bearer ${agentToken}` },
-    });
-    expect(missing.statusCode).toBe(400);
   });
 });

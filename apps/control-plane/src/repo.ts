@@ -380,6 +380,22 @@ export async function insertWorkbookSnapshot(
   return must(data as WorkbookSnapshotRow | null, error, 'insertWorkbookSnapshot');
 }
 
+/** The workspace's most recent upload, regardless of name. */
+export async function getLatestWorkbookSnapshotAny(
+  db: Db,
+  workspaceId: string,
+): Promise<WorkbookSnapshotRow | null> {
+  const { data, error } = await db
+    .from('workbook_snapshots')
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`getLatestWorkbookSnapshotAny: ${error.message}`);
+  return (data as WorkbookSnapshotRow | null) ?? null;
+}
+
 /** The latest snapshot per (workspace, name) is the served profile. */
 export async function getLatestWorkbookSnapshot(
   db: Db,

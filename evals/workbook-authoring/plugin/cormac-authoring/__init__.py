@@ -82,14 +82,17 @@ READ_WORKBOOK_SCHEMA = {
     "description": (
         "Read the client's workbook as a detection profile: sheets, headers, "
         "inferred column types, and sample rows. Do this first, before greeting "
-        "the client. Returns the latest snapshot for the named workbook."
+        "the client. With no arguments it returns the client's most recent "
+        "upload, which is what you want."
     ),
     "parameters": {
         "type": "object",
         "properties": {
             "workbook": {
                 "type": "string",
-                "description": "Workbook name (default: relationship-crm)",
+                "description": (
+                    "Optional specific workbook name; omit to get the latest upload"
+                ),
             },
         },
         "required": [],
@@ -98,10 +101,11 @@ READ_WORKBOOK_SCHEMA = {
 
 
 def _handle_read_workbook(args: dict, **_kw) -> str:
-    workbook = str(args.get("workbook") or "relationship-crm").strip()
-    status, payload = _call(
-        "GET", "/agent/workbook?name=" + urllib.parse.quote(workbook)
-    )
+    workbook = str(args.get("workbook") or "").strip()
+    path = "/agent/workbook"
+    if workbook:
+        path += "?name=" + urllib.parse.quote(workbook)
+    status, payload = _call("GET", path)
     if status != 200:
         return _problem(status, payload)
     return tool_result(payload)

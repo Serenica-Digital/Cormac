@@ -87,10 +87,24 @@ export function Interview() {
 
   return (
     <div>
-      <PageHeader
-        title="Interview"
-        sub="Cormac interviews you about how your business actually runs, then publishes the contract you approve. Take your time; it asks one thing at a time."
-      />
+      <div className="flex items-start justify-between">
+        <PageHeader
+          title="Interview"
+          sub="Cormac interviews you about how your business actually runs, then publishes the contract you approve. Take your time; it asks one thing at a time."
+        />
+        {messages.length > 0 && (
+          <button
+            onClick={() => {
+              if (confirm('Clear this chat display? (The interview state on the server is unaffected.)')) {
+                setMessages([]);
+              }
+            }}
+            className="mt-1 shrink-0 text-xs text-stone-400 hover:text-stone-600"
+          >
+            Clear chat display
+          </button>
+        )}
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.25fr_1fr]">
         <div className="flex h-[calc(100vh-14rem)] min-h-[24rem] flex-col rounded-xl border border-stone-200 bg-white shadow-[0_1px_3px_rgba(28,25,23,0.05)]">

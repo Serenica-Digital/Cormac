@@ -13,6 +13,7 @@ import { publishContract } from '../pipeline/contract.js';
 import {
   getActiveContract,
   getLatestWorkbookSnapshot,
+  getLatestWorkbookSnapshotAny,
   getProposalBySourceMessage,
   getRecord,
   getSourceMessage,
@@ -42,16 +43,24 @@ function contractSummary(contract: Contract, version: number): string {
  * (ADR-0001: MCP is never internal plumbing), the gates did not.
  */
 export function registerAgentRoutes(app: FastifyInstance): void {
-  // read_workbook: the latest detection profile for the named workbook.
+  // read_workbook: the latest detection profile. Without a name, the
+  // workspace's most recent upload wins — "the client's workbook" is whatever
+  // they brought last, never a name the agent has to guess (the web app
+  // stores uploads under a filename slug the agent cannot know; #77).
   app.get(
     '/agent/workbook',
     { preHandler: [requireAgentCapability('read_workbook')] },
     async (request) => {
       const ctx = requireAgentCtx(request);
       const { name } = request.query as { name?: string };
-      if (!name) throw ProblemError.badRequest('Missing workbook name');
-      const snapshot = await getLatestWorkbookSnapshot(request.server.app.db, ctx.workspaceId, name);
-      if (!snapshot) throw ProblemError.notFound(`No workbook snapshot named "${name}"`);
+      const snapshot = name
+        ? await getLatestWorkbookSnapshot(request.server.app.db, ctx.workspaceId, name)
+        : await getLatestWorkbookSnapshotAny(request.server.app.db, ctx.workspaceId);
+      if (!snapshot) {
+        throw ProblemError.notFound(
+          name ? `No workbook snapshot named "${name}"` : 'No workbook uploaded yet',
+        );
+      }
       return snapshot.profile;
     },
   );
