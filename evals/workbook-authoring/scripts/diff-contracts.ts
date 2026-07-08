@@ -12,7 +12,7 @@
  * be schema-valid; run validate-contract.ts first.
  */
 import { readFileSync } from 'node:fs';
-import { parseContract, type Contract, type ContractObject } from '../src/contract.js';
+import { parseContract, type Contract, type ContractObject } from '@cormac/contract';
 
 // Seeded from v0's score.ts synonym groups, trimmed to this domain.
 const OBJECT_SYNONYMS: string[][] = [

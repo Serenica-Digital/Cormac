@@ -6,8 +6,9 @@ contract. Brief: `.jarvis/tmp/plans/spike-64-authoring-agent.md`. Gate: ADR-0002
 
 ## Layout
 
-- `src/contract.ts` — the contract meta-schema (Zod) and `parseContract`. Ported from
-  v0 (`archive/packages/contract/src/contract.ts`); code unchanged below the header.
+- The contract meta-schema (Zod) and `parseContract` live in `packages/contract`
+  (`@cormac/contract`), moved there from this workspace's `src/` in #66 phase 2. Ported
+  from v0 (`archive/packages/contract/src/contract.ts`); code unchanged below the header.
 - `fixture/*.detected.json` — workbook detection profiles (sheets, headers, inferred
   types, sample rows). `relationship-crm` is anonymized from a real client workbook and
   is the primary fixture; it broke v0's one-shot authoring. `contacts-deals` is synthetic.

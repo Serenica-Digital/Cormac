@@ -10,7 +10,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { z } from 'zod';
-import { parseContract } from '../src/contract.js';
+import { parseContract } from '@cormac/contract';
 
 const arg = process.argv[2];
 if (!arg) {
