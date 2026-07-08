@@ -50,9 +50,9 @@ Durable outcomes and constraints the rebuild must preserve. Each carries its ori
 
 ## Open questions
 
-- Operations-agent data access during a run (bundled tools vs MCP callback): the
-  authoring half is settled on bundled tools (ADR-0004); the operations half is owned by
-  the walking skeleton (#66).
+- (settled) Operations-agent data access: typed per-profile plugin tools over `/agent/*`,
+  no shell, no MCP callback — ADR-0008. Authoring's migration off its shell-script
+  binding is follow-up work under the same ADR.
 - (settled) The ops/authoring privilege split is per-agent-kind capability sets on
   `/agent/*`, one profile instance per (workspace, agent kind) — ADR-0005.
 - A2P 10DLC registration timing for the SMS door.

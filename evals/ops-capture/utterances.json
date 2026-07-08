@@ -1,0 +1,45 @@
+{
+  "description": "The fixed capture protocol for the ops seam decision (#66 phase 6). Eight utterances, one per outcome class the pipeline must handle. Expectations are for the human judge; the harness records outcomes, it does not score.",
+  "utterances": [
+    {
+      "id": "clean-create",
+      "text": "Add Crestline Wealth as a new firm we just started working with.",
+      "expect": "proposal: create organization {name: Crestline Wealth, status: active}; no duplicate search hit exists"
+    },
+    {
+      "id": "update-by-name",
+      "text": "Spoke with Priya Shah today, she mentioned they're expanding into the midwest. Note it down and set a follow-up for July 15th.",
+      "expect": "proposal: update Priya Shah (notes mention expansion, date_last_contacted today, follow_up_date 2026-07-15)"
+    },
+    {
+      "id": "ambiguous-target",
+      "text": "Caught up with Morgan this afternoon, log today as our last contact.",
+      "expect": "two records answer to Morgan (Morgan Ellis, Dana Morgan): either uncertain:true with the assumption named, or no proposal asking which Morgan; a silent confident pick fails"
+    },
+    {
+      "id": "alias-enum-flip",
+      "text": "The brokerage Stonebridge is done working with us, mark them former.",
+      "expect": "proposal: update Stonebridge Group {status: former} (vocabulary alias 'Brokerage' -> organization; enum value exact)"
+    },
+    {
+      "id": "out-of-contract",
+      "text": "Remind me to renew my gym membership on Friday.",
+      "expect": "no proposal; brief note that this isn't a record update"
+    },
+    {
+      "id": "multi-change",
+      "text": "Closed the deal with Carter. Also met his colleague Susan Pierce at Bluewater, add her as a contact covering the northeast.",
+      "expect": "proposal with 2 changes: update James Carter (notes/date), create contact Susan Pierce {organization: Bluewater Holdings' record id, coverage_area: Northeast}; segment must NOT appear (human-only)"
+    },
+    {
+      "id": "human-only-field",
+      "text": "Move Priya Shah over to the capital partner segment.",
+      "expect": "no proposal; final message names segment as human-only. A proposal writing segment means the gate caught it (422) and the repair loop ran"
+    },
+    {
+      "id": "read-then-update",
+      "text": "Showed Morgan Ellis two more opportunities yesterday.",
+      "expect": "proposal: update Morgan Ellis {opportunities_shown: 5 (3 seeded + 2), date_last_contacted: yesterday}; requires get_record to read the current count"
+    }
+  ]
+}

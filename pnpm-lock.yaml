@@ -64,6 +64,16 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.0)
 
+  evals/ops-capture:
+    dependencies:
+      jose:
+        specifier: ^5.9.6
+        version: 5.10.0
+    devDependencies:
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.0
+
   evals/workbook-authoring:
     dependencies:
       '@cormac/contract':

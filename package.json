@@ -21,7 +21,10 @@
     "db:push:managed": "infisical run --env=staging -- sh -c 'test -n \"$SUPABASE_DB_URL\" || { echo \"SUPABASE_DB_URL missing from Infisical staging\" >&2; exit 1; }; pnpm exec supabase db push --db-url \"$SUPABASE_DB_URL\"'",
     "mint:agent-token": "sh -c 'infisical run --env=\"${INFISICAL_ENV:-dev}\" -- pnpm exec tsx scripts/mint-agent-token.ts \"$@\"' --",
     "seed:authoring-e2e": "sh -c 'infisical run --env=\"${INFISICAL_ENV:-dev}\" -- pnpm exec tsx scripts/seed-authoring-e2e.ts \"$@\"' --",
+    "seed:ops-e2e": "sh -c 'infisical run --env=\"${INFISICAL_ENV:-dev}\" -- pnpm exec tsx scripts/seed-ops-e2e.ts \"$@\"' --",
     "agent:hub": "sh -c 'infisical run --env=\"${INFISICAL_ENV:-dev}\" -- evals/workbook-authoring/profile/hub.sh \"$@\"' --",
+    "ops:hub": "sh -c 'infisical run --env=\"${INFISICAL_ENV:-dev}\" -- evals/ops-capture/profile/hub.sh \"$@\"' --",
+    "ops:batch": "sh -c 'infisical run --env=dev -- pnpm exec tsx evals/ops-capture/scripts/run-batch.ts \"$@\"' --",
     "check:remote": "infisical run --env=staging -- vitest run apps/control-plane/tests/isolation.test.ts"
   },
   "pnpm": {
