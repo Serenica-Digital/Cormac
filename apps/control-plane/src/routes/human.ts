@@ -6,13 +6,15 @@ import { authenticate, requireCapability, requireCtx } from '../auth.js';
 import { captureUpdate } from '../pipeline/capture.js';
 import { decideProposal } from '../pipeline/apply.js';
 import { publishContract } from '../pipeline/contract.js';
-import { proposalsView } from '../pipeline/queries.js';
+import { proposalsView, recordTimeline } from '../pipeline/queries.js';
 import type { ProposalStatus } from '../rows.js';
 import {
   getActiveContract,
+  getRecord,
   insertWorkbookSnapshot,
   listAuditEvents,
   listRecords,
+  listWorkspacesForUser,
 } from '../repo.js';
 
 const captureBody = z.object({ text: z.string().min(1).max(4000) });
@@ -88,6 +90,29 @@ export function registerHumanRoutes(app: FastifyInstance): void {
       return { records };
     },
   );
+
+  // One record plus its history: audit events joined with the utterance and
+  // proposal that produced each change. The record-detail read for surfaces.
+  app.get(
+    '/api/workspaces/:workspaceId/records/:recordId/timeline',
+    { preHandler: [authenticate, requireCapability('read_records')] },
+    async (request) => {
+      const ctx = requireCtx(request);
+      const { recordId } = request.params as { recordId: string };
+      const record = await getRecord(request.server.app.db, ctx.workspaceId, recordId);
+      if (!record) throw ProblemError.notFound('No such record in this workspace');
+      const entries = await recordTimeline(request.server.app, ctx.workspaceId, recordId);
+      return { record, entries };
+    },
+  );
+
+  // The workspaces the caller belongs to: the sign-in picker. No workspaceId in
+  // the path, so this runs behind authenticate alone; membership IS the filter.
+  app.get('/api/workspaces', { preHandler: [authenticate] }, async (request) => {
+    if (!request.authUserId) throw ProblemError.unauthorized();
+    const workspaces = await listWorkspacesForUser(request.server.app.db, request.authUserId);
+    return { workspaces };
+  });
 
   app.get(
     '/api/workspaces/:workspaceId/audit',

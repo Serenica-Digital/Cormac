@@ -254,6 +254,87 @@ export async function listAuditEvents(db: Db, workspaceId: string): Promise<Audi
   return (data as AuditEventRow[] | null) ?? [];
 }
 
+export async function listAuditEventsForRecord(
+  db: Db,
+  workspaceId: string,
+  recordId: string,
+): Promise<AuditEventRow[]> {
+  const { data, error } = await db
+    .from('audit_events')
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .eq('record_id', recordId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`listAuditEventsForRecord: ${error.message}`);
+  return (data as AuditEventRow[] | null) ?? [];
+}
+
+export interface SourceMessageContent {
+  id: string;
+  channel: SourceChannel;
+  content: string;
+  created_at: string;
+}
+
+export async function getSourceMessageContents(
+  db: Db,
+  workspaceId: string,
+  ids: string[],
+): Promise<SourceMessageContent[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await db
+    .from('source_messages')
+    .select('id, channel, content, created_at')
+    .eq('workspace_id', workspaceId)
+    .in('id', ids);
+  if (error) throw new Error(`getSourceMessageContents: ${error.message}`);
+  return (data as SourceMessageContent[] | null) ?? [];
+}
+
+export async function getProposalStatuses(
+  db: Db,
+  workspaceId: string,
+  ids: string[],
+): Promise<Array<{ id: string; status: ProposalStatus }>> {
+  if (ids.length === 0) return [];
+  const { data, error } = await db
+    .from('agent_proposals')
+    .select('id, status')
+    .eq('workspace_id', workspaceId)
+    .in('id', ids);
+  if (error) throw new Error(`getProposalStatuses: ${error.message}`);
+  return (data as Array<{ id: string; status: ProposalStatus }> | null) ?? [];
+}
+
+export interface WorkspaceMembership {
+  id: string;
+  name: string;
+  role: string;
+}
+
+/** Every workspace the user belongs to, with their role: the sign-in picker. */
+export async function listWorkspacesForUser(
+  db: Db,
+  userId: string,
+): Promise<WorkspaceMembership[]> {
+  const { data, error } = await db
+    .from('memberships')
+    .select('role, workspaces(id, name)')
+    .eq('user_id', userId);
+  if (error) throw new Error(`listWorkspacesForUser: ${error.message}`);
+  // supabase-js cannot know the FK is to-one, so it types the embed loosely;
+  // normalize object-or-array to one workspace row.
+  const rows =
+    (data as unknown as Array<{
+      role: string;
+      workspaces: { id: string; name: string } | Array<{ id: string; name: string }> | null;
+    }>) ?? [];
+  return rows.flatMap((r) => {
+    const ws = Array.isArray(r.workspaces) ? r.workspaces[0] : r.workspaces;
+    return ws ? [{ id: ws.id, name: ws.name, role: r.role }] : [];
+  });
+}
+
 export async function setProposalDecision(
   db: Db,
   input: {
