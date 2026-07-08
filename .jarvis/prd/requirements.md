@@ -48,7 +48,8 @@ Durable outcomes and constraints the rebuild must preserve. Each carries its ori
 
 ## Open questions
 
-- Agent data access during a run: tools bundled in the Hermes profile vs MCP callback to
-  the control plane. Owned by the keystone spike; the seam is recorded in ADR-0001.
-- Operations-vs-authoring privilege split in the runtime profile(s).
+- Operations-agent data access during a run (bundled tools vs MCP callback): the
+  authoring half is settled on bundled tools (ADR-0004); the operations half is owned by
+  the walking skeleton (#66).
+- Operations-vs-authoring privilege split in the runtime profile(s); forced by #66.
 - A2P 10DLC registration timing for the SMS door.

@@ -1,8 +1,8 @@
 # Architecture
 
-How Cormac v2 is structured. This is the target shape; as of 2026-07-07 none of it is
-built. The one deliberately open seam is marked OPEN. Diagrams originated in the June 2026
-post-archive sessions (formerly `v2-architecture/diagrams1.md`).
+How Cormac v2 is structured. This is the target shape; as of 2026-07-07 the authoring
+agent exists (keystone spike, ADR-0004) and nothing else is built. Diagrams originated
+in the June 2026 post-archive sessions (formerly `v2-architecture/diagrams1.md`).
 
 ## The product
 
@@ -37,7 +37,7 @@ flowchart TB
   supaAuth --> cp
   cp -->|"submit run + compiled context, SSE back"| hermes
   hermes -->|"LLM calls"| model
-  hermes -.->|"data access: MCP tool callback<br/>OR tools bundled in the profile (OPEN)"| cp
+  hermes -.->|"data access: bundled profile tools<br/>(authoring, ADR-0004); operations seam<br/>open, owned by #66"| cp
   cp -->|"the only writer"| db
 ```
 
@@ -60,12 +60,15 @@ flowchart TB
 - **System of record**: managed Supabase/Postgres, JSONB-hybrid with generated hot
   columns, RLS, ES256/JWKS.
 
-## OPEN seam (first decision of the keystone spike)
+## Data-access seam (half settled)
 
-Agent data access during a run: **tools bundled in the Hermes profile** vs **MCP tool
-callback to the control plane**. The write gate stays a schema-enforced proposal either
-way. v0's mistake was routing everything through MCP and calling that the trust boundary;
-the boundary is authority (credentials, RLS, the validated gate), not transport.
+For the **authoring agent** the seam is settled: tools bundled in the Hermes profile,
+with names and shapes that mirror the future control-plane interface (ADR-0004; the #66
+swap is bindings, not cognition). For the **operations agent** it stays open, owned by
+the walking skeleton (#66). The write gate stays a schema-enforced proposal either way;
+the boundary is authority (credentials, RLS, the validated gate), not transport. The
+authoring profile's tracked source is `evals/workbook-authoring/profile/`; spike
+mechanics and cost evidence live in `.jarvis/research/authoring-spike-findings.md`.
 
 ## Deployment shape
 

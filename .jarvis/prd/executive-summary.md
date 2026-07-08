@@ -32,7 +32,11 @@ that is the bet the product lives or dies on.
 
 ## Current stage (2026-07-07)
 
-Clean-slate rebuild, day one. v0 (June 2026) is archived whole under `archive/`; its
-retrospective and the sibling Jarvis project digest live in `.jarvis/research/`. Settled so
-far: transport (ADR-0001), build order (ADR-0002), deployment posture (ADR-0003). Nothing
-of v2 is built. The first work is the authoring-agent keystone spike.
+Keystone spike complete with a GO verdict (ADR-0004). v0 (June 2026) is archived whole
+under `archive/`; its retrospective and the sibling Jarvis project digest live in
+`.jarvis/research/`. Settled: transport (ADR-0001), build order (ADR-0002), deployment
+posture (ADR-0003), keystone GO and authoring data access (ADR-0004). The
+`cormac-authoring` profile and the `evals/workbook-authoring/` workspace are built and
+proven: three agent-played interviews on the real fixture, all schema-valid, core
+structure stable across runs, ~$0.50 per interview. The ADR-0002 gate is cleared; next is
+the control-plane walking skeleton (#66).
