@@ -39,10 +39,13 @@ around it.
   `.env`: Hermes copies file values into `os.environ`, silently overriding the
   slot (hub.sh refuses to start while one exists). Env changes still need a
   gateway relaunch to reach tool scripts.
-- **Billing = the launch slot** (ADR-0006): `dev` has no `ANTHROPIC_API_KEY`,
-  so calls bill the profile's seeded claude.ai login (subject to its usage
-  cap); `INFISICAL_ENV=staging pnpm agent:hub run` bills the metered key and
-  is the only source of cost evidence.
+- **Billing and model = the launch slot** (ADR-0006): `pnpm agent:hub run`
+  (dev) pins gpt-5.5 on the Codex OAuth plan — flat-rate iteration;
+  `INFISICAL_ENV=staging pnpm agent:hub run` pins metered Sonnet 4.6 and is
+  the only source of cost/verdict/behavior evidence. hub.sh sets
+  model/provider per slot via `hermes config set` at launch. Do not use the
+  claude.ai-OAuth fallback as a dev mode: it bills the plan's "extra usage"
+  pool, not the plan allocation (verified 2026-07-08).
 - **`approvals.timeout` must be human-paced** for gated runs: 1800s, not the
   60s default (expiry DENIES the pending command).
 

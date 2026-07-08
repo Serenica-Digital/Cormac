@@ -54,13 +54,18 @@ copy but a silent override, and `hub.sh` refuses to start while one exists. **Ve
 live 2026-07-08** with no profile `.env` on disk: dev-slot launch → full turn +
 `read_workbook` → control plane `GET /agent/workbook` 200 with the vault-injected token.
 
-**Billing rides the ADR-0006 environments:** `staging` carries `ANTHROPIC_API_KEY`
-(metered — the only source of cost evidence); `dev` carries none, so the Anthropic
-credential chain (`ANTHROPIC_API_KEY → ANTHROPIC_TOKEN → CLAUDE_CODE_OAUTH_TOKEN`,
-`hermes_cli/auth.py:496`) falls through to the profile's seeded claude.ai subscription
-login. Both paths verified live 2026-07-08: key-less dev launch reached Anthropic on the
-subscription credential (cap-exhaustion response proves the path); staging launch
-completed a metered turn. Subscription mode is subject to the plan's usage caps.
+**Billing rides the ADR-0006 environments, and the slot selects the model too**
+(`hub.sh` pins model/provider via idempotent `hermes config set` before launch, since
+model choice is config state, not env): `dev` runs **gpt-5.5 on the Codex OAuth plan**
+(flat-rate, cheap iteration); `staging` carries `ANTHROPIC_API_KEY` and runs **metered
+Sonnet 4.6** — the only source of cost and verdict evidence, and the only model whose
+behavior evidence counts (the interview skill is tuned on Sonnet). Both verified live
+2026-07-08 (`model=gpt-5.5` and `model=claude-sonnet-4-6` in the gateway log,
+respectively). **Rejected as a billing mode:** the claude.ai-OAuth fallback (the
+Anthropic chain `ANTHROPIC_API_KEY → ANTHROPIC_TOKEN → CLAUDE_CODE_OAUTH_TOKEN`,
+`auth.py:496`, falling through to the profile's seeded login) — verified reachable, but
+it bills the plan's **"extra usage" pool, not the plan allocation**, which defeats the
+purpose of a cheap dev mode.
 
 ## Consequences
 

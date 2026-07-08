@@ -31,12 +31,14 @@ hermes -p cormac-authoring chat    # human plays the client
 ```
 
 Over the HTTP path (through the control plane), the gateway launches under the vault
-slot: `pnpm agent:hub run` (dev) or `INFISICAL_ENV=staging pnpm agent:hub run` (metered).
-The profile holds no `.env`; see `profile/hub.sh` and ADR-0005/0006.
+slot: `pnpm agent:hub run` (dev — gpt-5.5 on the Codex plan, cheap iteration) or
+`INFISICAL_ENV=staging pnpm agent:hub run` (metered Sonnet 4.6). The profile holds no
+`.env`; see `profile/hub.sh` and ADR-0005/0006.
 
-**Evidence rule:** cost and verdict evidence comes from metered (`staging`) runs only.
-Dev-slot runs bill the claude.ai subscription and never update VERDICT.md or ADR cost
-claims.
+**Evidence rule:** cost, verdict, and interview-behavior evidence comes from metered
+(`staging`, Sonnet) runs only. Dev-slot runs are a different model on the Codex plan —
+good for plumbing, harness, and skill-mechanics iteration; they never update VERDICT.md
+or ADR claims.
 
 Produced contracts and per-run judgment notes land in
 `.jarvis/tmp/notes/authoring-runs/` (gitignored scratch). Between runs:
