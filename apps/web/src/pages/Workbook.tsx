@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useWorkbookUpload } from '../api/hooks';
-import { WorkbookPreview } from '../components/WorkbookPreview';
+import { typeWord, WorkbookPreview } from '../components/WorkbookPreview';
 import { Button, ErrorNote, PageHeader, SectionLabel } from '../components/ui';
-import { toDetectionProfile } from '../workbook/detect';
+import { detectSheet, toDetectionProfile } from '../workbook/detect';
 import { parseWorkbookFile } from '../workbook/parse';
 import { saveParsedWorkbook } from '../workbook/store';
 import type { DetectionProfile, ParsedWorkbook } from '../workbook/types';
@@ -25,17 +25,18 @@ export function Workbook() {
   const [parsed, setParsed] = useState<ParsedWorkbook | null>(null);
   const [jsonProfile, setJsonProfile] = useState<DetectionProfile | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
-  const [uploadedAs, setUploadedAs] = useState<string | null>(null);
+  const [uploaded, setUploaded] = useState(false);
+  const [activeSheetName, setActiveSheetName] = useState<string | null>(null);
   const upload = useWorkbookUpload(workspaceId);
 
   async function onFile(file: File) {
     setParseError(null);
-    setUploadedAs(null);
+    setUploaded(false);
     setJsonProfile(null);
     setParsed(null);
     try {
-      if (file.name.endsWith('.json')) {
-        // Dev convenience: a pre-built detection profile (the eval fixtures).
+      if (import.meta.env.DEV && file.name.endsWith('.json')) {
+        // Dev-only convenience: a pre-built detection profile (the eval fixtures).
         const profile = JSON.parse(await file.text()) as DetectionProfile;
         if (!profile.workbookName || !Array.isArray(profile.sheets)) {
           throw new Error('That JSON is not a detection profile (workbookName/sheets missing)');
@@ -43,8 +44,9 @@ export function Workbook() {
         setJsonProfile(profile);
       } else {
         const wb = await parseWorkbookFile(file);
-        if (wb.sheets.length === 0) throw new Error('No non-empty sheets found in that file');
+        if (wb.sheets.length === 0) throw new Error('We could not find any filled-in sheets in that file');
         setParsed(wb);
+        setActiveSheetName(wb.sheets[0]?.name ?? null);
       }
     } catch (err) {
       setParseError(err instanceof Error ? err.message : String(err));
@@ -69,8 +71,8 @@ export function Workbook() {
     upload.mutate(
       { name, profile },
       {
-        onSuccess: (result) => {
-          setUploadedAs(result.name);
+        onSuccess: () => {
+          setUploaded(true);
           if (parsed) saveParsedWorkbook(workspaceId, parsed);
         },
       },
@@ -78,12 +80,15 @@ export function Workbook() {
   }
 
   const ready = parsed ?? jsonProfile;
+  const activeSheet =
+    parsed?.sheets.find((s) => s.name === activeSheetName) ?? parsed?.sheets[0] ?? null;
+  const activeColumns = activeSheet ? detectSheet(activeSheet).columns : [];
 
   return (
     <div>
       <PageHeader
         title="Workbook"
-        sub="Bring the spreadsheet your business lives in. Cormac reads a detection profile of it during the interview; the file itself never leaves this browser."
+        sub="Bring the spreadsheet your business lives in. Cormac reads a summary of its structure during the interview. The file itself never leaves your browser."
       />
 
       <div
@@ -96,14 +101,16 @@ export function Workbook() {
           if (file) void onFile(file);
         }}
       >
-        <div className="font-display text-lg text-stone-600">
+        <div className="font-display text-xl text-stone-600">
           Drop your workbook here, or click to choose
         </div>
-        <div className="mt-1 text-xs text-stone-400">.xlsx (or a .detected.json fixture in dev)</div>
+        <div className="mt-1 text-sm text-stone-400">
+          Excel files (.xlsx){import.meta.env.DEV ? ' — or a .detected.json fixture in dev' : ''}
+        </div>
         <input
           ref={fileInput}
           type="file"
-          accept=".xlsx,.xls,.json"
+          accept={import.meta.env.DEV ? '.xlsx,.xls,.json' : '.xlsx,.xls'}
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -116,14 +123,32 @@ export function Workbook() {
 
       {parsed && (
         <section className="animate-rise">
-          <SectionLabel>Preview — check the header rows before sending</SectionLabel>
+          <SectionLabel>Check it looks right before sharing</SectionLabel>
           <div className="mt-2">
-            <WorkbookPreview sheets={parsed.sheets} onHeaderRowChange={setHeaderRow} />
+            <WorkbookPreview
+              sheets={parsed.sheets}
+              onHeaderRowChange={setHeaderRow}
+              onActiveSheetChange={setActiveSheetName}
+            />
           </div>
+
+          {activeSheet && activeColumns.length > 0 && (
+            <div className="mt-4">
+              <SectionLabel>Columns we found in “{activeSheet.name}”</SectionLabel>
+              <ul className="mt-2 grid grid-cols-1 gap-x-8 gap-y-1 text-sm text-stone-600 sm:grid-cols-2">
+                {activeColumns.map((c) => (
+                  <li key={c.header} className="flex items-baseline justify-between gap-3 border-b border-stone-100 py-1">
+                    <span className="font-medium text-ink">{c.header}</span>
+                    <span className="text-sm text-stone-400">{typeWord(c.inferredType)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
       )}
 
-      {jsonProfile && (
+      {jsonProfile && import.meta.env.DEV && (
         <div className="rounded-md border border-stone-200 bg-white px-4 py-3 text-sm text-stone-600">
           Detection profile <span className="font-mono">{jsonProfile.workbookName}</span> with{' '}
           {jsonProfile.sheets.length} sheet(s), ready to send.
@@ -131,14 +156,17 @@ export function Workbook() {
       )}
 
       {ready && (
-        <div className="mt-5 flex items-center gap-3">
+        <div className="mt-6 flex items-center gap-3">
           <Button onClick={submit} busy={upload.isPending}>
-            Send profile to Cormac
+            Share with Cormac
           </Button>
-          {uploadedAs && (
+          {uploaded && (
             <span className="text-sm text-ledger-700">
-              Stored as <span className="font-mono">{uploadedAs}</span> — ready for the{' '}
-              <Link to={`/w/${workspaceId}/interview`} className="underline underline-offset-2">
+              Cormac has your workbook — ready for the{' '}
+              <Link
+                to={`/w/${workspaceId}/interview`}
+                className="font-medium underline decoration-ledger-300 underline-offset-2 hover:decoration-ledger-600"
+              >
                 interview
               </Link>
               .

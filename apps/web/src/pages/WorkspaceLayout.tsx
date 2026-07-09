@@ -4,12 +4,12 @@ import { useSession } from '../auth/useSession';
 import { supabase } from '../supabase';
 
 const NAV = [
-  { to: 'interview', label: 'Interview', hint: 'Author the contract' },
-  { to: 'workbook', label: 'Workbook', hint: 'Upload and preview' },
-  { to: 'inbox', label: 'Inbox', hint: 'Capture and review' },
+  { to: 'interview', label: 'Interview', hint: 'Set up your workspace' },
+  { to: 'workbook', label: 'Workbook', hint: 'Bring your spreadsheet' },
+  { to: 'inbox', label: 'Inbox', hint: 'Tell Cormac what happened' },
   { to: 'records', label: 'Records', hint: 'The book' },
-  { to: 'contract', label: 'Contract', hint: 'The published truth' },
-  { to: 'audit', label: 'Audit', hint: 'Every change, kept' },
+  { to: 'contract', label: 'Structure', hint: 'How your book is organized' },
+  { to: 'audit', label: 'History', hint: 'Every change, kept' },
 ];
 
 export function WorkspaceLayout() {
@@ -22,7 +22,7 @@ export function WorkspaceLayout() {
     <div className="flex min-h-screen bg-paper">
       <aside className="fixed inset-y-0 flex w-60 flex-col border-r border-stone-200 bg-white/70 backdrop-blur">
         <div className="px-5 pt-5 pb-4">
-          <Link to="/" className="font-display text-[22px] font-[560] text-ink">
+          <Link to="/" className="font-display text-2xl font-[560] text-ink">
             Cormac
           </Link>
           <div className="mt-0.5 truncate text-xs text-stone-400">
@@ -43,7 +43,7 @@ export function WorkspaceLayout() {
               }
             >
               <span className="block">{item.label}</span>
-              <span className="block text-[11px] font-normal text-stone-400 group-hover:text-stone-500">
+              <span className="block text-xs font-normal text-stone-400 group-hover:text-stone-500">
                 {item.hint}
               </span>
             </NavLink>

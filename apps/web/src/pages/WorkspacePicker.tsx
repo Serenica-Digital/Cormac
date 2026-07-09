@@ -29,8 +29,12 @@ export function WorkspacePicker() {
         {error && <ErrorNote error={error} />}
         {workspaces && workspaces.length === 0 && (
           <div className="rounded-lg border border-dashed border-stone-300 bg-white px-6 py-8 text-center text-sm text-stone-500">
-            No workspaces yet. Ask an administrator to add you, or seed one in dev
-            (<span className="font-mono text-xs">pnpm seed:ops-e2e</span>).
+            No workspaces yet. Ask your administrator to add you.
+            {import.meta.env.DEV && (
+              <span className="mt-1 block text-xs text-stone-400">
+                (dev: <span className="font-mono">pnpm seed:ops-e2e</span>)
+              </span>
+            )}
           </div>
         )}
         <div className="space-y-2">

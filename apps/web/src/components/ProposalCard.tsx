@@ -44,7 +44,7 @@ export function ProposalCard({
                 {change.op === 'update' && change.recordId && (
                   <Link
                     to={`/w/${workspaceId}/records/${change.recordId}`}
-                    className="text-stone-500 underline decoration-stone-300 underline-offset-2 hover:text-ledger-700"
+                    className="text-ledger-700 underline decoration-ledger-200 underline-offset-2 hover:decoration-ledger-600"
                   >
                     {change.current ? recordTitle(object, change.current) : 'view record'}
                   </Link>
@@ -53,7 +53,7 @@ export function ProposalCard({
               <dl className="mt-2 space-y-1.5">
                 {fieldNames.map((name) => (
                   <div key={name} className="flex flex-wrap items-baseline gap-x-3">
-                    <dt className="w-40 shrink-0 text-[13px] text-stone-500">
+                    <dt className="w-40 shrink-0 text-xs text-stone-500">
                       {fieldLabel(object, name)}
                     </dt>
                     <dd>

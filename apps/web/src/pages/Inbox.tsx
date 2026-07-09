@@ -42,15 +42,15 @@ export function Inbox() {
       <form onSubmit={submit} className="mb-8">
         <div className="rounded-lg border border-stone-200 bg-white p-3 shadow-[0_1px_2px_rgba(28,25,23,0.04)] focus-within:border-ledger-500 focus-within:ring-2 focus-within:ring-ledger-100">
           <textarea
-            className="h-20 w-full resize-none bg-transparent text-sm text-ink placeholder:text-stone-400 focus:outline-none"
+            className="h-20 w-full resize-none bg-transparent text-base text-ink placeholder:text-stone-400 focus:outline-none"
             placeholder='e.g. "Just closed the deal with Carter, met his partner Susan"'
             value={text}
             onChange={(e) => setText(e.target.value)}
             disabled={capture.isPending}
           />
           <div className="flex items-center justify-between pt-1">
-            <span className="text-xs text-stone-400">
-              {capture.isPending ? 'Cormac is reading that…' : 'Captured to the audit trail, always.'}
+            <span className="text-sm text-stone-400">
+              {capture.isPending ? 'Cormac is reading that…' : 'Everything you send is kept in your History.'}
             </span>
             <Button type="submit" busy={capture.isPending} disabled={!text.trim()}>
               Send to Cormac
@@ -76,7 +76,7 @@ export function Inbox() {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              className={`rounded-full px-3.5 py-1 text-sm font-medium transition-colors ${
                 tab === t ? 'bg-ink text-paper' : 'text-stone-500 hover:bg-stone-100'
               }`}
             >

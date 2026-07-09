@@ -7,7 +7,7 @@ import { formatValue } from './ui';
 export function ValueDiff({ current, proposed }: { current: unknown; proposed: unknown }) {
   const hasCurrent = current !== null && current !== undefined && current !== '';
   return (
-    <span className="inline-flex flex-wrap items-baseline gap-1.5 font-mono text-[13px]">
+    <span className="inline-flex flex-wrap items-baseline gap-1.5 font-mono text-xs">
       {hasCurrent && (
         <>
           <span className="rounded bg-stone-100 px-1.5 py-0.5 text-stone-500 line-through decoration-stone-400">

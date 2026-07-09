@@ -54,7 +54,7 @@ export function Timeline({ entries }: { entries: TimelineEntry[] }) {
 
           <dl className="mt-2 space-y-1">
             {changedKeys(e).map((k) => (
-              <div key={k} className="flex flex-wrap items-baseline gap-x-3 text-[13px]">
+              <div key={k} className="flex flex-wrap items-baseline gap-x-3 text-xs">
                 <dt className="w-36 shrink-0 text-stone-500">{k}</dt>
                 <dd className="font-mono">
                   {e.before && e.before[k] !== undefined && e.before[k] !== null && (

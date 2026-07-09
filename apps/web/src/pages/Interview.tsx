@@ -90,7 +90,7 @@ export function Interview() {
       <div className="flex items-start justify-between">
         <PageHeader
           title="Interview"
-          sub="Cormac interviews you about how your business actually runs, then publishes the contract you approve. Take your time; it asks one thing at a time."
+          sub="Cormac interviews you about how your business actually runs, then sets up your workspace the way you approve. Take your time; it asks one thing at a time."
         />
         {messages.length > 0 && (
           <button
@@ -111,7 +111,7 @@ export function Interview() {
           <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
             {messages.length === 0 && (
               <div className="mx-auto max-w-sm py-10 text-center">
-                <div className="font-display text-lg text-stone-500">
+                <div className="font-display text-xl text-stone-500">
                   Start when you're ready.
                 </div>
                 <p className="mt-2 text-sm text-stone-400">
@@ -128,19 +128,19 @@ export function Interview() {
                 <div
                   className={
                     m.role === 'user'
-                      ? 'max-w-[85%] rounded-2xl rounded-br-sm bg-ink px-4 py-2.5 text-sm text-paper'
+                      ? 'max-w-[85%] rounded-2xl rounded-br-sm bg-ink px-4 py-2.5 text-base text-paper'
                       : 'max-w-[92%]'
                   }
                 >
                   {m.role === 'agent' && (
-                    <div className="mb-1 text-[10px] font-semibold tracking-[0.16em] text-ledger-700">
+                    <div className="mb-1 text-2xs font-semibold tracking-[0.16em] text-ledger-700">
                       CORMAC
                     </div>
                   )}
                   <div
                     className={
                       m.role === 'agent'
-                        ? 'text-sm leading-relaxed whitespace-pre-wrap text-stone-800'
+                        ? 'text-base leading-relaxed whitespace-pre-wrap text-stone-800'
                         : 'whitespace-pre-wrap'
                     }
                   >
@@ -151,7 +151,7 @@ export function Interview() {
             ))}
             {turn.isPending && (
               <div className="flex items-center gap-2 text-sm text-stone-400">
-                <span className="font-semibold tracking-[0.16em] text-ledger-700 text-[10px]">
+                <span className="font-semibold tracking-[0.16em] text-ledger-700 text-2xs">
                   CORMAC
                 </span>
                 <span className="inline-flex gap-1">
@@ -159,7 +159,7 @@ export function Interview() {
                   <span className="thinking-dot size-1.5 rounded-full bg-stone-400" />
                   <span className="thinking-dot size-1.5 rounded-full bg-stone-400" />
                 </span>
-                <span className="text-xs">thinking — a long pause is normal on the final review</span>
+                <span className="text-sm">thinking — a long pause is normal on the final review</span>
               </div>
             )}
             {turn.error && lastFailed && (
@@ -174,7 +174,7 @@ export function Interview() {
           <form onSubmit={submit} className="border-t border-stone-200 p-3">
             <div className="flex items-end gap-2">
               <textarea
-                className="max-h-40 min-h-[2.5rem] flex-1 resize-y rounded-md border border-stone-200 bg-paper px-3 py-2 text-sm focus:border-ledger-500 focus:outline-none focus:ring-2 focus:ring-ledger-100"
+                className="max-h-40 min-h-[2.75rem] flex-1 resize-y rounded-md border border-stone-200 bg-paper px-3 py-2 text-base focus:border-ledger-500 focus:outline-none focus:ring-2 focus:ring-ledger-100"
                 placeholder={turn.isPending ? 'Cormac is thinking…' : 'Say something to Cormac'}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -196,9 +196,12 @@ export function Interview() {
         <div className="min-w-0">
           {contract.data && (
             <div className="mb-4 rounded-md border border-ledger-200 bg-ledger-50 px-4 py-3 text-sm text-ledger-800">
-              Contract v{contract.data.version} is live.{' '}
-              <Link to={`/w/${workspaceId}/contract`} className="font-medium underline underline-offset-2">
-                See what was published →
+              Your structure is live (v{contract.data.version}).{' '}
+              <Link
+                to={`/w/${workspaceId}/contract`}
+                className="font-medium underline decoration-ledger-400 underline-offset-2 hover:decoration-ledger-700"
+              >
+                See how Cormac understands your book →
               </Link>
             </div>
           )}
@@ -208,12 +211,12 @@ export function Interview() {
               <WorkbookPreview sheets={workbook.sheets} highlightHeaders={highlights} />
             ) : (
               <div className="rounded-lg border border-dashed border-stone-300 px-5 py-8 text-center text-sm text-stone-400">
-                No workbook parsed in this browser yet.{' '}
+                Your workbook isn't showing here yet.{' '}
                 <Link
                   to={`/w/${workspaceId}/workbook`}
-                  className="text-ledger-700 underline underline-offset-2"
+                  className="text-ledger-700 underline decoration-ledger-300 underline-offset-2 hover:decoration-ledger-600"
                 >
-                  Upload it
+                  Bring it in
                 </Link>{' '}
                 to follow along as Cormac asks about your columns.
               </div>

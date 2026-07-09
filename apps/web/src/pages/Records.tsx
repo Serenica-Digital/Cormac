@@ -28,8 +28,8 @@ export function Records() {
       <div>
         <PageHeader title="Records" />
         <EmptyState
-          title="No contract published yet"
-          hint="Run the interview first; records exist only against a published contract."
+          title="Finish the interview first"
+          hint="That's where Cormac learns how your book is organized. Records live against that structure."
         />
       </div>
     );
@@ -47,7 +47,7 @@ export function Records() {
           <button
             key={o.apiName}
             onClick={() => setActiveObject(o.apiName)}
-            className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               o.apiName === objectApiName
                 ? 'bg-ink text-paper'
                 : 'text-stone-600 hover:bg-stone-100'
@@ -65,7 +65,7 @@ export function Records() {
       )}
       {records.error && <ErrorNote error={records.error} />}
       {records.data && records.data.length === 0 && (
-        <EmptyState title="No records yet" hint="Approved proposals land here." />
+        <EmptyState title="No records yet" hint="Changes you approve land here." />
       )}
 
       {records.data && records.data.length > 0 && object && (
@@ -74,11 +74,11 @@ export function Records() {
             <thead>
               <tr className="border-b border-stone-200 bg-stone-50/70 text-left">
                 {columns.map((c) => (
-                  <th key={c.apiName} className="px-4 py-2.5 text-xs font-semibold tracking-wide text-stone-500">
+                  <th key={c.apiName} className="px-4 py-3 text-xs font-semibold tracking-wide text-stone-500">
                     {c.label}
                   </th>
                 ))}
-                <th className="px-4 py-2.5 text-right text-xs font-semibold tracking-wide text-stone-500">
+                <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-stone-500">
                   Updated
                 </th>
               </tr>
@@ -87,11 +87,11 @@ export function Records() {
               {records.data.map((r) => (
                 <tr key={r.id} className="group border-b border-stone-100 last:border-0 hover:bg-ledger-50/40">
                   {columns.map((c, i) => (
-                    <td key={c.apiName} className="px-4 py-2.5">
+                    <td key={c.apiName} className="px-4 py-3">
                       {i === 0 ? (
                         <Link
                           to={`/w/${workspaceId}/records/${r.id}`}
-                          className="font-medium text-ink underline-offset-2 group-hover:underline"
+                          className="font-medium text-ledger-700 underline decoration-ledger-200 underline-offset-2 hover:decoration-ledger-600"
                         >
                           {formatValue(r.data[c.apiName])}
                         </Link>
@@ -100,7 +100,7 @@ export function Records() {
                       )}
                     </td>
                   ))}
-                  <td className="px-4 py-2.5 text-right text-xs text-stone-400">
+                  <td className="px-4 py-3 text-right text-sm text-stone-400">
                     {formatWhen(r.updated_at)}
                   </td>
                 </tr>

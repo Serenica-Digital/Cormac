@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 export function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <div className="text-[11px] font-semibold tracking-[0.14em] text-stone-400 uppercase">
+    <div className="text-xs font-semibold tracking-[0.12em] text-stone-500 uppercase">
       {children}
     </div>
   );
@@ -27,7 +27,7 @@ export function Button({
   ...rest
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; busy?: boolean }) {
   const base =
-    'inline-flex items-center gap-2 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ledger-600 disabled:cursor-not-allowed disabled:opacity-50';
+    'inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ledger-600 disabled:cursor-not-allowed disabled:opacity-50';
   const variants: Record<ButtonVariant, string> = {
     primary: 'bg-ledger-700 text-white hover:bg-ledger-800',
     ghost: 'border border-stone-300 bg-white text-stone-700 hover:bg-stone-50',
@@ -62,7 +62,7 @@ const chipTones: Record<string, string> = {
 export function Chip({ tone = 'neutral', children }: { tone?: string; children: ReactNode }) {
   const cls = chipTones[tone] ?? chipTones.neutral;
   return (
-    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${cls}`}>
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${cls}`}>
       {children}
     </span>
   );
@@ -71,7 +71,7 @@ export function Chip({ tone = 'neutral', children }: { tone?: string; children: 
 export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   return (
     <div className="rounded-lg border border-dashed border-stone-300 px-6 py-10 text-center">
-      <div className="font-display text-lg text-stone-500">{title}</div>
+      <div className="font-display text-xl text-stone-500">{title}</div>
       {hint && <div className="mt-1 text-sm text-stone-400">{hint}</div>}
     </div>
   );
@@ -89,8 +89,8 @@ export function ErrorNote({ error }: { error: unknown }) {
 export function PageHeader({ title, sub }: { title: string; sub?: string }) {
   return (
     <header className="mb-6 animate-rise">
-      <h1 className="font-display text-[26px] font-[560] text-ink">{title}</h1>
-      {sub && <p className="mt-1 max-w-xl text-sm text-stone-500">{sub}</p>}
+      <h1 className="font-display text-3xl font-[560] text-ink">{title}</h1>
+      {sub && <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-stone-500">{sub}</p>}
     </header>
   );
 }

@@ -16,10 +16,10 @@ export function ContractPage() {
   if (contract.error || !contract.data) {
     return (
       <div>
-        <PageHeader title="Contract" />
+        <PageHeader title="Structure" />
         <EmptyState
-          title="Nothing published yet"
-          hint="The interview ends by publishing your first contract version."
+          title="Nothing here yet"
+          hint="The interview ends by setting up how your book is organized — that's what shows here."
         />
       </div>
     );
@@ -31,52 +31,53 @@ export function ContractPage() {
     <div>
       <PageHeader
         title={doc.name}
-        sub={`Version ${version}, live. This is the shared source of truth every capture is validated against.`}
+        sub={`Structure, version ${version} — how Cormac understands your book. Every change it proposes is checked against this.`}
       />
 
       <div className="space-y-6">
         {doc.objects.map((o) => (
           <Card key={o.apiName} className="animate-rise p-5">
             <div className="flex items-baseline gap-3">
-              <h2 className="font-display text-lg font-[560] text-ink">{o.label}</h2>
-              <span className="font-mono text-xs text-stone-400">{o.apiName}</span>
-              <span className="ml-auto text-xs text-stone-400">
+              <h2 className="font-display text-xl font-[560] text-ink">{o.label}</h2>
+              <span className="ml-auto text-sm text-stone-400">
                 identified by {o.identity.displayFields.join(', ')}
               </span>
             </div>
             <table className="mt-3 w-full text-sm">
               <thead>
                 <tr className="border-b border-stone-200 text-left text-xs text-stone-400">
-                  <th className="py-1.5 pr-4 font-medium">Field</th>
-                  <th className="py-1.5 pr-4 font-medium">Type</th>
-                  <th className="py-1.5 pr-4 font-medium">Rules</th>
+                  <th className="py-2 pr-4 font-medium">Field</th>
+                  <th className="py-2 pr-4 font-medium">Kind</th>
+                  <th className="py-2 pr-4 font-medium">Rules</th>
                 </tr>
               </thead>
               <tbody>
                 {o.fields.map((f) => (
                   <tr key={f.apiName} className="border-b border-stone-100 last:border-0">
-                    <td className="py-2 pr-4">
-                      <span className="font-medium text-ink">{f.label}</span>
-                      <span className="ml-2 font-mono text-xs text-stone-400">{f.apiName}</span>
-                    </td>
-                    <td className="py-2 pr-4">
+                    <td className="py-2.5 pr-4 font-medium text-ink">{f.label}</td>
+                    <td className="py-2.5 pr-4">
                       <Chip tone="neutral">
-                        {f.type}
-                        {f.type === 'relationship' && f.relationshipTargetType
-                          ? ` → ${f.relationshipTargetType}`
-                          : ''}
+                        {f.type === 'string'
+                          ? 'text'
+                          : f.type === 'boolean'
+                            ? 'yes/no'
+                            : f.type === 'enum'
+                              ? 'choice'
+                              : f.type === 'relationship'
+                                ? 'linked record'
+                                : f.type}
                       </Chip>
                       {f.type === 'enum' && f.enumOptions && (
-                        <span className="ml-2 text-xs text-stone-400">
+                        <span className="ml-2 text-sm text-stone-400">
                           {f.enumOptions.join(' · ')}
                         </span>
                       )}
                     </td>
-                    <td className="py-2 pr-4 text-xs text-stone-500">
+                    <td className="py-2.5 pr-4 text-sm text-stone-500">
                       {[
                         f.required ? 'required' : null,
-                        f.editableByAgent ? 'agent may propose' : 'human-only',
-                        f.sensitive ? 'sensitive' : null,
+                        f.editableByAgent ? 'Cormac may propose changes' : 'only you can change it',
+                        f.sensitive ? 'kept private from Cormac' : null,
                       ]
                         .filter(Boolean)
                         .join(' · ')}

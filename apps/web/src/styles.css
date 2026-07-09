@@ -10,6 +10,16 @@
   --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
 
+  /* The type scale, raised from Tailwind's defaults so the smallest steps
+   * stay readable. Components use these semantic steps only — never
+   * arbitrary pixel values. text-2xs is the floor, for true micro-meta. */
+  --text-2xs: 0.6875rem; /* 11px */
+  --text-2xs--line-height: 1.4;
+  --text-xs: 0.8125rem; /* 13px, up from 12 */
+  --text-xs--line-height: 1.45;
+  --text-sm: 0.9375rem; /* 15px, up from 14 */
+  --text-sm--line-height: 1.5;
+
   --color-paper: #faf9f7;
   --color-ink: #211d19;
 
@@ -27,6 +37,14 @@
 
 ::selection {
   background: var(--color-ledger-200);
+}
+
+@layer base {
+  /* Tailwind v4 preflight sets buttons to cursor:default; every enabled
+   * button here is an action and must read as one. */
+  button:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 @keyframes rise {

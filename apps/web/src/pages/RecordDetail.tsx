@@ -25,7 +25,7 @@ export function RecordDetail() {
     <div>
       <Link
         to={`/w/${workspaceId}/records`}
-        className="text-xs text-stone-400 hover:text-stone-600"
+        className="text-sm text-stone-400 hover:text-stone-600"
       >
         ← Records
       </Link>
@@ -35,11 +35,11 @@ export function RecordDetail() {
         <div>
           <SectionLabel>Fields</SectionLabel>
           <Card className="mt-2 p-4">
-            <dl className="space-y-2">
+            <dl className="space-y-2.5">
               {(object?.fields ?? []).map((f) => (
-                <div key={f.apiName} className="flex items-baseline gap-3 text-sm">
-                  <dt className="w-40 shrink-0 text-[13px] text-stone-500">{f.label}</dt>
-                  <dd className="font-mono text-[13px] text-ink">
+                <div key={f.apiName} className="flex items-baseline gap-3">
+                  <dt className="w-40 shrink-0 text-sm text-stone-500">{f.label}</dt>
+                  <dd className="font-mono text-sm text-ink">
                     {formatValue(record.data[f.apiName])}
                   </dd>
                 </div>
