@@ -13,6 +13,7 @@ import { Records } from './pages/Records';
 import { RecordDetail } from './pages/RecordDetail';
 import { ContractPage } from './pages/ContractPage';
 import { AuditPage } from './pages/AuditPage';
+import { Members } from './pages/Members';
 
 /** Lands on the everyday Inbox once the book is live; on setup before then. */
 function WorkspaceIndex() {
@@ -53,6 +54,7 @@ const router = createBrowserRouter([
           { path: 'records/:recordId', element: <RecordDetail /> },
           { path: 'contract', element: <ContractPage /> },
           { path: 'audit', element: <AuditPage /> },
+          { path: 'members', element: <Members /> },
         ],
       },
     ],

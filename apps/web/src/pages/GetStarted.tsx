@@ -11,19 +11,33 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useContract } from '../api/hooks';
-import { PageHeader } from '../components/kit';
+import { useMyRole, can } from '../lib/authz';
+import { PageHeader, SetupPending, Spinner } from '../components/kit';
 import { loadParsedWorkbook } from '../workbook/store';
 
 /**
  * The setup-stage landing: two steps, told in order. Step 1's done state
  * reads the locally parsed workbook; the workspace's real state (live or
- * not) comes from the server.
+ * not) comes from the server. Setup itself is reserved for roles that can
+ * publish the contract; everyone else sees where things stand.
  */
 export function GetStarted() {
   const { workspaceId = '' } = useParams();
   const contract = useContract(workspaceId);
+  const { role } = useMyRole(workspaceId);
   const workbook = useMemo(() => loadParsedWorkbook(workspaceId), [workspaceId]);
   const workbookShared = workbook !== null;
+
+  if (role === null) {
+    return (
+      <div className="flex justify-center py-20 text-stone-400">
+        <Spinner />
+      </div>
+    );
+  }
+  if (!can(role, 'publish_contract')) {
+    return <SetupPending workspaceId={workspaceId} live={Boolean(contract.data)} />;
+  }
 
   if (contract.data) {
     return (
@@ -97,9 +111,8 @@ export function GetStarted() {
             <CardTitle className="font-display text-xl font-[560]">Talk with Cormac</CardTitle>
           </CardHeader>
           <CardContent className="text-sm leading-relaxed text-stone-600">
-            A short conversation about how you actually work. Cormac asks one thing at a time,
-            then proposes how your book should be organized — you approve it before anything is
-            set.
+            A short conversation about how you actually work. Cormac asks one thing at a time, then
+            proposes how your book should be organized — you approve it before anything is set.
           </CardContent>
           <CardFooter className="flex-wrap gap-x-4 gap-y-2">
             <Button asChild variant={workbookShared ? 'default' : 'outline'}>

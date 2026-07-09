@@ -2,6 +2,7 @@ import { Outlet, useParams } from 'react-router';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar, type WorkspaceStage } from '../components/app-sidebar';
 import { useContract, useWorkspaces } from '../api/hooks';
+import { useMyRole } from '../lib/authz';
 import { useSession } from '../auth/useSession';
 
 /** Where this workspace is in its life: still loading, pre-setup, or live. */
@@ -22,10 +23,16 @@ export function WorkspaceLayout() {
   const { session } = useSession();
   const workspace = workspaces?.find((w) => w.id === workspaceId);
   const stage = useWorkspaceStage(workspaceId);
+  const { role } = useMyRole(workspaceId);
 
   return (
     <SidebarProvider>
-      <AppSidebar workspaceName={workspace?.name} email={session?.user.email} stage={stage} />
+      <AppSidebar
+        workspaceName={workspace?.name}
+        email={session?.user.email}
+        stage={stage}
+        role={role}
+      />
       <SidebarInset className="min-w-0 bg-background">
         <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4 md:hidden">
           <SidebarTrigger />

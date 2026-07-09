@@ -79,16 +79,21 @@ export function ProposalCard({
         })}
       </div>
 
-      {onDecide && proposal.status === 'pending' && (
-        <div className="mt-4 flex gap-2">
-          <Button onClick={() => onDecide('approve')} busy={deciding}>
-            Approve
-          </Button>
-          <Button variant="danger" onClick={() => onDecide('reject')} disabled={deciding}>
-            Reject
-          </Button>
-        </div>
-      )}
+      {proposal.status === 'pending' &&
+        (onDecide ? (
+          <div className="mt-4 flex gap-2">
+            <Button onClick={() => onDecide('approve')} busy={deciding}>
+              Approve
+            </Button>
+            <Button variant="danger" onClick={() => onDecide('reject')} disabled={deciding}>
+              Reject
+            </Button>
+          </div>
+        ) : (
+          // Roles that cannot decide see where the proposal stands, not
+          // disabled buttons they could never press.
+          <p className="mt-4 text-xs text-stone-400">Waiting for a manager's approval.</p>
+        ))}
     </Card>
   );
 }

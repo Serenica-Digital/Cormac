@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import type { Contract } from '@cormac/contract';
 import { ProposalCard } from '../src/components/ProposalCard';
@@ -63,6 +63,9 @@ const proposal: ProposalView = {
 };
 
 describe('ProposalCard', () => {
+  // RTL auto-cleanup needs vitest globals, which this suite does not use.
+  afterEach(cleanup);
+
   it('renders the diff (current struck through, proposed highlighted) with contract labels', () => {
     render(
       <MemoryRouter>
@@ -81,7 +84,12 @@ describe('ProposalCard', () => {
     const onDecide = vi.fn();
     const { rerender } = render(
       <MemoryRouter>
-        <ProposalCard proposal={proposal} contract={contract} workspaceId="ws1" onDecide={onDecide} />
+        <ProposalCard
+          proposal={proposal}
+          contract={contract}
+          workspaceId="ws1"
+          onDecide={onDecide}
+        />
       </MemoryRouter>,
     );
     screen.getByText('Approve').click();
@@ -98,5 +106,16 @@ describe('ProposalCard', () => {
       </MemoryRouter>,
     );
     expect(screen.queryByText('Approve')).toBeNull();
+  });
+
+  it('tells non-deciders a pending proposal is waiting, without dead buttons', () => {
+    render(
+      <MemoryRouter>
+        <ProposalCard proposal={proposal} contract={contract} workspaceId="ws1" />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("Waiting for a manager's approval.")).toBeDefined();
+    expect(screen.queryByText('Approve')).toBeNull();
+    expect(screen.queryByText('Reject')).toBeNull();
   });
 });

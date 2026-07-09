@@ -50,4 +50,9 @@ export const api = {
   get: <T>(path: string) => apiFetch<T>(path),
   post: <T>(path: string, body: unknown) =>
     apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body) }),
+  patch: <T>(path: string, body: unknown) =>
+    apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
+  // No body, and deliberately no content-type: the server's JSON parser
+  // rejects an empty JSON body before the route even runs.
+  del: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
 };

@@ -48,11 +48,31 @@ const PASSWORD = process.env.SMOKE_PASSWORD ?? 'cormac-demo';
 const SHOTS = new URL('../../.jarvis/tmp/notes/render-smoke/shots/', import.meta.url).pathname;
 mkdirSync(SHOTS, { recursive: true });
 
-const PAGES = ['start', 'interview', 'workbook', 'inbox', 'records', 'contract', 'audit'];
+const PAGES = [
+  'start',
+  'interview',
+  'workbook',
+  'inbox',
+  'records',
+  'contract',
+  'audit',
+  'members',
+];
 const VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
   { name: 'mobile', width: 390, height: 844 },
 ];
+
+// Role expectations for the demo personas (docs/dev/demo-accounts.md):
+// what the sidebar reveals and whether the capture box exists. Checked on
+// desktop only (the mobile sidebar lives in a sheet).
+const ROLE_CHECKS = {
+  owner: { people: true, setupTools: true, capture: true },
+  admin: { people: true, setupTools: true, capture: true },
+  manager: { people: false, setupTools: false, capture: true },
+  member: { people: false, setupTools: false, capture: true },
+  viewer: { people: false, setupTools: false, capture: false },
+};
 
 const problems = [];
 
@@ -112,7 +132,9 @@ for (const vp of VIEWPORTS) {
       const hscroll = await page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
       );
-      const blank = await page.evaluate(() => document.getElementById('root')?.innerText.trim() === '');
+      const blank = await page.evaluate(
+        () => document.getElementById('root')?.innerText.trim() === '',
+      );
       await page.screenshot({ path: `${SHOTS}${vp.name}-ws${wi}-${p}.png`, fullPage: false });
       const newErrors = errors.slice(before);
       const flags = [
@@ -120,8 +142,53 @@ for (const vp of VIEWPORTS) {
         blank ? 'BLANK PAGE' : null,
         newErrors.length ? `${newErrors.length} console error(s)` : null,
       ].filter(Boolean);
-      if (flags.length) problems.push(`[${vp.name}] ws${wi}/${p}: ${flags.join(', ')} ${newErrors[0] ?? ''}`);
+      if (flags.length)
+        problems.push(`[${vp.name}] ws${wi}/${p}: ${flags.join(', ')} ${newErrors[0] ?? ''}`);
       console.log(`[${vp.name}] ws${wi}/${p} ok=${flags.length === 0} ${flags.join(' | ')}`);
+    }
+
+    // Role flows: the nav and the capture box must match the persona.
+    const checks = EMAIL.endsWith('@demo.test') ? ROLE_CHECKS[EMAIL.split('@')[0]] : null;
+    if (vp.name === 'desktop' && checks) {
+      await page.goto(`${BASE}/w/${ws}/inbox`, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(400);
+      const nav = await page
+        .locator('[data-slot="sidebar-content"]')
+        .innerText()
+        .catch(() => '');
+      const expectNav = (label, expected) => {
+        if (nav.includes(label) !== expected) {
+          problems.push(
+            `[role] ws${wi}: nav "${label}" ${expected ? 'missing' : 'present'} for ${EMAIL}`,
+          );
+        }
+      };
+      expectNav('People', checks.people);
+      expectNav('Talk with Cormac', checks.setupTools);
+
+      const hasCapture = (await page.locator('form textarea').count()) > 0;
+      if (hasCapture !== checks.capture) {
+        problems.push(
+          `[role] ws${wi}: capture box ${checks.capture ? 'missing' : 'present'} for ${EMAIL}`,
+        );
+      }
+      if (!checks.capture) {
+        const viewingNote = await page.getByText("You're viewing this book").count();
+        if (viewingNote === 0) problems.push(`[role] ws${wi}: viewer note missing for ${EMAIL}`);
+      }
+
+      // Direct URL must not out-privilege the nav.
+      await page.goto(`${BASE}/w/${ws}/members`, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(300);
+      const expectedMembersText = checks.people
+        ? 'Who can work in this book'
+        : 'Nothing to manage here';
+      if ((await page.getByText(expectedMembersText).count()) === 0) {
+        problems.push(
+          `[role] ws${wi}: /members did not show "${expectedMembersText}" for ${EMAIL}`,
+        );
+      }
+      console.log(`[role] ws${wi} checks done for ${EMAIL}`);
     }
 
     // Mobile: exercise the sidebar sheet trigger on one page.
@@ -144,7 +211,9 @@ for (const vp of VIEWPORTS) {
 await browser.close();
 console.log('\n=== RESULT ===');
 if (problems.length === 0) {
-  console.log(`CLEAN for ${EMAIL}: no console errors, no blank pages, no page-level horizontal scroll.`);
+  console.log(
+    `CLEAN for ${EMAIL}: no console errors, no blank pages, no page-level horizontal scroll.`,
+  );
 } else {
   for (const p of problems) console.log('PROBLEM:', p);
   process.exitCode = 1;

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
+import { Link } from 'react-router';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Spinner } from '@/components/ui/button';
+import { Button, Spinner } from '@/components/ui/button';
 
 export { Spinner };
 
@@ -46,6 +47,33 @@ export function ErrorNote({ error }: { error: unknown }) {
     <Alert variant="destructive" className="border-red-200 bg-red-50">
       <AlertDescription>{message}</AlertDescription>
     </Alert>
+  );
+}
+
+/**
+ * What a non-admin sees on the setup pages: a held door, not a wall of
+ * buttons that would all be refused. Hide-with-context, never dead controls.
+ */
+export function SetupPending({ workspaceId, live }: { workspaceId: string; live: boolean }) {
+  return (
+    <div className="mx-auto max-w-2xl">
+      {live ? (
+        <EmptyState
+          title="This area is for workspace admins"
+          hint="Your book is live. Everyday work happens in the Inbox."
+          action={
+            <Button asChild>
+              <Link to={`/w/${workspaceId}/inbox`}>Open your Inbox</Link>
+            </Button>
+          }
+        />
+      ) : (
+        <EmptyState
+          title="Your book is being set up"
+          hint="A workspace admin is setting things up with Cormac. You'll be able to work here the moment it's live."
+        />
+      )}
+    </div>
   );
 }
 

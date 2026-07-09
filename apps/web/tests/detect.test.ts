@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { detectHeaderRow, detectSheet, inferType, toDetectionProfile } from '../src/workbook/detect';
+import {
+  detectHeaderRow,
+  detectSheet,
+  inferType,
+  toDetectionProfile,
+} from '../src/workbook/detect';
 import type { ParsedSheet } from '../src/workbook/types';
 
 /** Grid shaped like the fixture's banner case: title rows above real headers. */

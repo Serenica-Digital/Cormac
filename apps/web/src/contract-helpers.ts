@@ -1,6 +1,9 @@
 import type { Contract, ContractField, ContractObject } from '@cormac/contract';
 
-export function objectFor(contract: Contract | undefined, apiName: string): ContractObject | undefined {
+export function objectFor(
+  contract: Contract | undefined,
+  apiName: string,
+): ContractObject | undefined {
   return contract?.objects.find((o) => o.apiName === apiName);
 }
 
@@ -8,7 +11,10 @@ export function fieldLabel(object: ContractObject | undefined, fieldApiName: str
   return object?.fields.find((f) => f.apiName === fieldApiName)?.label ?? fieldApiName;
 }
 
-export function fieldFor(object: ContractObject | undefined, fieldApiName: string): ContractField | undefined {
+export function fieldFor(
+  object: ContractObject | undefined,
+  fieldApiName: string,
+): ContractField | undefined {
   return object?.fields.find((f) => f.apiName === fieldApiName);
 }
 

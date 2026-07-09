@@ -14,8 +14,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuthoringTurn, useContract } from '../api/hooks';
+import { useMyRole, can } from '../lib/authz';
 import { WorkbookPreview } from '../components/WorkbookPreview';
-import { ErrorNote, PageHeader, SectionLabel } from '../components/kit';
+import { ErrorNote, PageHeader, SectionLabel, SetupPending, Spinner } from '../components/kit';
 import { loadParsedWorkbook } from '../workbook/store';
 
 interface ChatMessage {
@@ -34,6 +35,24 @@ function loadTranscript(workspaceId: string): ChatMessage[] {
   }
 }
 
+/** The interview drives contract publishing, so it carries the same gate. */
+export function Interview() {
+  const { workspaceId = '' } = useParams();
+  const { role } = useMyRole(workspaceId);
+  const contract = useContract(workspaceId);
+  if (role === null) {
+    return (
+      <div className="flex justify-center py-20 text-stone-400">
+        <Spinner />
+      </div>
+    );
+  }
+  if (!can(role, 'publish_contract')) {
+    return <SetupPending workspaceId={workspaceId} live={Boolean(contract.data)} />;
+  }
+  return <InterviewChat />;
+}
+
 /**
  * The authoring interview. Each send is one synchronous turn against the
  * server-side conversation (the server holds true state; this transcript is
@@ -43,7 +62,7 @@ function loadTranscript(workspaceId: string): ChatMessage[] {
  * Layout: the conversation gets a comfortable reading column; the workbook
  * sits below it at full width so its table has real room.
  */
-export function Interview() {
+function InterviewChat() {
   const { workspaceId = '' } = useParams();
   const [messages, setMessages] = useState<ChatMessage[]>(() => loadTranscript(workspaceId));
   const [draft, setDraft] = useState('');
@@ -120,8 +139,7 @@ export function Interview() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Clear this conversation from view?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This only clears what's shown here. Cormac's memory of your setup is
-                    unaffected.
+                    This only clears what's shown here. Cormac's memory of your setup is unaffected.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -151,8 +169,8 @@ export function Interview() {
               <div className="mx-auto max-w-sm py-10 text-center">
                 <div className="font-display text-xl text-stone-500">Start when you're ready.</div>
                 <p className="mt-2 text-sm text-stone-400">
-                  Something like “hi — I brought my relationship tracker, let's set up my
-                  workspace” works fine. Share your workbook first if you haven't.
+                  Something like “hi — I brought my relationship tracker, let's set up my workspace”
+                  works fine. Share your workbook first if you haven't.
                 </p>
               </div>
             )}
