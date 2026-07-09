@@ -2,7 +2,8 @@ import { Link } from 'react-router';
 import type { Contract } from '@cormac/contract';
 import type { ProposalView } from '../api/types';
 import { fieldLabel, objectFor, recordTitle } from '../contract-helpers';
-import { Button, Card, Chip, formatWhen } from './ui';
+import { Button, Card, Chip } from './kit';
+import { formatWhen } from '@/lib/format';
 import { ValueDiff } from './ValueDiff';
 
 export function ProposalCard({

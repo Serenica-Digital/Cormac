@@ -8,7 +8,14 @@
     "noEmit": true,
     "declaration": false,
     "sourceMap": false,
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    // Overriding paths replaces the base config's map, so the @cormac/contract
+    // mapping is restated here relative to this package.
+    "paths": {
+      "@/*": ["./src/*"],
+      "@cormac/contract": ["../../packages/contract/src/index.ts"]
+    }
   },
   "include": ["src", "tests", "vite.config.ts"]
 }

@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
@@ -8,6 +9,9 @@ import tailwindcss from '@tailwindcss/vite';
 // values; nothing secret is ever defined here.
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
   // 5175 to stay clear of the default 5173 (occupied by other tooling on the
   // dev machine); strictPort so a port collision fails loudly instead of
   // hopping somewhere CORS_ORIGINS does not allow.

@@ -1,5 +1,6 @@
 import type { TimelineEntry } from '../api/types';
-import { Chip, formatValue, formatWhen } from './ui';
+import { Chip } from './kit';
+import { formatValue, formatWhen } from '@/lib/format';
 
 function changedKeys(entry: TimelineEntry): string[] {
   if (!entry.after) return [];

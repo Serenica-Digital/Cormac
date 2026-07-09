@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router';
 import { useAudit } from '../api/hooks';
-import { Chip, EmptyState, ErrorNote, formatWhen, PageHeader, Spinner } from '../components/ui';
+import { Chip, EmptyState, ErrorNote, PageHeader, Spinner } from '../components/kit';
+import { formatWhen } from '@/lib/format';
 
 export function AuditPage() {
   const { workspaceId = '' } = useParams();

@@ -1,4 +1,4 @@
-import { formatValue } from './ui';
+import { formatValue } from '@/lib/format';
 
 /**
  * A single field's current -> proposed rendering: the review queue's whole

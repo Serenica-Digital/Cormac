@@ -1,6 +1,6 @@
 import { Navigate, useNavigate } from 'react-router';
 import { useWorkspaces } from '../api/hooks';
-import { Chip, ErrorNote, Spinner } from '../components/ui';
+import { Chip, ErrorNote, Spinner } from '../components/kit';
 import { supabase } from '../supabase';
 
 export function WorkspacePicker() {

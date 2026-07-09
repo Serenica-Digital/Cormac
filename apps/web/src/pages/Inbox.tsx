@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useParams } from 'react-router';
 import { useCapture, useContract, useDecision, useProposals } from '../api/hooks';
 import { ProposalCard } from '../components/ProposalCard';
-import { Button, EmptyState, ErrorNote, PageHeader, SectionLabel, Spinner } from '../components/ui';
+import { Button, EmptyState, ErrorNote, PageHeader, SectionLabel, Spinner } from '../components/kit';
 
 type Tab = 'pending' | 'applied' | 'rejected';
 

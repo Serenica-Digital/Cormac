@@ -2,7 +2,8 @@ import { Link, useParams } from 'react-router';
 import { useContract, useRecordTimeline } from '../api/hooks';
 import { objectFor, recordTitle } from '../contract-helpers';
 import { Timeline } from '../components/Timeline';
-import { Card, ErrorNote, formatValue, PageHeader, SectionLabel, Spinner } from '../components/ui';
+import { Card, ErrorNote, PageHeader, SectionLabel, Spinner } from '../components/kit';
+import { formatValue } from '@/lib/format';
 
 export function RecordDetail() {
   const { workspaceId = '', recordId = '' } = useParams();

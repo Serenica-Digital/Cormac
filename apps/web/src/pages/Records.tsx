@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useContract, useRecords } from '../api/hooks';
 import { tableColumns } from '../contract-helpers';
-import { EmptyState, ErrorNote, formatValue, formatWhen, PageHeader, Spinner } from '../components/ui';
+import { EmptyState, ErrorNote, PageHeader, Spinner } from '../components/kit';
+import { formatValue, formatWhen } from '@/lib/format';
 
 export function Records() {
   const { workspaceId = '' } = useParams();

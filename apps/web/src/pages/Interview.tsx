@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router';
 import { useAuthoringTurn, useContract } from '../api/hooks';
 import { WorkbookPreview } from '../components/WorkbookPreview';
-import { Button, ErrorNote, PageHeader, SectionLabel } from '../components/ui';
+import { Button, ErrorNote, PageHeader, SectionLabel } from '../components/kit';
 import { loadParsedWorkbook } from '../workbook/store';
 
 interface ChatMessage {

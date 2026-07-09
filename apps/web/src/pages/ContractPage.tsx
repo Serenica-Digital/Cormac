@@ -1,6 +1,6 @@
 import { useParams } from 'react-router';
 import { useContract } from '../api/hooks';
-import { Card, Chip, EmptyState, PageHeader, SectionLabel, Spinner } from '../components/ui';
+import { Card, Chip, EmptyState, PageHeader, SectionLabel, Spinner } from '../components/kit';
 
 export function ContractPage() {
   const { workspaceId = '' } = useParams();

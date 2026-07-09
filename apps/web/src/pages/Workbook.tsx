@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useWorkbookUpload } from '../api/hooks';
 import { typeWord, WorkbookPreview } from '../components/WorkbookPreview';
-import { Button, ErrorNote, PageHeader, SectionLabel } from '../components/ui';
+import { Button, ErrorNote, PageHeader, SectionLabel } from '../components/kit';
 import { detectSheet, toDetectionProfile } from '../workbook/detect';
 import { parseWorkbookFile } from '../workbook/parse';
 import { saveParsedWorkbook } from '../workbook/store';

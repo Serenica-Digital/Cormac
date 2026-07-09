@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { supabase } from '../supabase';
-import { Button, ErrorNote } from '../components/ui';
+import { Button, ErrorNote } from '../components/kit';
 
 export function SignIn() {
   const navigate = useNavigate();
