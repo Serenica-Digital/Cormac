@@ -10,6 +10,24 @@ export interface WorkspaceMembership {
   role: string;
 }
 
+export interface Me {
+  userId: string;
+  email: string | null;
+  platformAdmin: boolean;
+}
+
+export interface WorkspaceMemberRow {
+  userId: string;
+  email: string | null;
+  role: string;
+  createdAt: string;
+}
+
+export interface AddMemberResult {
+  member: WorkspaceMemberRow;
+  userCreated: boolean;
+}
+
 export interface ProposalChangeView {
   objectApiName: string;
   op: 'create' | 'update';

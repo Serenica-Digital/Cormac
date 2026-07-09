@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { useWorkbookUpload } from '../api/hooks';
+import { useContract, useWorkbookUpload } from '../api/hooks';
+import { useMyRole, can } from '../lib/authz';
 import { Button } from '@/components/ui/button';
 import { typeWord, WorkbookPreview } from '../components/WorkbookPreview';
-import { ErrorNote, PageHeader, SectionLabel } from '../components/kit';
+import { ErrorNote, PageHeader, SectionLabel, SetupPending, Spinner } from '../components/kit';
 import { detectSheet, toDetectionProfile } from '../workbook/detect';
 import { parseWorkbookFile } from '../workbook/parse';
 import { saveParsedWorkbook } from '../workbook/store';
@@ -20,7 +21,25 @@ function slugify(name: string): string {
   );
 }
 
+/** Sharing a workbook feeds contract publishing, so it carries the same gate. */
 export function Workbook() {
+  const { workspaceId = '' } = useParams();
+  const { role } = useMyRole(workspaceId);
+  const contract = useContract(workspaceId);
+  if (role === null) {
+    return (
+      <div className="flex justify-center py-20 text-stone-400">
+        <Spinner />
+      </div>
+    );
+  }
+  if (!can(role, 'publish_contract')) {
+    return <SetupPending workspaceId={workspaceId} live={Boolean(contract.data)} />;
+  }
+  return <WorkbookUpload />;
+}
+
+function WorkbookUpload() {
   const { workspaceId = '' } = useParams();
   const fileInput = useRef<HTMLInputElement>(null);
   const [parsed, setParsed] = useState<ParsedWorkbook | null>(null);
@@ -45,7 +64,8 @@ export function Workbook() {
         setJsonProfile(profile);
       } else {
         const wb = await parseWorkbookFile(file);
-        if (wb.sheets.length === 0) throw new Error('We could not find any filled-in sheets in that file');
+        if (wb.sheets.length === 0)
+          throw new Error('We could not find any filled-in sheets in that file');
         setParsed(wb);
         setActiveSheetName(wb.sheets[0]?.name ?? null);
       }
@@ -138,7 +158,10 @@ export function Workbook() {
               <SectionLabel>Columns we found in “{activeSheet.name}”</SectionLabel>
               <ul className="mt-2 grid grid-cols-1 gap-x-8 gap-y-1 text-sm text-stone-600 sm:grid-cols-2">
                 {activeColumns.map((c) => (
-                  <li key={c.header} className="flex items-baseline justify-between gap-3 border-b border-stone-100 py-1">
+                  <li
+                    key={c.header}
+                    className="flex items-baseline justify-between gap-3 border-b border-stone-100 py-1"
+                  >
                     <span className="font-medium text-ink">{c.header}</span>
                     <span className="text-sm text-stone-400">{typeWord(c.inferredType)}</span>
                   </li>

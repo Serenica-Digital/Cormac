@@ -3,6 +3,7 @@ import { useParams } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCapture, useContract, useDecision, useProposals } from '../api/hooks';
+import { useCan } from '../lib/authz';
 import { ProposalCard } from '../components/ProposalCard';
 import { EmptyState, ErrorNote, PageHeader, SectionLabel, Spinner } from '../components/kit';
 
@@ -17,7 +18,7 @@ const TAB_LABELS: Record<Tab, string> = {
 const EMPTY_COPY: Record<Tab, { title: string; hint?: string }> = {
   pending: {
     title: 'Nothing waiting on you',
-    hint: "Tell Cormac what happened above — it lands here for your say-so.",
+    hint: 'Tell Cormac what happened above — it lands here for your say-so.',
   },
   applied: { title: 'No approved changes yet' },
   rejected: { title: 'Nothing rejected yet' },
@@ -33,6 +34,9 @@ export function Inbox() {
   const proposals = useProposals(workspaceId, tab);
   const capture = useCapture(workspaceId);
   const decision = useDecision(workspaceId);
+  const canDo = useCan(workspaceId);
+  const canCapture = canDo('capture_update');
+  const canApprove = canDo('approve_proposal');
 
   function submit(e: FormEvent) {
     e.preventDefault();
@@ -53,40 +57,52 @@ export function Inbox() {
     <div className="mx-auto w-full max-w-3xl">
       <PageHeader
         title="Inbox"
-        sub="Tell Cormac what happened. It proposes the change; nothing is written until you approve it."
+        sub={
+          canCapture
+            ? 'Tell Cormac what happened. It proposes the change; nothing is written until it is approved.'
+            : 'Changes proposed for this book, and what became of them.'
+        }
       />
 
-      <form onSubmit={submit} className="mb-8">
-        <div className="rounded-lg bg-card p-3 ring-1 ring-foreground/10 focus-within:ring-2 focus-within:ring-ring/40">
-          <textarea
-            className="h-20 w-full resize-none bg-transparent text-base text-ink placeholder:text-stone-400 focus:outline-none"
-            placeholder='e.g. "Just closed the deal with Carter, met his partner Susan"'
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            disabled={capture.isPending}
-          />
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-            <span className="text-sm text-stone-400">
-              {capture.isPending
-                ? 'Cormac is reading that…'
-                : 'Everything you send is kept in your History.'}
-            </span>
-            <Button type="submit" busy={capture.isPending} disabled={!text.trim()}>
-              Send to Cormac
-            </Button>
+      {!canCapture && (
+        <p className="mb-8 text-sm text-stone-500">
+          You're viewing this book. Updates are sent by teammates with edit access.
+        </p>
+      )}
+
+      {canCapture && (
+        <form onSubmit={submit} className="mb-8">
+          <div className="rounded-lg bg-card p-3 ring-1 ring-foreground/10 focus-within:ring-2 focus-within:ring-ring/40">
+            <textarea
+              className="h-20 w-full resize-none bg-transparent text-base text-ink placeholder:text-stone-400 focus:outline-none"
+              placeholder='e.g. "Just closed the deal with Carter, met his partner Susan"'
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              disabled={capture.isPending}
+            />
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <span className="text-sm text-stone-400">
+                {capture.isPending
+                  ? 'Cormac is reading that…'
+                  : 'Everything you send is kept in your History.'}
+              </span>
+              <Button type="submit" busy={capture.isPending} disabled={!text.trim()}>
+                Send to Cormac
+              </Button>
+            </div>
           </div>
-        </div>
-        {capture.error && (
-          <div className="mt-2">
-            <ErrorNote error={capture.error} />
-          </div>
-        )}
-        {agentNote && (
-          <div className="mt-2 rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-600">
-            <span className="font-medium text-stone-500">Cormac:</span> {agentNote}
-          </div>
-        )}
-      </form>
+          {capture.error && (
+            <div className="mt-2">
+              <ErrorNote error={capture.error} />
+            </div>
+          )}
+          {agentNote && (
+            <div className="mt-2 rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-600">
+              <span className="font-medium text-stone-500">Cormac:</span> {agentNote}
+            </div>
+          )}
+        </form>
+      )}
 
       <div className="mb-3 flex flex-wrap items-center gap-4">
         <SectionLabel>Review queue</SectionLabel>
@@ -108,7 +124,10 @@ export function Inbox() {
       )}
       {proposals.error && <ErrorNote error={proposals.error} />}
       {proposals.data && proposals.data.length === 0 && (
-        <EmptyState title={EMPTY_COPY[tab].title} hint={EMPTY_COPY[tab].hint} />
+        <EmptyState
+          title={EMPTY_COPY[tab].title}
+          hint={canCapture ? EMPTY_COPY[tab].hint : undefined}
+        />
       )}
       <div className="space-y-4">
         {proposals.data?.map((p) => (
@@ -118,7 +137,9 @@ export function Inbox() {
             contract={contract.data?.contract}
             workspaceId={workspaceId}
             deciding={decision.isPending && decision.variables?.proposalId === p.id}
-            onDecide={(d) => decision.mutate({ proposalId: p.id, decision: d })}
+            onDecide={
+              canApprove ? (d) => decision.mutate({ proposalId: p.id, decision: d }) : undefined
+            }
           />
         ))}
       </div>

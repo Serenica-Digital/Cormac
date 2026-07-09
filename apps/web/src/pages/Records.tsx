@@ -63,7 +63,9 @@ export function Records() {
             key={o.apiName}
             onClick={() => setActiveObject(o.apiName)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              o.apiName === objectApiName ? 'bg-ink text-paper' : 'text-stone-600 hover:bg-stone-100'
+              o.apiName === objectApiName
+                ? 'bg-ink text-paper'
+                : 'text-stone-600 hover:bg-stone-100'
             }`}
           >
             {o.label}

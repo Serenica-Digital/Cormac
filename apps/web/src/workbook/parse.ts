@@ -15,7 +15,9 @@ export async function parseWorkbookFile(file: File): Promise<ParsedWorkbook> {
     const rows = ws
       ? (XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' }) as unknown[][])
       : [];
-    const grid = rows.map((row) => row.map((cell) => (cell === null || cell === undefined ? '' : String(cell))));
+    const grid = rows.map((row) =>
+      row.map((cell) => (cell === null || cell === undefined ? '' : String(cell))),
+    );
     // Drop fully blank trailing rows so counts and previews stay honest.
     while (grid.length > 0 && grid[grid.length - 1]!.every((c) => c.trim() === '')) grid.pop();
     return { name, grid, headerRowIndex: detectHeaderRow(grid) };

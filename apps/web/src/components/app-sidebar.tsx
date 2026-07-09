@@ -14,6 +14,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { buildNav } from '@/lib/nav';
+import type { Role } from '@/lib/authz';
 import { supabase } from '../supabase';
 
 export type WorkspaceStage = 'pending' | 'setup' | 'live';
@@ -22,10 +23,12 @@ export function AppSidebar({
   workspaceName,
   email,
   stage,
+  role,
 }: {
   workspaceName?: string;
   email?: string;
   stage: WorkspaceStage;
+  role: Role | null;
 }) {
   const location = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
@@ -39,12 +42,10 @@ export function AppSidebar({
         <Link to="/" className="w-fit font-display text-2xl font-[560] text-ink">
           Cormac
         </Link>
-        <div className="truncate text-xs text-muted-foreground">
-          {workspaceName ?? 'workspace'}
-        </div>
+        <div className="truncate text-xs text-muted-foreground">{workspaceName ?? 'workspace'}</div>
       </SidebarHeader>
       <SidebarContent>
-        {stage === 'pending' ? (
+        {stage === 'pending' || role === null ? (
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -57,7 +58,7 @@ export function AppSidebar({
             </SidebarGroupContent>
           </SidebarGroup>
         ) : (
-          buildNav({ live: stage === 'live' }).map((group, gi) => (
+          buildNav({ live: stage === 'live', role }).map((group, gi) => (
             <SidebarGroup key={group.label ?? gi}>
               {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
               <SidebarGroupContent>

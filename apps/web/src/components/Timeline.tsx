@@ -63,7 +63,9 @@ export function Timeline({ entries }: { entries: TimelineEntry[] }) {
                 <dd className="font-mono">
                   {e.before && e.before[k] !== undefined && e.before[k] !== null && (
                     <>
-                      <span className="text-stone-400 line-through">{formatValue(e.before[k])}</span>
+                      <span className="text-stone-400 line-through">
+                        {formatValue(e.before[k])}
+                      </span>
                       <span className="mx-1.5 text-stone-400">→</span>
                     </>
                   )}

@@ -2,14 +2,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Contract } from '@cormac/contract';
 import { api } from './client';
 import type {
+  AddMemberResult,
   AuditEventRow,
   AuthoringTurnOutcome,
   BusinessRecordRow,
   CaptureResult,
   DecisionResult,
+  Me,
   ProposalView,
   TimelineEntry,
   WorkbookUploadResult,
+  WorkspaceMemberRow,
   WorkspaceMembership,
 } from './types';
 
@@ -20,6 +23,61 @@ export function useWorkspaces() {
     queryKey: ['workspaces'],
     queryFn: () => api.get<{ workspaces: WorkspaceMembership[] }>('/api/workspaces'),
     select: (d) => d.workspaces,
+  });
+}
+
+export function useMe() {
+  return useQuery({
+    queryKey: ['me'],
+    queryFn: () => api.get<Me>('/api/me'),
+    // Identity and the operator flag move rarely; don't refetch per page.
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useMembers(workspaceId: string) {
+  return useQuery({
+    queryKey: ['members', workspaceId],
+    queryFn: () => api.get<{ members: WorkspaceMemberRow[] }>(`${ws(workspaceId)}/members`),
+    select: (d) => d.members,
+  });
+}
+
+/** Membership mutations invalidate the workspaces list too: my own role may change. */
+function useMembersInvalidation(workspaceId: string) {
+  const qc = useQueryClient();
+  return () => {
+    void qc.invalidateQueries({ queryKey: ['members', workspaceId] });
+    void qc.invalidateQueries({ queryKey: ['workspaces'] });
+  };
+}
+
+export function useAddMember(workspaceId: string) {
+  const invalidate = useMembersInvalidation(workspaceId);
+  return useMutation({
+    mutationFn: (input: { email: string; role: string }) =>
+      api.post<AddMemberResult>(`${ws(workspaceId)}/members`, input),
+    onSuccess: invalidate,
+  });
+}
+
+export function useChangeMemberRole(workspaceId: string) {
+  const invalidate = useMembersInvalidation(workspaceId);
+  return useMutation({
+    mutationFn: (input: { userId: string; role: string }) =>
+      api.patch<{ member: WorkspaceMemberRow }>(`${ws(workspaceId)}/members/${input.userId}`, {
+        role: input.role,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useRemoveMember(workspaceId: string) {
+  const invalidate = useMembersInvalidation(workspaceId);
+  return useMutation({
+    mutationFn: (userId: string) =>
+      api.del<{ removed: boolean }>(`${ws(workspaceId)}/members/${userId}`),
+    onSuccess: invalidate,
   });
 }
 
