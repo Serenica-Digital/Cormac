@@ -532,3 +532,114 @@ export async function isPlatformAdmin(db: Db, userId: string): Promise<boolean> 
   if (error) throw new Error(`isPlatformAdmin: ${error.message}`);
   return data !== null;
 }
+
+// --- Operator surface (platform administration) -----------------------------
+
+export async function listAllWorkspaces(db: Db): Promise<WorkspaceRow[]> {
+  const { data, error } = await db
+    .from('workspaces')
+    .select('*')
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(`listAllWorkspaces: ${error.message}`);
+  return (data as WorkspaceRow[] | null) ?? [];
+}
+
+export async function insertWorkspace(db: Db, name: string): Promise<WorkspaceRow> {
+  const { data, error } = await db.from('workspaces').insert({ name }).select('*').single();
+  return must(data as WorkspaceRow | null, error, 'insertWorkspace');
+}
+
+export interface WorkspaceStats {
+  memberCount: number;
+  contractVersion: number | null;
+  recordCount: number;
+  pendingProposalCount: number;
+  lastAuditAt: string | null;
+}
+
+/** Five queries per workspace: naive, and fine at prototype scale. */
+export async function getWorkspaceStats(db: Db, workspaceId: string): Promise<WorkspaceStats> {
+  const [members, contract, records, pending, lastAudit] = await Promise.all([
+    db
+      .from('memberships')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('workspace_id', workspaceId),
+    getActiveContract(db, workspaceId),
+    db
+      .from('business_records')
+      .select('id', { count: 'exact', head: true })
+      .eq('workspace_id', workspaceId)
+      .is('archived_at', null),
+    db
+      .from('agent_proposals')
+      .select('id', { count: 'exact', head: true })
+      .eq('workspace_id', workspaceId)
+      .eq('status', 'pending'),
+    db
+      .from('audit_events')
+      .select('created_at')
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  for (const [what, res] of [
+    ['memberships', members],
+    ['business_records', records],
+    ['agent_proposals', pending],
+    ['audit_events', lastAudit],
+  ] as const) {
+    if (res.error) throw new Error(`getWorkspaceStats(${what}): ${res.error.message}`);
+  }
+
+  return {
+    memberCount: members.count ?? 0,
+    contractVersion: contract?.version ?? null,
+    recordCount: records.count ?? 0,
+    pendingProposalCount: pending.count ?? 0,
+    lastAuditAt: (lastAudit.data as { created_at: string } | null)?.created_at ?? null,
+  };
+}
+
+/**
+ * Agent-token reads for the operator surface. token_hash is never selected:
+ * even the hash stays out of every response path by construction.
+ */
+export interface AgentTokenSafe {
+  id: string;
+  workspace_id: string;
+  agent: string;
+  created_at: string;
+  revoked_at: string | null;
+}
+
+const AGENT_TOKEN_SAFE_COLUMNS = 'id, workspace_id, agent, created_at, revoked_at';
+
+export async function listAgentTokensSafe(db: Db, workspaceId: string): Promise<AgentTokenSafe[]> {
+  const { data, error } = await db
+    .from('agent_tokens')
+    .select(AGENT_TOKEN_SAFE_COLUMNS)
+    .eq('workspace_id', workspaceId)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(`listAgentTokensSafe: ${error.message}`);
+  return (data as AgentTokenSafe[] | null) ?? [];
+}
+
+export async function getAgentTokenSafe(db: Db, tokenId: string): Promise<AgentTokenSafe | null> {
+  const { data, error } = await db
+    .from('agent_tokens')
+    .select(AGENT_TOKEN_SAFE_COLUMNS)
+    .eq('id', tokenId)
+    .maybeSingle();
+  if (error) throw new Error(`getAgentTokenSafe: ${error.message}`);
+  return (data as AgentTokenSafe | null) ?? null;
+}
+
+export async function revokeAgentToken(db: Db, tokenId: string): Promise<void> {
+  const { error } = await db
+    .from('agent_tokens')
+    .update({ revoked_at: new Date().toISOString() })
+    .eq('id', tokenId)
+    .is('revoked_at', null);
+  if (error) throw new Error(`revokeAgentToken: ${error.message}`);
+}
