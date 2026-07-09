@@ -95,6 +95,27 @@ export function requireCtx(request: FastifyRequest): RequestContext {
   return request.ctx;
 }
 
+/**
+ * Gate the /api/operator/* surface: the caller must hold a platform_admins
+ * row. This is Serenica's tier above workspace roles, and a separate surface:
+ * the flag never bypasses requireCapability, and workspace guards never
+ * consult it. Non-admins read as a plain 403, like any other forbidden call.
+ */
+export async function requirePlatformAdmin(
+  request: FastifyRequest,
+  _reply: FastifyReply,
+): Promise<void> {
+  if (!request.authUserId) throw ProblemError.unauthorized();
+  const { db } = request.server.app;
+  const { data, error } = await db
+    .from('platform_admins')
+    .select('user_id')
+    .eq('user_id', request.authUserId)
+    .maybeSingle();
+  if (error) throw new Error(`platform admin lookup failed: ${error.message}`);
+  if (!data) throw ProblemError.forbidden('Not permitted');
+}
+
 // --- Agent-token auth (ADR-0005) -------------------------------------------
 
 export function hashAgentToken(rawToken: string): string {

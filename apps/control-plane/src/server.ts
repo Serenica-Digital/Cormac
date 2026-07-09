@@ -7,6 +7,7 @@ import type { Config } from './config.js';
 import type { RuntimeClient } from './runtime/types.js';
 import { registerHumanRoutes } from './routes/human.js';
 import { registerMemberRoutes } from './routes/members.js';
+import { registerOperatorRoutes } from './routes/operator.js';
 import { registerAgentRoutes } from './routes/agent.js';
 import './types.js';
 
@@ -65,6 +66,7 @@ export async function buildServer(
 
   registerHumanRoutes(fastify);
   registerMemberRoutes(fastify);
+  registerOperatorRoutes(fastify);
   registerAgentRoutes(fastify);
   return fastify;
 }
