@@ -7,8 +7,12 @@ import type {
   AuthoringTurnOutcome,
   BusinessRecordRow,
   CaptureResult,
+  CreateWorkspaceResult,
   DecisionResult,
   Me,
+  OperatorAgentToken,
+  OperatorWorkspaceDetail,
+  OperatorWorkspaceSummary,
   ProposalView,
   TimelineEntry,
   WorkbookUploadResult,
@@ -78,6 +82,45 @@ export function useRemoveMember(workspaceId: string) {
     mutationFn: (userId: string) =>
       api.del<{ removed: boolean }>(`${ws(workspaceId)}/members/${userId}`),
     onSuccess: invalidate,
+  });
+}
+
+// --- Operator surface (Serenica-internal) -----------------------------------
+
+export function useOperatorWorkspaces() {
+  return useQuery({
+    queryKey: ['operator', 'workspaces'],
+    queryFn: () => api.get<{ workspaces: OperatorWorkspaceSummary[] }>('/api/operator/workspaces'),
+    select: (d) => d.workspaces,
+  });
+}
+
+export function useOperatorWorkspace(workspaceId: string) {
+  return useQuery({
+    queryKey: ['operator', 'workspace', workspaceId],
+    queryFn: () => api.get<OperatorWorkspaceDetail>(`/api/operator/workspaces/${workspaceId}`),
+  });
+}
+
+export function useCreateWorkspace() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { name: string; ownerEmail?: string }) =>
+      api.post<CreateWorkspaceResult>('/api/operator/workspaces', input),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['operator', 'workspaces'] });
+    },
+  });
+}
+
+export function useRevokeAgentToken(workspaceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (tokenId: string) =>
+      api.post<{ token: OperatorAgentToken }>(`/api/operator/agent-tokens/${tokenId}/revoke`, {}),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['operator', 'workspace', workspaceId] });
+    },
   });
 }
 

@@ -205,6 +205,34 @@ for (const vp of VIEWPORTS) {
       }
     }
   }
+
+  // Operator console: operators get the tenant list and a detail page;
+  // everyone else gets a plain nothing-here.
+  if (vp.name === 'desktop' && EMAIL.endsWith('@demo.test')) {
+    await page.goto(`${BASE}/operator`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(400);
+    if (EMAIL.startsWith('operator@')) {
+      if ((await page.getByText('Every tenant on this deployment.').count()) === 0) {
+        problems.push(`[role] /operator did not render for ${EMAIL}`);
+      }
+      await page.screenshot({ path: `${SHOTS}desktop-operator-list.png` });
+      const firstWorkspace = page.locator('table a').first();
+      if ((await firstWorkspace.count()) > 0) {
+        await firstWorkspace.click();
+        await page.waitForTimeout(600);
+        if ((await page.getByText('Agent tokens').count()) === 0) {
+          problems.push(`[role] operator workspace detail did not render for ${EMAIL}`);
+        }
+        await page.screenshot({ path: `${SHOTS}desktop-operator-detail.png` });
+      }
+      console.log(`[role] operator console checks done for ${EMAIL}`);
+    } else {
+      if ((await page.getByText("There's nothing here.").count()) === 0) {
+        problems.push(`[role] /operator is not hidden from ${EMAIL}`);
+      }
+      console.log(`[role] /operator hidden from ${EMAIL}`);
+    }
+  }
   await ctx.close();
 }
 

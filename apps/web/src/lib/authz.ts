@@ -25,6 +25,11 @@ export function roleOrFloor(raw: unknown): Role {
   return isRole(raw) ? raw : 'read_only';
 }
 
+/** The client word for any role string the server hands us. */
+export function roleLabel(role: string): string {
+  return (ROLE_LABELS as Record<string, { label: string }>)[role]?.label ?? role;
+}
+
 /**
  * The caller's role in this workspace, derived from the workspaces query the
  * shell already runs (no extra request). `role` is null while that query is
