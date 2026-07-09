@@ -18,7 +18,7 @@
     "format:check": "prettier --check .",
     "test": "infisical run --env=dev -- vitest run",
     "test:watch": "infisical run --env=dev -- vitest",
-    "db:start": "pnpm exec supabase start",
+    "db:start": "infisical run --env=dev -- pnpm exec supabase start",
     "db:stop": "pnpm exec supabase stop",
     "db:reset": "pnpm exec supabase db reset",
     "db:push:managed": "infisical run --env=staging -- sh -c 'test -n \"$SUPABASE_DB_URL\" || { echo \"SUPABASE_DB_URL missing from Infisical staging\" >&2; exit 1; }; pnpm exec supabase db push --db-url \"$SUPABASE_DB_URL\"'",

@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate, RouterProvider, useParams } from 'react-
 import { RequireAuth } from './auth/RequireAuth';
 import { Spinner } from './components/kit';
 import { SignIn } from './pages/SignIn';
+import { AuthCallback } from './pages/AuthCallback';
 import { WorkspacePicker } from './pages/WorkspacePicker';
 import { WorkspaceLayout, useWorkspaceStage } from './pages/WorkspaceLayout';
 import { GetStarted } from './pages/GetStarted';
@@ -40,6 +41,9 @@ const queryClient = new QueryClient({
 
 const router = createBrowserRouter([
   { path: '/signin', element: <SignIn /> },
+  // OAuth and magic-link redirects land here; no auth guard, the session is
+  // being established by this very page.
+  { path: '/auth/callback', element: <AuthCallback /> },
   {
     element: <RequireAuth />,
     children: [
