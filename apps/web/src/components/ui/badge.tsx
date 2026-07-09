@@ -19,6 +19,13 @@ const badgeVariants = cva(
         ghost:
           "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
         link: "text-primary underline-offset-4 hover:underline",
+        // Status tones for proposals, changes, and audit rows.
+        pending: "border-amber-200 bg-amber-50 text-amber-800",
+        applied: "border-ledger-200 bg-ledger-50 text-ledger-800",
+        create: "border-ledger-200 bg-ledger-50 text-ledger-800",
+        rejected: "border-red-200 bg-red-50 text-red-700",
+        update: "border-sky-200 bg-sky-50 text-sky-800",
+        neutral: "border-stone-200 bg-stone-100 text-stone-600",
       },
     },
     defaultVariants: {

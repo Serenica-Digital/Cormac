@@ -18,6 +18,7 @@ const buttonVariants = cva(
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+        danger: "border-red-200 bg-white text-red-700 hover:bg-red-50",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
@@ -46,10 +47,15 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  busy = false,
+  disabled,
+  children,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    /** Shows a spinner and disables the button while an action runs. */
+    busy?: boolean
   }) {
   const Comp = asChild ? Slot.Root : "button"
 
@@ -59,9 +65,22 @@ function Button({
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={disabled || busy}
       {...props}
-    />
+    >
+      {busy && <Spinner className="size-3.5" />}
+      {children}
+    </Comp>
   )
 }
 
-export { Button, buttonVariants }
+function Spinner({ className = "size-4" }: { className?: string }) {
+  return (
+    <svg className={cn("animate-spin", className)} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-20" />
+      <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export { Button, buttonVariants, Spinner }

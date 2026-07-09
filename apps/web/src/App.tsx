@@ -1,9 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router';
+import { createBrowserRouter, Navigate, RouterProvider, useParams } from 'react-router';
 import { RequireAuth } from './auth/RequireAuth';
+import { Spinner } from './components/kit';
 import { SignIn } from './pages/SignIn';
 import { WorkspacePicker } from './pages/WorkspacePicker';
-import { WorkspaceLayout } from './pages/WorkspaceLayout';
+import { WorkspaceLayout, useWorkspaceStage } from './pages/WorkspaceLayout';
+import { GetStarted } from './pages/GetStarted';
 import { Interview } from './pages/Interview';
 import { Workbook } from './pages/Workbook';
 import { Inbox } from './pages/Inbox';
@@ -11,6 +13,20 @@ import { Records } from './pages/Records';
 import { RecordDetail } from './pages/RecordDetail';
 import { ContractPage } from './pages/ContractPage';
 import { AuditPage } from './pages/AuditPage';
+
+/** Lands on the everyday Inbox once the book is live; on setup before then. */
+function WorkspaceIndex() {
+  const { workspaceId = '' } = useParams();
+  const stage = useWorkspaceStage(workspaceId);
+  if (stage === 'pending') {
+    return (
+      <div className="flex justify-center py-20 text-stone-400">
+        <Spinner />
+      </div>
+    );
+  }
+  return <Navigate to={stage === 'live' ? 'inbox' : 'start'} replace />;
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,7 +44,8 @@ const router = createBrowserRouter([
         path: '/w/:workspaceId',
         element: <WorkspaceLayout />,
         children: [
-          { index: true, element: <Navigate to="inbox" replace /> },
+          { index: true, element: <WorkspaceIndex /> },
+          { path: 'start', element: <GetStarted /> },
           { path: 'interview', element: <Interview /> },
           { path: 'workbook', element: <Workbook /> },
           { path: 'inbox', element: <Inbox /> },
