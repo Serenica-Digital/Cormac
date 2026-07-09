@@ -10,10 +10,11 @@
     "sourceMap": false,
     "types": ["vite/client"],
     "baseUrl": ".",
-    // Overriding paths replaces the base config's map, so the @cormac/contract
-    // mapping is restated here relative to this package.
+    // Overriding paths replaces the base config's map, so the @cormac/*
+    // mappings are restated here relative to this package.
     "paths": {
       "@/*": ["./src/*"],
+      "@cormac/authz": ["../../packages/authz/src/index.ts"],
       "@cormac/contract": ["../../packages/contract/src/index.ts"]
     }
   },
