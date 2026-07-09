@@ -53,8 +53,10 @@ export async function buildServer(
     }
     // Fastify's own client errors (empty JSON body, oversized payload, bad
     // content type) carry a 4xx statusCode; a client mistake is not a 500.
-    if (typeof err.statusCode === 'number' && err.statusCode >= 400 && err.statusCode < 500) {
-      void reply.status(err.statusCode).send({ error: 'bad_request', message: err.message });
+    const statusCode = (err as { statusCode?: unknown }).statusCode;
+    if (typeof statusCode === 'number' && statusCode >= 400 && statusCode < 500) {
+      const message = err instanceof Error ? err.message : 'Bad request';
+      void reply.status(statusCode).send({ error: 'bad_request', message });
       return;
     }
     request.log.error(err);
