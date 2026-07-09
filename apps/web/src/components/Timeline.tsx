@@ -1,5 +1,6 @@
+import { Badge } from '@/components/ui/badge';
 import type { TimelineEntry } from '../api/types';
-import { Chip } from './kit';
+import { statusVariant } from './kit';
 import { formatValue, formatWhen } from '@/lib/format';
 
 function changedKeys(entry: TimelineEntry): string[] {
@@ -43,8 +44,10 @@ export function Timeline({ entries }: { entries: TimelineEntry[] }) {
             </span>
             <span>·</span>
             <span>{formatWhen(e.at)}</span>
-            {e.channel && <Chip tone="neutral">{e.channel}</Chip>}
-            {e.proposalStatus && <Chip tone={e.proposalStatus}>{e.proposalStatus}</Chip>}
+            {e.channel && <Badge variant="neutral">{e.channel}</Badge>}
+            {e.proposalStatus && (
+              <Badge variant={statusVariant(e.proposalStatus)}>{e.proposalStatus}</Badge>
+            )}
           </div>
 
           {e.utterance && (

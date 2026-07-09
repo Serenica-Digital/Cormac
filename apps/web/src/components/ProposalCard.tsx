@@ -1,9 +1,12 @@
 import { Link } from 'react-router';
 import type { Contract } from '@cormac/contract';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import type { ProposalView } from '../api/types';
 import { fieldLabel, objectFor, recordTitle } from '../contract-helpers';
-import { Button, Card, Chip } from './kit';
 import { formatWhen } from '@/lib/format';
+import { statusVariant } from './kit';
 import { ValueDiff } from './ValueDiff';
 
 export function ProposalCard({
@@ -20,10 +23,10 @@ export function ProposalCard({
   deciding?: boolean;
 }) {
   return (
-    <Card className="animate-rise p-4">
-      <div className="flex items-center gap-2">
-        <Chip tone={proposal.status}>{proposal.status}</Chip>
-        {proposal.uncertain && <Chip tone="pending">uncertain — check the assumption</Chip>}
+    <Card className="animate-rise gap-0 p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant={statusVariant(proposal.status)}>{proposal.status}</Badge>
+        {proposal.uncertain && <Badge variant="pending">uncertain — check the assumption</Badge>}
         <span className="ml-auto text-xs text-stone-400">{formatWhen(proposal.createdAt)}</span>
       </div>
 
@@ -38,10 +41,12 @@ export function ProposalCard({
           const object = objectFor(contract, change.objectApiName);
           const fieldNames = Object.keys(change.values);
           return (
-            <div key={i} className="rounded-md border border-stone-150 border-stone-200/70 bg-stone-50/50 p-3">
-              <div className="flex items-center gap-2 text-sm">
-                <Chip tone={change.op}>{change.op}</Chip>
-                <span className="font-medium text-ink">{object?.label ?? change.objectApiName}</span>
+            <div key={i} className="rounded-md border border-stone-200/70 bg-stone-50/50 p-3">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <Badge variant={change.op}>{change.op}</Badge>
+                <span className="font-medium text-ink">
+                  {object?.label ?? change.objectApiName}
+                </span>
                 {change.op === 'update' && change.recordId && (
                   <Link
                     to={`/w/${workspaceId}/records/${change.recordId}`}
@@ -53,8 +58,11 @@ export function ProposalCard({
               </div>
               <dl className="mt-2 space-y-1.5">
                 {fieldNames.map((name) => (
-                  <div key={name} className="flex flex-wrap items-baseline gap-x-3">
-                    <dt className="w-40 shrink-0 text-xs text-stone-500">
+                  <div
+                    key={name}
+                    className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-x-3"
+                  >
+                    <dt className="shrink-0 text-xs text-stone-500 sm:w-40">
                       {fieldLabel(object, name)}
                     </dt>
                     <dd>

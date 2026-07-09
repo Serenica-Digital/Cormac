@@ -1,8 +1,9 @@
 import { Link, useParams } from 'react-router';
+import { Card } from '@/components/ui/card';
 import { useContract, useRecordTimeline } from '../api/hooks';
 import { objectFor, recordTitle } from '../contract-helpers';
 import { Timeline } from '../components/Timeline';
-import { Card, ErrorNote, PageHeader, SectionLabel, Spinner } from '../components/kit';
+import { ErrorNote, PageHeader, SectionLabel, Spinner } from '../components/kit';
 import { formatValue } from '@/lib/format';
 
 export function RecordDetail() {
@@ -35,12 +36,15 @@ export function RecordDetail() {
       <div className="grid gap-6 md:grid-cols-[1fr_1.2fr]">
         <div>
           <SectionLabel>Fields</SectionLabel>
-          <Card className="mt-2 p-4">
+          <Card className="mt-2 gap-0 p-4">
             <dl className="space-y-2.5">
               {(object?.fields ?? []).map((f) => (
-                <div key={f.apiName} className="flex items-baseline gap-3">
-                  <dt className="w-40 shrink-0 text-sm text-stone-500">{f.label}</dt>
-                  <dd className="font-mono text-sm text-ink">
+                <div
+                  key={f.apiName}
+                  className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3"
+                >
+                  <dt className="shrink-0 text-sm text-stone-500 sm:w-40">{f.label}</dt>
+                  <dd className="font-mono text-sm break-words text-ink">
                     {formatValue(record.data[f.apiName])}
                   </dd>
                 </div>

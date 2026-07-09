@@ -1,10 +1,27 @@
 import { useState, type FormEvent } from 'react';
 import { useParams } from 'react-router';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCapture, useContract, useDecision, useProposals } from '../api/hooks';
 import { ProposalCard } from '../components/ProposalCard';
-import { Button, EmptyState, ErrorNote, PageHeader, SectionLabel, Spinner } from '../components/kit';
+import { EmptyState, ErrorNote, PageHeader, SectionLabel, Spinner } from '../components/kit';
 
 type Tab = 'pending' | 'applied' | 'rejected';
+
+const TAB_LABELS: Record<Tab, string> = {
+  pending: 'Waiting',
+  applied: 'Approved',
+  rejected: 'Rejected',
+};
+
+const EMPTY_COPY: Record<Tab, { title: string; hint?: string }> = {
+  pending: {
+    title: 'Nothing waiting on you',
+    hint: "Tell Cormac what happened above — it lands here for your say-so.",
+  },
+  applied: { title: 'No approved changes yet' },
+  rejected: { title: 'Nothing rejected yet' },
+};
 
 export function Inbox() {
   const { workspaceId = '' } = useParams();
@@ -33,14 +50,14 @@ export function Inbox() {
   }
 
   return (
-    <div>
+    <div className="mx-auto w-full max-w-3xl">
       <PageHeader
         title="Inbox"
         sub="Tell Cormac what happened. It proposes the change; nothing is written until you approve it."
       />
 
       <form onSubmit={submit} className="mb-8">
-        <div className="rounded-lg border border-stone-200 bg-white p-3 shadow-[0_1px_2px_rgba(28,25,23,0.04)] focus-within:border-ledger-500 focus-within:ring-2 focus-within:ring-ledger-100">
+        <div className="rounded-lg bg-card p-3 ring-1 ring-foreground/10 focus-within:ring-2 focus-within:ring-ring/40">
           <textarea
             className="h-20 w-full resize-none bg-transparent text-base text-ink placeholder:text-stone-400 focus:outline-none"
             placeholder='e.g. "Just closed the deal with Carter, met his partner Susan"'
@@ -48,9 +65,11 @@ export function Inbox() {
             onChange={(e) => setText(e.target.value)}
             disabled={capture.isPending}
           />
-          <div className="flex items-center justify-between pt-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
             <span className="text-sm text-stone-400">
-              {capture.isPending ? 'Cormac is reading that…' : 'Everything you send is kept in your History.'}
+              {capture.isPending
+                ? 'Cormac is reading that…'
+                : 'Everything you send is kept in your History.'}
             </span>
             <Button type="submit" busy={capture.isPending} disabled={!text.trim()}>
               Send to Cormac
@@ -69,21 +88,17 @@ export function Inbox() {
         )}
       </form>
 
-      <div className="mb-3 flex items-center gap-4">
+      <div className="mb-3 flex flex-wrap items-center gap-4">
         <SectionLabel>Review queue</SectionLabel>
-        <div className="flex gap-1">
-          {(['pending', 'applied', 'rejected'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`rounded-full px-3.5 py-1 text-sm font-medium transition-colors ${
-                tab === t ? 'bg-ink text-paper' : 'text-stone-500 hover:bg-stone-100'
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+          <TabsList>
+            {(['pending', 'applied', 'rejected'] as const).map((t) => (
+              <TabsTrigger key={t} value={t} className="px-3">
+                {TAB_LABELS[t]}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
       {proposals.isPending && (
@@ -93,10 +108,7 @@ export function Inbox() {
       )}
       {proposals.error && <ErrorNote error={proposals.error} />}
       {proposals.data && proposals.data.length === 0 && (
-        <EmptyState
-          title={tab === 'pending' ? 'Nothing waiting on you' : `No ${tab} proposals yet`}
-          hint={tab === 'pending' ? 'Capture something above and it lands here for review.' : undefined}
-        />
+        <EmptyState title={EMPTY_COPY[tab].title} hint={EMPTY_COPY[tab].hint} />
       )}
       <div className="space-y-4">
         {proposals.data?.map((p) => (

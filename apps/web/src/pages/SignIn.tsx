@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { supabase } from '../supabase';
-import { Button, ErrorNote } from '../components/kit';
+import { ErrorNote } from '../components/kit';
 
 export function SignIn() {
   const navigate = useNavigate();
@@ -23,11 +25,8 @@ export function SignIn() {
     navigate('/', { replace: true });
   }
 
-  const input =
-    'w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-ink placeholder:text-stone-400 focus:border-ledger-600 focus:outline-none focus:ring-2 focus:ring-ledger-100';
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-paper px-4">
       <div className="w-full max-w-sm animate-rise">
         <div className="mb-8 text-center">
           <div className="font-display text-4xl font-[560] text-ink">Cormac</div>
@@ -35,13 +34,13 @@ export function SignIn() {
         </div>
         <form
           onSubmit={submit}
-          className="space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-[0_1px_3px_rgba(28,25,23,0.06)]"
+          className="space-y-4 rounded-xl bg-card p-6 ring-1 ring-foreground/10"
         >
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-stone-500">Email</span>
-            <input
+            <Input
               type="email"
-              className={input}
+              className="h-10 text-base"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
@@ -50,9 +49,9 @@ export function SignIn() {
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-stone-500">Password</span>
-            <input
+            <Input
               type="password"
-              className={input}
+              className="h-10 text-base"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
@@ -60,7 +59,7 @@ export function SignIn() {
             />
           </label>
           {error && <ErrorNote error={new Error(error)} />}
-          <Button type="submit" busy={busy} className="w-full justify-center">
+          <Button type="submit" size="lg" busy={busy} className="w-full justify-center">
             Sign in
           </Button>
         </form>

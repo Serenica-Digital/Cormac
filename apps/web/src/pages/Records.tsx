@@ -1,5 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useContract, useRecords } from '../api/hooks';
 import { tableColumns } from '../contract-helpers';
 import { EmptyState, ErrorNote, PageHeader, Spinner } from '../components/kit';
@@ -29,8 +38,13 @@ export function Records() {
       <div>
         <PageHeader title="Records" />
         <EmptyState
-          title="Finish the interview first"
-          hint="That's where Cormac learns how your book is organized. Records live against that structure."
+          title="Your book isn't set up yet"
+          hint="One conversation with Cormac and your records will live here."
+          action={
+            <Button asChild variant="outline">
+              <Link to={`/w/${workspaceId}/start`}>Get started</Link>
+            </Button>
+          }
         />
       </div>
     );
@@ -43,15 +57,13 @@ export function Records() {
         sub="The current state of the book. History lives on each record's timeline; bulk edits belong in your spreadsheet, not here."
       />
 
-      <div className="mb-4 flex gap-1">
+      <div className="mb-4 flex flex-wrap gap-1">
         {objects.map((o) => (
           <button
             key={o.apiName}
             onClick={() => setActiveObject(o.apiName)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              o.apiName === objectApiName
-                ? 'bg-ink text-paper'
-                : 'text-stone-600 hover:bg-stone-100'
+              o.apiName === objectApiName ? 'bg-ink text-paper' : 'text-stone-600 hover:bg-stone-100'
             }`}
           >
             {o.label}
@@ -70,25 +82,25 @@ export function Records() {
       )}
 
       {records.data && records.data.length > 0 && object && (
-        <div className="animate-rise overflow-hidden rounded-lg border border-stone-200 bg-white">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-stone-200 bg-stone-50/70 text-left">
+        <div className="animate-rise min-w-0 overflow-hidden rounded-lg bg-card ring-1 ring-foreground/10">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-stone-50/70 hover:bg-stone-50/70">
                 {columns.map((c) => (
-                  <th key={c.apiName} className="px-4 py-3 text-xs font-semibold tracking-wide text-stone-500">
+                  <TableHead key={c.apiName} className="px-4 text-xs font-semibold text-stone-500">
                     {c.label}
-                  </th>
+                  </TableHead>
                 ))}
-                <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-stone-500">
+                <TableHead className="px-4 text-right text-xs font-semibold text-stone-500">
                   Updated
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {records.data.map((r) => (
-                <tr key={r.id} className="group border-b border-stone-100 last:border-0 hover:bg-ledger-50/40">
+                <TableRow key={r.id} className="border-stone-100 hover:bg-ledger-50/40">
                   {columns.map((c, i) => (
-                    <td key={c.apiName} className="px-4 py-3">
+                    <TableCell key={c.apiName} className="px-4 py-3">
                       {i === 0 ? (
                         <Link
                           to={`/w/${workspaceId}/records/${r.id}`}
@@ -97,17 +109,19 @@ export function Records() {
                           {formatValue(r.data[c.apiName])}
                         </Link>
                       ) : (
-                        <span className="text-stone-600">{formatValue(r.data[c.apiName])}</span>
+                        <span className="block max-w-[16rem] truncate text-stone-600">
+                          {formatValue(r.data[c.apiName])}
+                        </span>
                       )}
-                    </td>
+                    </TableCell>
                   ))}
-                  <td className="px-4 py-3 text-right text-sm text-stone-400">
+                  <TableCell className="px-4 py-3 text-right text-sm text-stone-400">
                     {formatWhen(r.updated_at)}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

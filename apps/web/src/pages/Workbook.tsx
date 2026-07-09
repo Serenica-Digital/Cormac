@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useWorkbookUpload } from '../api/hooks';
+import { Button } from '@/components/ui/button';
 import { typeWord, WorkbookPreview } from '../components/WorkbookPreview';
-import { Button, ErrorNote, PageHeader, SectionLabel } from '../components/kit';
+import { ErrorNote, PageHeader, SectionLabel } from '../components/kit';
 import { detectSheet, toDetectionProfile } from '../workbook/detect';
 import { parseWorkbookFile } from '../workbook/parse';
 import { saveParsedWorkbook } from '../workbook/store';
@@ -85,14 +86,14 @@ export function Workbook() {
   const activeColumns = activeSheet ? detectSheet(activeSheet).columns : [];
 
   return (
-    <div>
+    <div className="mx-auto w-full max-w-4xl">
       <PageHeader
-        title="Workbook"
-        sub="Bring the spreadsheet your business lives in. Cormac reads a summary of its structure during the interview. The file itself never leaves your browser."
+        title="Your workbook"
+        sub="Bring the spreadsheet your business lives in. Cormac reads a summary of its structure when you talk. The file itself never leaves your browser."
       />
 
       <div
-        className="mb-6 cursor-pointer rounded-xl border-2 border-dashed border-stone-300 bg-white/60 px-6 py-10 text-center transition-colors hover:border-ledger-400 hover:bg-ledger-50/40"
+        className="mb-6 cursor-pointer rounded-xl border-2 border-dashed border-stone-300 bg-card/60 px-4 py-8 text-center transition-colors hover:border-ledger-400 hover:bg-ledger-50/40 md:px-6 md:py-10"
         onClick={() => fileInput.current?.click()}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
@@ -156,18 +157,18 @@ export function Workbook() {
       )}
 
       {ready && (
-        <div className="mt-6 flex items-center gap-3">
+        <div className="mt-6 flex flex-wrap items-center gap-3">
           <Button onClick={submit} busy={upload.isPending}>
             Share with Cormac
           </Button>
           {uploaded && (
             <span className="text-sm text-ledger-700">
-              Cormac has your workbook — ready for the{' '}
+              Cormac has your workbook — next,{' '}
               <Link
                 to={`/w/${workspaceId}/interview`}
                 className="font-medium underline decoration-ledger-300 underline-offset-2 hover:decoration-ledger-600"
               >
-                interview
+                start the conversation
               </Link>
               .
             </span>

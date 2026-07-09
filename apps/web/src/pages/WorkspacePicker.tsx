@@ -1,6 +1,7 @@
 import { Navigate, useNavigate } from 'react-router';
+import { Badge } from '@/components/ui/badge';
 import { useWorkspaces } from '../api/hooks';
-import { Chip, ErrorNote, Spinner } from '../components/kit';
+import { ErrorNote, Spinner } from '../components/kit';
 import { supabase } from '../supabase';
 
 export function WorkspacePicker() {
@@ -9,7 +10,7 @@ export function WorkspacePicker() {
 
   if (isPending) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-paper text-stone-400">
+      <div className="flex min-h-dvh items-center justify-center bg-paper text-stone-400">
         <Spinner />
       </div>
     );
@@ -20,7 +21,7 @@ export function WorkspacePicker() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-paper px-4">
       <div className="w-full max-w-md animate-rise">
         <div className="mb-6 text-center">
           <div className="font-display text-3xl font-[560] text-ink">Cormac</div>
@@ -28,7 +29,7 @@ export function WorkspacePicker() {
         </div>
         {error && <ErrorNote error={error} />}
         {workspaces && workspaces.length === 0 && (
-          <div className="rounded-lg border border-dashed border-stone-300 bg-white px-6 py-8 text-center text-sm text-stone-500">
+          <div className="rounded-lg border border-dashed border-stone-300 bg-card px-6 py-8 text-center text-sm text-stone-500">
             No workspaces yet. Ask your administrator to add you.
             {import.meta.env.DEV && (
               <span className="mt-1 block text-xs text-stone-400">
@@ -42,10 +43,10 @@ export function WorkspacePicker() {
             <button
               key={w.id}
               onClick={() => navigate(`/w/${w.id}`)}
-              className="flex w-full items-center justify-between rounded-lg border border-stone-200 bg-white px-4 py-3 text-left transition-colors hover:border-ledger-400 hover:bg-ledger-50"
+              className="flex w-full items-center justify-between rounded-lg bg-card px-4 py-3 text-left ring-1 ring-foreground/10 transition-all hover:bg-ledger-50 hover:ring-ledger-400"
             >
               <span className="text-sm font-medium text-ink">{w.name}</span>
-              <Chip tone="neutral">{w.role}</Chip>
+              <Badge variant="neutral">{w.role}</Badge>
             </button>
           ))}
         </div>
