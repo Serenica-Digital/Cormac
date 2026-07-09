@@ -6,6 +6,7 @@ import { buildAppContext } from './app.js';
 import type { Config } from './config.js';
 import type { RuntimeClient } from './runtime/types.js';
 import { registerHumanRoutes } from './routes/human.js';
+import { registerMemberRoutes } from './routes/members.js';
 import { registerAgentRoutes } from './routes/agent.js';
 import './types.js';
 
@@ -50,11 +51,20 @@ export async function buildServer(
       void reply.status(400).send({ error: 'bad_request', message: 'Invalid request', detail });
       return;
     }
+    // Fastify's own client errors (empty JSON body, oversized payload, bad
+    // content type) carry a 4xx statusCode; a client mistake is not a 500.
+    const statusCode = (err as { statusCode?: unknown }).statusCode;
+    if (typeof statusCode === 'number' && statusCode >= 400 && statusCode < 500) {
+      const message = err instanceof Error ? err.message : 'Bad request';
+      void reply.status(statusCode).send({ error: 'bad_request', message });
+      return;
+    }
     request.log.error(err);
     void reply.status(500).send({ error: 'internal', message: 'Internal error' });
   });
 
   registerHumanRoutes(fastify);
+  registerMemberRoutes(fastify);
   registerAgentRoutes(fastify);
   return fastify;
 }

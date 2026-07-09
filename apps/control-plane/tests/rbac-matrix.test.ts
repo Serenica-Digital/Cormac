@@ -127,6 +127,47 @@ describe.skipIf(!env.ready)('RBAC matrix', () => {
     }
   });
 
+  it('lets every member list the people in the workspace', async () => {
+    for (const role of ROLES) {
+      const res = await server.inject({ method: 'GET', url: `${base()}/members`, headers: bearer(token[role]!) });
+      expect(res.statusCode, role).toBe(200);
+    }
+    const unauth = await server.inject({ method: 'GET', url: `${base()}/members` });
+    expect(unauth.statusCode).toBe(401);
+  });
+
+  it('gates member management on manage_members (owner/agent_admin only)', async () => {
+    const allowed = new Set<Role>(['owner', 'agent_admin']);
+    for (const role of ROLES) {
+      // An invalid email: allowed roles pass authz and fail validation (400),
+      // so the matrix never creates users.
+      const add = await server.inject({
+        method: 'POST',
+        url: `${base()}/members`,
+        headers: bearer(token[role]!),
+        payload: { email: 'not-an-email', role: 'member' },
+      });
+      expect(add.statusCode, `POST as ${role}`).toBe(allowed.has(role) ? 400 : 403);
+
+      // A random target: allowed roles pass authz and 404 on the lookup.
+      const patch = await server.inject({
+        method: 'PATCH',
+        url: `${base()}/members/${randomUUID()}`,
+        headers: bearer(token[role]!),
+        payload: { role: 'member' },
+      });
+      expect(patch.statusCode, `PATCH as ${role}`).toBe(allowed.has(role) ? 404 : 403);
+
+      // No content-type: a bodyless DELETE must not enter the JSON parser.
+      const del = await server.inject({
+        method: 'DELETE',
+        url: `${base()}/members/${randomUUID()}`,
+        headers: { authorization: `Bearer ${token[role]!}` },
+      });
+      expect(del.statusCode, `DELETE as ${role}`).toBe(allowed.has(role) ? 404 : 403);
+    }
+  });
+
   it('denies capture for read_only and admits it for others', async () => {
     const readOnly = await server.inject({
       method: 'POST',

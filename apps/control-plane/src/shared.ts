@@ -1,17 +1,14 @@
 /**
- * Shared vocabulary, inlined from v0's @cormac/shared (archive/packages/shared)
- * until a second consumer justifies a package: workspace roles, the
- * per-workspace confirmation mode, and a typed error the control plane turns
- * into HTTP problem responses. The authority these encode is enforced
- * server-side; nothing here is a UI-only check.
+ * Control-plane vocabulary. The workspace role/capability model moved to
+ * @cormac/authz when the web app became a second consumer; it is re-exported
+ * here so existing './shared.js' imports keep working. What remains local:
+ * the confirmation mode, the agent-kind split, and the typed error the
+ * control plane turns into HTTP problem responses. The authority these encode
+ * is enforced server-side; nothing here is a UI-only check.
  */
 
-export const ROLES = ['owner', 'agent_admin', 'manager', 'member', 'read_only'] as const;
-export type Role = (typeof ROLES)[number];
-
-export function isRole(value: unknown): value is Role {
-  return typeof value === 'string' && (ROLES as readonly string[]).includes(value);
-}
+export { CAPABILITIES_BY_ROLE, can, isRole, ROLES } from '@cormac/authz';
+export type { Capability, Role } from '@cormac/authz';
 
 /**
  * Per-workspace write-confirmation policy. The skeleton ships `confirm_each`
@@ -19,35 +16,6 @@ export function isRole(value: unknown): value is Role {
  */
 export const CONFIRMATION_MODES = ['confirm_each', 'apply_then_report'] as const;
 export type ConfirmationMode = (typeof CONFIRMATION_MODES)[number];
-
-/** Capabilities the control plane checks before doing anything dangerous. */
-export type Capability =
-  | 'capture_update' // submit natural language that becomes a proposal
-  | 'approve_proposal' // approve/reject a held proposal, applying a write
-  | 'publish_contract' // publish a new contract version
-  | 'read_records'; // read business records and the proposal queue
-
-const CAPABILITIES_BY_ROLE: Record<Role, ReadonlySet<Capability>> = {
-  owner: new Set<Capability>([
-    'capture_update',
-    'approve_proposal',
-    'publish_contract',
-    'read_records',
-  ]),
-  agent_admin: new Set<Capability>([
-    'capture_update',
-    'approve_proposal',
-    'publish_contract',
-    'read_records',
-  ]),
-  manager: new Set<Capability>(['capture_update', 'approve_proposal', 'read_records']),
-  member: new Set<Capability>(['capture_update', 'read_records']),
-  read_only: new Set<Capability>(['read_records']),
-};
-
-export function can(role: Role, capability: Capability): boolean {
-  return CAPABILITIES_BY_ROLE[role].has(capability);
-}
 
 /**
  * The two agent kinds and their privilege split (ADR-0005): what each kind of

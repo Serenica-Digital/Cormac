@@ -11,7 +11,9 @@ import type { ProposalStatus } from '../rows.js';
 import {
   getActiveContract,
   getRecord,
+  getUserEmail,
   insertWorkbookSnapshot,
+  isPlatformAdmin,
   listAuditEvents,
   listRecords,
   listWorkspacesForUser,
@@ -105,6 +107,19 @@ export function registerHumanRoutes(app: FastifyInstance): void {
       return { record, entries };
     },
   );
+
+  // Who is calling: identity plus the platform-operator flag. Email comes from
+  // GoTrue, the flag from platform_admins; no workspace in the path, so this
+  // runs behind authenticate alone.
+  app.get('/api/me', { preHandler: [authenticate] }, async (request) => {
+    if (!request.authUserId) throw ProblemError.unauthorized();
+    const { db } = request.server.app;
+    const [email, platformAdmin] = await Promise.all([
+      getUserEmail(db, request.authUserId),
+      isPlatformAdmin(db, request.authUserId),
+    ]);
+    return { userId: request.authUserId, email, platformAdmin };
+  });
 
   // The workspaces the caller belongs to: the sign-in picker. No workspaceId in
   // the path, so this runs behind authenticate alone; membership IS the filter.

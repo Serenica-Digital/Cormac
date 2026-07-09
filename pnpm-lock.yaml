@@ -41,6 +41,9 @@ importers:
 
   apps/control-plane:
     dependencies:
+      '@cormac/authz':
+        specifier: workspace:*
+        version: link:../../packages/authz
       '@cormac/contract':
         specifier: workspace:*
         version: link:../../packages/contract
@@ -66,6 +69,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@cormac/authz':
+        specifier: workspace:*
+        version: link:../../packages/authz
       '@cormac/contract':
         specifier: workspace:*
         version: link:../../packages/contract
@@ -162,6 +168,8 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.0
+
+  packages/authz: {}
 
   packages/contract:
     dependencies:

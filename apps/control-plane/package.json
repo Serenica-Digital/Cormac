@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@cormac/authz": "workspace:*",
     "@cormac/contract": "workspace:*",
     "@fastify/cors": "^10.0.1",
     "@supabase/supabase-js": "^2.47.10",

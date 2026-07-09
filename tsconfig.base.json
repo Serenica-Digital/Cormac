@@ -17,6 +17,7 @@
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
+      "@cormac/authz": ["packages/authz/src/index.ts"],
       "@cormac/contract": ["packages/contract/src/index.ts"]
     }
   }

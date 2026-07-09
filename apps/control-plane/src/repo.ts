@@ -1,9 +1,11 @@
 import { buildContextDisplay, type Contract } from '@cormac/contract';
+import type { Role } from './shared.js';
 import type { Db } from './db.js';
 import type {
   AuditEventRow,
   BusinessRecordRow,
   ContractVersionRow,
+  MembershipRow,
   ProposalRow,
   ProposalStatus,
   SourceChannel,
@@ -412,4 +414,121 @@ export async function getLatestWorkbookSnapshot(
     .maybeSingle();
   if (error) throw new Error(`getLatestWorkbookSnapshot: ${error.message}`);
   return (data as WorkbookSnapshotRow | null) ?? null;
+}
+
+// --- Memberships and identity (member management + /api/me) ----------------
+
+export async function listMemberships(db: Db, workspaceId: string): Promise<MembershipRow[]> {
+  const { data, error } = await db
+    .from('memberships')
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(`listMemberships: ${error.message}`);
+  return (data as MembershipRow[] | null) ?? [];
+}
+
+export async function getMembership(
+  db: Db,
+  workspaceId: string,
+  userId: string,
+): Promise<MembershipRow | null> {
+  const { data, error } = await db
+    .from('memberships')
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw new Error(`getMembership: ${error.message}`);
+  return (data as MembershipRow | null) ?? null;
+}
+
+export async function insertMembership(
+  db: Db,
+  input: { workspaceId: string; userId: string; role: Role },
+): Promise<MembershipRow> {
+  const { data, error } = await db
+    .from('memberships')
+    .insert({ workspace_id: input.workspaceId, user_id: input.userId, role: input.role })
+    .select('*')
+    .single();
+  return must(data as MembershipRow | null, error, 'insertMembership');
+}
+
+export async function updateMembershipRole(
+  db: Db,
+  input: { workspaceId: string; userId: string; role: Role },
+): Promise<void> {
+  const { error } = await db
+    .from('memberships')
+    .update({ role: input.role })
+    .eq('workspace_id', input.workspaceId)
+    .eq('user_id', input.userId);
+  if (error) throw new Error(`updateMembershipRole: ${error.message}`);
+}
+
+export async function deleteMembership(
+  db: Db,
+  workspaceId: string,
+  userId: string,
+): Promise<void> {
+  const { error } = await db
+    .from('memberships')
+    .delete()
+    .eq('workspace_id', workspaceId)
+    .eq('user_id', userId);
+  if (error) throw new Error(`deleteMembership: ${error.message}`);
+}
+
+export async function countOwners(db: Db, workspaceId: string): Promise<number> {
+  const { count, error } = await db
+    .from('memberships')
+    .select('user_id', { count: 'exact', head: true })
+    .eq('workspace_id', workspaceId)
+    .eq('role', 'owner');
+  if (error) throw new Error(`countOwners: ${error.message}`);
+  return count ?? 0;
+}
+
+export async function getUserEmail(db: Db, userId: string): Promise<string | null> {
+  const { data, error } = await db.auth.admin.getUserById(userId);
+  if (error) throw new Error(`getUserEmail: ${error.message}`);
+  return data.user?.email ?? null;
+}
+
+/**
+ * Resolve an email to an auth user, creating one if needed. Created users get
+ * no password: they sign in via an OAuth provider or a magic link (the
+ * PR-6 auth-providers work). GoTrue admin has no lookup-by-email, so the
+ * exists case pages through listUsers; fine at prototype scale.
+ */
+export async function findOrCreateAuthUserByEmail(
+  db: Db,
+  email: string,
+): Promise<{ userId: string; created: boolean }> {
+  const created = await db.auth.admin.createUser({ email, email_confirm: true });
+  if (!created.error) return { userId: created.data.user!.id, created: true };
+  const code = (created.error as { code?: string }).code;
+  if (code !== 'email_exists' && code !== 'user_already_exists') {
+    throw new Error(`findOrCreateAuthUserByEmail(${email}): ${created.error.message}`);
+  }
+  const perPage = 200;
+  for (let page = 1; page <= 50; page++) {
+    const res = await db.auth.admin.listUsers({ page, perPage });
+    if (res.error) throw new Error(`findOrCreateAuthUserByEmail listUsers: ${res.error.message}`);
+    const hit = res.data.users.find((u) => u.email?.toLowerCase() === email);
+    if (hit) return { userId: hit.id, created: false };
+    if (res.data.users.length < perPage) break;
+  }
+  throw new Error(`findOrCreateAuthUserByEmail(${email}): user exists but scan did not find it`);
+}
+
+export async function isPlatformAdmin(db: Db, userId: string): Promise<boolean> {
+  const { data, error } = await db
+    .from('platform_admins')
+    .select('user_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw new Error(`isPlatformAdmin: ${error.message}`);
+  return data !== null;
 }
