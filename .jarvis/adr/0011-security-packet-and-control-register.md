@@ -1,6 +1,6 @@
 # ADR-0011: The security packet and control register are tracked deliverables
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-07-09, owner merge of PR #91)
 - **Date:** 2026-07-09
 - **Relates to:** ADR-0005 (agent tokens), ADR-0008 (typed tools); adopts the
   mechanism of v0's ADR-015 (archive/docs/adr/, historical record)

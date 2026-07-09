@@ -65,14 +65,15 @@ verification: plumbing, not evidence). A first owner test caught the agent readi
 seeded fixture instead of the upload — fixed at `e90177c` (no-name workbook read =
 latest upload). Owner design review drove a client-language/type-scale pass (`a897657`)
 and a full shadcn/ui + responsive relayout (`e4cc6ce`..`f207b39`); client-facing names:
-contract = "Structure", audit = "History". A platform-infrastructure round is open as a
-stacked PR train **#79→#91** (merge in order, none merged): member management +
+contract = "Structure", audit = "History". The platform-infrastructure round is merged to dev
+(stacked PR train **#79→#91**, merged in order 2026-07-09): member management +
 `@cormac/authz` + `platform_admins`; platform-operator surface and `/operator` console;
 demo seeding (fixed personas, tracked render smoke); role-aware UI + People page;
 Microsoft/Google OAuth + magic-link sign-in via Supabase (magic link proven locally
 end-to-end; OAuth waits on owner app registrations); and the security packet —
 `docs/security/` control register (26 rows, Verified/Partial/Planned) +
-`pnpm check:controls` guard + ops runbooks — under **ADR-0011 (Proposed)**. An example
+`pnpm check:controls` guard + ops runbooks — under **ADR-0011 (Accepted)**; post-merge
+verification: 82/82 tests across 18 files green and the guard clean on dev. An example
 client workbook ships at `docs/dev/relationship-crm-example.xlsx` (`d3c107a`). Open:
 the human-played interview (ADR-0004 criterion 3) — the web interview UI now exists, so
 the owner click-through is the unblock; the #76 skill wording pass; the pane track

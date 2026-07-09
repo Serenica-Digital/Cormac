@@ -19,7 +19,8 @@ Durable outcomes and constraints the rebuild must preserve. Each carries its ori
   into durable context, ever. Backed by red-team evidence (v0 research: memory-on roughly
   doubles prompt-injection success).
 - **Security evidence is a deliverable.** Build so a client-facing security packet reads
-  as a true summary of enforced controls.
+  as a true summary of enforced controls. Mechanism: the tracked packet at
+  `docs/security/` with its control register and `pnpm check:controls` guard (ADR-0011).
 
 ## Product constraints
 
