@@ -1,8 +1,6 @@
-import { randomBytes, randomUUID } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { createServiceClient } from '../apps/control-plane/src/db.js';
-import { hashAgentToken } from '../apps/control-plane/src/auth.js';
+import { bindVaultToken, loadDetectedFixture } from './lib/seed-shared.js';
 
 /**
  * Stand up the authoring E2E workspace: a workspace + owner, the
@@ -10,12 +8,9 @@ import { hashAgentToken } from '../apps/control-plane/src/auth.js';
  * meta stripped — fixture hygiene, the agent must not see the planted
  * ambiguities named), and the authoring agent token bound to it.
  *
- * Token handling is vault-first (ADR-0005 as amended): this script runs under
- * `infisical run`, so the slot's CORMAC_AGENT_TOKEN is already in the process
- * env. If present, its hash is (re)bound to the new workspace — the raw value
- * never changes, so a running gateway keeps working with no restart. Only if
- * the slot has no token yet does the script mint one and write it to
- * Infisical (that first time, relaunch the gateway).
+ * Token handling is vault-first (ADR-0005 as amended) via bindVaultToken:
+ * rebinding an existing vault token needs no gateway restart; a fresh mint
+ * does.
  *
  * Usage: pnpm seed:authoring-e2e   (INFISICAL_ENV selects the slot, default dev)
  * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, CORMAC_AGENT_TOKEN (optional).
@@ -29,24 +24,7 @@ if (!url || !serviceKey) {
 }
 const db = createServiceClient(url, serviceKey);
 
-// Fixture, meta-stripped (the read_workbook fixture-mode rule, applied at seed
-// time for the DB-served path).
-function strip(node: unknown): unknown {
-  if (Array.isArray(node)) return node.map(strip);
-  if (node && typeof node === 'object') {
-    return Object.fromEntries(
-      Object.entries(node as Record<string, unknown>)
-        .filter(([k]) => k !== 'note' && k !== 'comment')
-        .map(([k, v]) => [k, strip(v)]),
-    );
-  }
-  return node;
-}
-const fixturePath = new URL(
-  '../evals/workbook-authoring/fixture/relationship-crm.detected.json',
-  import.meta.url,
-).pathname;
-const profileJson = strip(JSON.parse(readFileSync(fixturePath, 'utf8'))) as Record<string, unknown>;
+const profileJson = loadDetectedFixture();
 
 // Workspace + owner + membership.
 const suffix = randomUUID().slice(0, 8);
@@ -69,34 +47,11 @@ const snap = await db
   .single();
 if (snap.error) throw new Error(snap.error.message);
 
-// Authoring agent token: vault-first.
-let raw = process.env.CORMAC_AGENT_TOKEN;
-let minted = false;
-if (!raw) {
-  raw = randomBytes(32).toString('hex');
-  const slot = process.env.INFISICAL_ENV ?? 'dev';
-  const inf = spawnSync('infisical', ['secrets', 'set', `CORMAC_AGENT_TOKEN=${raw}`, `--env=${slot}`], {
-    stdio: ['ignore', 'ignore', 'inherit'],
-  });
-  if (inf.status !== 0) {
-    console.error(`could not write CORMAC_AGENT_TOKEN to Infisical ${slot}; aborting before any DB token row.`);
-    process.exit(1);
-  }
-  minted = true;
-}
-
-// (Re)bind the token's hash to this workspace. token_hash is unique, so an
-// upsert moves the binding from any prior seed's workspace — the raw value
-// (and therefore the running gateway's env) stays stable.
-const tok = await db
-  .from('agent_tokens')
-  .upsert(
-    { workspace_id: workspaceId, agent: 'authoring', token_hash: hashAgentToken(raw), revoked_at: null },
-    { onConflict: 'token_hash' },
-  )
-  .select('id')
-  .single();
-if (tok.error) throw new Error(tok.error.message);
+const token = await bindVaultToken(db, {
+  workspaceId,
+  agent: 'authoring',
+  vaultName: 'CORMAC_AGENT_TOKEN',
+});
 
 console.log(
   JSON.stringify(
@@ -105,9 +60,9 @@ console.log(
       userId,
       ownerEmail: email,
       snapshotId: snap.data.id,
-      tokenId: tok.data.id,
-      tokenMinted: minted,
-      next: minted
+      tokenId: token.tokenId,
+      tokenMinted: token.minted,
+      next: token.minted
         ? 'token newly minted into Infisical — (re)launch the gateway (pnpm agent:hub run), then drive /api/workspaces/:id/authoring/turn'
         : 'existing vault token rebound to this workspace — no gateway restart needed; drive /api/workspaces/:id/authoring/turn',
     },
