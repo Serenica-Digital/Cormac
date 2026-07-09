@@ -59,17 +59,25 @@ function Button({
   }) {
   const Comp = asChild ? Slot.Root : "button"
 
+  // Slot requires exactly one element child, so the busy spinner only
+  // renders on real buttons; asChild is for links, which are never busy.
   return (
     <Comp
       data-slot="button"
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
-      disabled={disabled || busy}
+      disabled={asChild ? disabled : disabled || busy}
       {...props}
     >
-      {busy && <Spinner className="size-3.5" />}
-      {children}
+      {asChild ? (
+        children
+      ) : (
+        <>
+          {busy && <Spinner className="size-3.5" />}
+          {children}
+        </>
+      )}
     </Comp>
   )
 }
