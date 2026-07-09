@@ -1,8 +1,9 @@
 # Architecture
 
-How Cormac v2 is structured. This is the current shape as of the #66 walking skeleton
-(2026-07-08): the authoring agent (ADR-0004), the control plane, the v2 schema, and the
-runtime module exist; the operations agent, surfaces, and deployment do not. Diagrams
+How Cormac v2 is structured. This is the current shape as of 2026-07-09: the authoring
+and operations agents (ADR-0004/ADR-0008), the control plane, the v2 schema, the runtime
+module, and the first client surface (`apps/web`, ADR-0010) exist; deployment does not
+(kind rehearsal deferred to the pilot track, #68). Diagrams
 originated in the June 2026 post-archive sessions (formerly `v2-architecture/diagrams1.md`).
 
 ## The product
@@ -60,6 +61,13 @@ flowchart TB
   into the cached prefix. Prose memory rejected by design.
 - **System of record**: managed Supabase/Postgres, JSONB-hybrid with generated hot
   columns, RLS, ES256/JWKS.
+- **Web surface** (`apps/web`): Vite + React 19 + Tailwind v4 on shadcn/ui primitives;
+  talks only to the control plane's `/api/*` with Supabase-issued JWTs. Supabase Auth is
+  the sole sign-in broker (password today; magic link and Microsoft/Google OAuth via
+  PKCE ride the open #79→#91 train, so the control plane needs zero auth changes per
+  provider). Workbook parsing happens in the browser; only the detection profile
+  (structure plus limited sample values) is uploaded. Boundary per ADR-0010: renders
+  tables, never rebuilds a spreadsheet grid.
 
 ## Data-access seam (settled for both agents)
 

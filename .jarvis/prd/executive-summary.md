@@ -30,7 +30,7 @@ one-to-one to EKS, so Juno remains a swappable substrate rather than a dependenc
 order honors the v0 lesson: the authoring agent and its interview loop come first, because
 that is the bet the product lives or dies on.
 
-## Current stage (2026-07-08)
+## Current stage (2026-07-09)
 
 Keystone GO (ADR-0004) and the #66 walking skeleton built. Phases 1-2 on dev (pnpm
 monorepo, @cormac/contract extracted); phases 3-5 merged to `dev` (#69→#71): v2
@@ -57,8 +57,23 @@ steady-state cache, ~4x under the ~$0.50 baseline; the lockdown itself halved pe
 input). Both product agents now run the ADR-0008 typed-tool pattern. Open: the
 human-played interview (ADR-0004 criterion 3), owner-deferred until an interview UI
 exists (vehicle: the web prototype, ADR-0010); a skill-wording tightening pass from two
-graded metered deviations. Next major piece: the web-app prototype (ADR-0010; the first
-client surface: interview, capture, review queue, records, per-record timeline). The
-Excel pane probes (#67, ADR-0009) are deferred to the pane's turn after a verified
-add-in distribution hole (GoDaddy-resold tenants) repositioned the pane as a flagship
-enhancement rather than the primary surface.
+graded metered deviations. The web-app prototype (#77, ADR-0010) is built on dev and
+owner-tested: sign-in, workbook upload (browser-side .xlsx parse; only the detection
+profile is uploaded), the authoring interview with workbook preview, capture, review
+queue, records, and the per-record timeline, all over the real control plane (dev-lane
+verification: plumbing, not evidence). A first owner test caught the agent reading the
+seeded fixture instead of the upload — fixed at `e90177c` (no-name workbook read =
+latest upload). Owner design review drove a client-language/type-scale pass (`a897657`)
+and a full shadcn/ui + responsive relayout (`e4cc6ce`..`f207b39`); client-facing names:
+contract = "Structure", audit = "History". A platform-infrastructure round is open as a
+stacked PR train **#79→#91** (merge in order, none merged): member management +
+`@cormac/authz` + `platform_admins`; platform-operator surface and `/operator` console;
+demo seeding (fixed personas, tracked render smoke); role-aware UI + People page;
+Microsoft/Google OAuth + magic-link sign-in via Supabase (magic link proven locally
+end-to-end; OAuth waits on owner app registrations); and the security packet —
+`docs/security/` control register (26 rows, Verified/Partial/Planned) +
+`pnpm check:controls` guard + ops runbooks — under **ADR-0011 (Proposed)**. An example
+client workbook ships at `docs/dev/relationship-crm-example.xlsx` (`d3c107a`). Open:
+the human-played interview (ADR-0004 criterion 3) — the web interview UI now exists, so
+the owner click-through is the unblock; the #76 skill wording pass; the pane track
+stays deferred (ADR-0009/0010).
