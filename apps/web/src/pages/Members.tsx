@@ -30,13 +30,9 @@ import {
   useRemoveMember,
 } from '../api/hooks';
 import type { WorkspaceMemberRow } from '../api/types';
-import { can, ROLE_LABELS, ROLES, useMyRole, type Role } from '../lib/authz';
+import { can, ROLE_LABELS, ROLES, roleLabel, useMyRole, type Role } from '../lib/authz';
 import { EmptyState, ErrorNote, PageHeader, Spinner } from '../components/kit';
 import { formatWhen } from '@/lib/format';
-
-function roleLabel(role: string): string {
-  return (ROLE_LABELS as Record<string, { label: string }>)[role]?.label ?? role;
-}
 
 /**
  * Who can work in this book. The UI mirrors the server's rules so nobody

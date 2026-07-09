@@ -28,6 +28,44 @@ export interface AddMemberResult {
   userCreated: boolean;
 }
 
+// --- Operator surface (routes/operator.ts) ---------------------------------
+
+export interface OperatorWorkspaceStats {
+  memberCount: number;
+  contractVersion: number | null;
+  recordCount: number;
+  pendingProposalCount: number;
+  lastAuditAt: string | null;
+}
+
+export interface OperatorWorkspaceSummary {
+  id: string;
+  name: string;
+  createdAt: string;
+  stats: OperatorWorkspaceStats;
+}
+
+export interface OperatorAgentToken {
+  id: string;
+  workspaceId: string;
+  agent: string;
+  createdAt: string;
+  revokedAt: string | null;
+}
+
+export interface OperatorWorkspaceDetail {
+  workspace: { id: string; name: string; confirmationMode: string; createdAt: string };
+  stats: OperatorWorkspaceStats;
+  members: WorkspaceMemberRow[];
+  agentTokens: OperatorAgentToken[];
+  contract: { version: number; document: unknown } | null;
+}
+
+export interface CreateWorkspaceResult {
+  workspace: { id: string; name: string; createdAt: string };
+  owner: { userId: string; email: string; userCreated: boolean } | null;
+}
+
 export interface ProposalChangeView {
   objectApiName: string;
   op: 'create' | 'update';

@@ -1,12 +1,14 @@
-import { Navigate, useNavigate } from 'react-router';
+import { Link, Navigate, useNavigate } from 'react-router';
 import { Badge } from '@/components/ui/badge';
-import { useWorkspaces } from '../api/hooks';
+import { useMe, useWorkspaces } from '../api/hooks';
+import { roleLabel } from '../lib/authz';
 import { ErrorNote, Spinner } from '../components/kit';
 import { supabase } from '../supabase';
 
 export function WorkspacePicker() {
   const navigate = useNavigate();
   const { data: workspaces, isPending, error } = useWorkspaces();
+  const me = useMe();
 
   if (isPending) {
     return (
@@ -46,16 +48,23 @@ export function WorkspacePicker() {
               className="flex w-full items-center justify-between rounded-lg bg-card px-4 py-3 text-left ring-1 ring-foreground/10 transition-all hover:bg-ledger-50 hover:ring-ledger-400"
             >
               <span className="text-sm font-medium text-ink">{w.name}</span>
-              <Badge variant="neutral">{w.role}</Badge>
+              <Badge variant="neutral">{roleLabel(w.role)}</Badge>
             </button>
           ))}
         </div>
-        <button
-          onClick={() => void supabase.auth.signOut()}
-          className="mx-auto mt-8 block text-xs text-stone-400 hover:text-stone-600"
-        >
-          Sign out
-        </button>
+        <div className="mt-8 flex items-center justify-center gap-4">
+          {me.data?.platformAdmin && (
+            <Link to="/operator" className="text-xs text-stone-400 hover:text-stone-600">
+              Operator console
+            </Link>
+          )}
+          <button
+            onClick={() => void supabase.auth.signOut()}
+            className="text-xs text-stone-400 hover:text-stone-600"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
     </div>
   );

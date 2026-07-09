@@ -14,6 +14,9 @@ import { RecordDetail } from './pages/RecordDetail';
 import { ContractPage } from './pages/ContractPage';
 import { AuditPage } from './pages/AuditPage';
 import { Members } from './pages/Members';
+import { OperatorLayout } from './pages/operator/OperatorLayout';
+import { OperatorWorkspaces } from './pages/operator/OperatorWorkspaces';
+import { OperatorWorkspaceDetail } from './pages/operator/OperatorWorkspaceDetail';
 
 /** Lands on the everyday Inbox once the book is live; on setup before then. */
 function WorkspaceIndex() {
@@ -41,6 +44,15 @@ const router = createBrowserRouter([
     element: <RequireAuth />,
     children: [
       { path: '/', element: <WorkspacePicker /> },
+      {
+        // Serenica-internal, its own shell; gated on the /api/me flag inside.
+        path: '/operator',
+        element: <OperatorLayout />,
+        children: [
+          { index: true, element: <OperatorWorkspaces /> },
+          { path: 'workspaces/:workspaceId', element: <OperatorWorkspaceDetail /> },
+        ],
+      },
       {
         path: '/w/:workspaceId',
         element: <WorkspaceLayout />,

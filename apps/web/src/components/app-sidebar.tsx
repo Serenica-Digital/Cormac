@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { buildNav } from '@/lib/nav';
 import type { Role } from '@/lib/authz';
+import { useMe } from '../api/hooks';
 import { supabase } from '../supabase';
 
 export type WorkspaceStage = 'pending' | 'setup' | 'live';
@@ -32,6 +33,7 @@ export function AppSidebar({
 }) {
   const location = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
+  const me = useMe();
   // /w/:workspaceId/<segment>/... — the segment names the active page.
   const activeSegment = location.pathname.split('/')[3] ?? '';
   const itemClasses = 'h-auto flex-col items-start gap-0 py-2';
@@ -104,6 +106,16 @@ export function AppSidebar({
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border px-4 py-3">
         <div className="truncate text-xs text-muted-foreground">{email}</div>
+        {me.data?.platformAdmin && (
+          // The picker auto-redirects single-membership users, so operators
+          // need a door from inside a workspace too.
+          <Link
+            to="/operator"
+            className="w-fit text-xs text-muted-foreground hover:text-foreground"
+          >
+            Operator console
+          </Link>
+        )}
         <button
           onClick={() => void supabase.auth.signOut()}
           className="w-fit text-xs text-muted-foreground hover:text-foreground"
