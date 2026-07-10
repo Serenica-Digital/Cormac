@@ -11,7 +11,9 @@ ingress:
 env:
   APP_ENV: staging
   API_PORT: "8080"
-  CORS_ORIGINS: "http://localhost:15174"
+  # Both spellings: browsers and muscle memory disagree about localhost vs
+  # 127.0.0.1, and the allowlist match is exact.
+  CORS_ORIGINS: "http://localhost:15174,http://127.0.0.1:15174"
   SUPABASE_URL: https://tcemqghhhfllvmmncshe.supabase.co
   HERMES_AUTHORING_URL: http://cormac-hermes-authoring:8644
   HERMES_OPS_URL: http://cormac-hermes-ops:8645
