@@ -1,0 +1,15 @@
+dependencies:
+- name: cormac-control-plane
+  repository: file://../../deploy/charts/control-plane
+  version: 0.1.0
+- name: cormac-web
+  repository: file://../../deploy/charts/web
+  version: 0.1.0
+- name: cormac-hermes
+  repository: file://../../deploy/charts/hermes
+  version: 0.1.0
+- name: cormac-hermes
+  repository: file://../../deploy/charts/hermes
+  version: 0.1.0
+digest: sha256:12c271ce2c907d48b3c8d559c691823dd016d73c47eb3e16c59d27cfa1a34cb7
+generated: "2026-07-10T10:07:53.526815-04:00"

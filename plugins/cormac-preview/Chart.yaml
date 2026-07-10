@@ -1,0 +1,23 @@
+apiVersion: v2
+name: cormac-preview
+description: Experimental Juno/Terra adapter for the portable Cormac preview stack
+type: application
+version: 0.1.0
+appVersion: "0.0.0"
+dependencies:
+  - name: cormac-control-plane
+    alias: control-plane
+    version: 0.1.0
+    repository: file://../../deploy/charts/control-plane
+  - name: cormac-web
+    alias: web
+    version: 0.1.0
+    repository: file://../../deploy/charts/web
+  - name: cormac-hermes
+    alias: hermes-authoring
+    version: 0.1.0
+    repository: file://../../deploy/charts/hermes
+  - name: cormac-hermes
+    alias: hermes-ops
+    version: 0.1.0
+    repository: file://../../deploy/charts/hermes
