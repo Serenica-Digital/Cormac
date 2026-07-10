@@ -39,43 +39,46 @@ const queryClient = new QueryClient({
   },
 });
 
-const router = createBrowserRouter([
-  { path: '/signin', element: <SignIn /> },
-  // OAuth and magic-link redirects land here; no auth guard, the session is
-  // being established by this very page.
-  { path: '/auth/callback', element: <AuthCallback /> },
-  {
-    element: <RequireAuth />,
-    children: [
-      { path: '/', element: <WorkspacePicker /> },
-      {
-        // Serenica-internal, its own shell; gated on the /api/me flag inside.
-        path: '/operator',
-        element: <OperatorLayout />,
-        children: [
-          { index: true, element: <OperatorWorkspaces /> },
-          { path: 'workspaces/:workspaceId', element: <OperatorWorkspaceDetail /> },
-        ],
-      },
-      {
-        path: '/w/:workspaceId',
-        element: <WorkspaceLayout />,
-        children: [
-          { index: true, element: <WorkspaceIndex /> },
-          { path: 'start', element: <GetStarted /> },
-          { path: 'interview', element: <Interview /> },
-          { path: 'workbook', element: <Workbook /> },
-          { path: 'inbox', element: <Inbox /> },
-          { path: 'records', element: <Records /> },
-          { path: 'records/:recordId', element: <RecordDetail /> },
-          { path: 'contract', element: <ContractPage /> },
-          { path: 'audit', element: <AuditPage /> },
-          { path: 'members', element: <Members /> },
-        ],
-      },
-    ],
-  },
-]);
+const router = createBrowserRouter(
+  [
+    { path: '/signin', element: <SignIn /> },
+    // OAuth and magic-link redirects land here; no auth guard, the session is
+    // being established by this very page.
+    { path: '/auth/callback', element: <AuthCallback /> },
+    {
+      element: <RequireAuth />,
+      children: [
+        { path: '/', element: <WorkspacePicker /> },
+        {
+          // Serenica-internal, its own shell; gated on the /api/me flag inside.
+          path: '/operator',
+          element: <OperatorLayout />,
+          children: [
+            { index: true, element: <OperatorWorkspaces /> },
+            { path: 'workspaces/:workspaceId', element: <OperatorWorkspaceDetail /> },
+          ],
+        },
+        {
+          path: '/w/:workspaceId',
+          element: <WorkspaceLayout />,
+          children: [
+            { index: true, element: <WorkspaceIndex /> },
+            { path: 'start', element: <GetStarted /> },
+            { path: 'interview', element: <Interview /> },
+            { path: 'workbook', element: <Workbook /> },
+            { path: 'inbox', element: <Inbox /> },
+            { path: 'records', element: <Records /> },
+            { path: 'records/:recordId', element: <RecordDetail /> },
+            { path: 'contract', element: <ContractPage /> },
+            { path: 'audit', element: <AuditPage /> },
+            { path: 'members', element: <Members /> },
+          ],
+        },
+      ],
+    },
+  ],
+  { basename: import.meta.env.BASE_URL },
+);
 
 export function App() {
   return (
