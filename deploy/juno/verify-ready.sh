@@ -5,7 +5,9 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
-TAG="${TAG:-$(git rev-parse --short HEAD)}"
+# Deployment-only commits do not rebuild the application images. Default to
+# the tag pinned by the adapter; allow TAG to override it for a new release.
+TAG="${TAG:-$(awk '/^[[:space:]]+tag:/{gsub(/"/, "", $2); print $2; exit}' plugins/cormac-preview/values.yaml)}"
 
 bash -n deploy/scripts/ghcr-pull-secret.sh
 bash -n deploy/scripts/secrets-from-infisical.sh
