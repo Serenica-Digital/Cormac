@@ -8,22 +8,21 @@ evidence: `.jarvis/adr/0008-*` and `.jarvis/research/ops-seam-findings.md`.
 ## The shape under test
 
 Typed profile tools, no shell. The agent's three tools (`search_records`, `get_record`,
-`submit_proposal`) are the **cormac-ops plugin** (`plugin/cormac-ops/`, installed
-per-profile by `profile/sync.sh` so only this profile's gateway loads it), Python handlers
+`submit_proposal`) are the **cormac-ops plugin** (`agents/operations/plugin/`, installed
+per-profile by `agents/operations/sync.sh` so only this profile's gateway loads it), Python handlers
 making stateless HTTP calls to the control plane's `/agent/*` surface with the
 workspace-scoped operations token (ADR-0005). The profile's tool surface on the
 API-server platform is exactly that toolset: no terminal, no files, no web, no browser, no
-memory, curator off (`profile/setup.sh`). The contract rides the compiled prompt
+memory, curator off (`agents/operations/setup.sh`). The contract rides the compiled prompt
 (`instructions` seam); capture runs ride `/v1/runs` (ADR-0001).
 
 ## Layout
 
-- `plugin/cormac-ops/` — tracked source of the plugin (manifest + three tool handlers).
-- `profile/` — tracked source of the `cormac-operations` Hermes profile. `SOUL.md` carries
-  the whole procedure (no skills dir on purpose: the skills mechanism needs the skills
-  toolset, which includes agent self-editing via `skill_manage`). `sync.sh` installs the
-  SOUL and the plugin into the profile, `setup.sh` owns config, `hub.sh` launches the
-  gateway (port 8645).
+- The agent definition (SOUL, plugin, sync/setup/hub scripts) lives at
+  `agents/operations/`: `SOUL.md` carries the whole procedure (no skills dir on purpose:
+  the skills mechanism needs the skills toolset, which includes agent self-editing via
+  `skill_manage`); `sync.sh` installs the SOUL and the plugin into the profile,
+  `setup.sh` owns config, `hub.sh` launches the gateway (port 8645).
 - `utterances.json` — the fixed 8-utterance protocol, one per outcome class: clean create,
   update by name, ambiguous target, alias + enum flip, out-of-contract, multi-change,
   human-only field, read-then-update.

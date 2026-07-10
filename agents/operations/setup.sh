@@ -20,7 +20,7 @@ set -euo pipefail
 PROFILE=cormac-operations
 
 if [[ ! -d "$HOME/.hermes/profiles/$PROFILE/plugins/cormac-ops" ]]; then
-  echo "cormac-ops plugin not installed in the profile; run profile/sync.sh first" >&2
+  echo "cormac-ops plugin not installed in the profile; run agents/operations/sync.sh first" >&2
   exit 1
 fi
 

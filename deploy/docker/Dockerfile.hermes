@@ -6,11 +6,11 @@
 #   docker build -f deploy/docker/Dockerfile.hermes .
 FROM nousresearch/hermes-agent:v2026.6.19
 
-COPY evals/workbook-authoring/profile/SOUL.md      /profiles/cormac-authoring/SOUL.md
-COPY evals/workbook-authoring/profile/skills       /profiles/cormac-authoring/skills
-COPY evals/workbook-authoring/plugin/cormac-authoring /profiles/cormac-authoring/plugins/cormac-authoring
-COPY evals/ops-capture/profile/SOUL.md             /profiles/cormac-operations/SOUL.md
-COPY evals/ops-capture/plugin/cormac-ops           /profiles/cormac-operations/plugins/cormac-ops
+COPY agents/authoring/SOUL.md   /profiles/cormac-authoring/SOUL.md
+COPY agents/authoring/skills    /profiles/cormac-authoring/skills
+COPY agents/authoring/plugin    /profiles/cormac-authoring/plugins/cormac-authoring
+COPY agents/operations/SOUL.md  /profiles/cormac-operations/SOUL.md
+COPY agents/operations/plugin   /profiles/cormac-operations/plugins/cormac-ops
 
 COPY deploy/docker/hermes-entrypoint.sh /hermes-entrypoint.sh
 RUN chmod 755 /hermes-entrypoint.sh && \

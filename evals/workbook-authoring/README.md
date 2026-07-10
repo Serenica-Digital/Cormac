@@ -18,12 +18,11 @@ contract. Brief: `.jarvis/tmp/plans/spike-64-authoring-agent.md`. Gate: ADR-0002
   issues verbatim on failure; the same gate the control plane runs behind `submit_contract`.
 - `scripts/diff-contracts.ts` — structural stability check across N produced contracts.
   `npm run diff <a.json> <b.json> ...`. Naming variance tolerated, structural variance not.
-- `profile/` — source of truth for the `cormac-authoring` Hermes profile (SOUL, interview
-  skill, hardening config). `profile/sync.sh` copies it into
+- The agent definition lives at `agents/authoring/`: source of truth for the
+  `cormac-authoring` Hermes profile (SOUL, interview skill, hardening config) plus the
+  plugin tool surface (`read_workbook`, `submit_contract` as typed plugin tools calling
+  the control plane's `/agent/*`, ADR-0008). `agents/authoring/sync.sh` copies it into
   `~/.hermes/profiles/cormac-authoring/`.
-- `plugin/cormac-authoring/` — the profile's tool surface: `read_workbook` and
-  `submit_contract` as typed plugin tools calling the control plane's `/agent/*` (ADR-0008;
-  replaces the old shell scripts). `sync.sh` installs it into the profile's `plugins/`.
 
 ## Running an interview
 
@@ -34,8 +33,8 @@ control plane and a gateway launched under the vault slot (which injects
 
 ```bash
 cd evals/workbook-authoring        # process cwd matters: Hermes resolves relative paths here
-./profile/sync.sh                  # after any SOUL/skill/plugin edit
-./profile/setup.sh                 # idempotent; applies the hardened tool + config posture
+../../agents/authoring/sync.sh     # after any SOUL/skill/plugin edit
+../../agents/authoring/setup.sh    # idempotent; applies the hardened tool + config posture
 pnpm agent:hub run                 # dev — gpt-5.5 on the Codex plan (cheap iteration)
 # then drive turns against the gateway:
 ./scripts/send-turn.sh <conversation-name> "<client message>"
@@ -43,7 +42,7 @@ pnpm agent:hub run                 # dev — gpt-5.5 on the Codex plan (cheap it
 
 Use `INFISICAL_ENV=staging pnpm agent:hub run` for the metered Sonnet 4.6 lane (evidence
 only). The human-played interview runs the same gateway path (not `chat`), so it exercises
-the hardened `api_server` surface. The profile holds no `.env`; see `profile/hub.sh` and
+the hardened `api_server` surface. The profile holds no `.env`; see `agents/authoring/hub.sh` and
 ADR-0005/0006/0007.
 
 **Evidence rule:** cost, verdict, and interview-behavior evidence comes from metered

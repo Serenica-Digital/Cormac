@@ -22,10 +22,9 @@ cp -R "$SRC/skills/interview" "$DEST/skills/interview"
 # The cormac-authoring plugin installs per-profile: Hermes scans
 # <profile>/plugins/ as the user plugin dir under -p, so only this profile's
 # gateway ever loads these tools (no global install, no project-plugin flag).
-EVAL="$(cd "$SRC/.." && pwd)"
 mkdir -p "$DEST/plugins"
 rm -rf "$DEST/plugins/cormac-authoring"
-cp -R "$EVAL/plugin/cormac-authoring" "$DEST/plugins/cormac-authoring"
+cp -R "$SRC/plugin" "$DEST/plugins/cormac-authoring"
 rm -rf "$DEST/plugins/cormac-authoring/__pycache__"
 
 echo "synced SOUL.md, skills/interview, plugins/cormac-authoring -> $DEST"

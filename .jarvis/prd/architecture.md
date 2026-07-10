@@ -74,7 +74,7 @@ flowchart TB
 Both agents reach data through the control plane's `/agent/*` API; the seam question was
 only ever how a tool call leaves the model. For the **operations agent** it is settled
 (ADR-0008): typed tools registered by the per-profile `cormac-ops` plugin
-(`evals/ops-capture/plugin/`), handlers making stateless HTTP calls — no shell, no MCP
+(`agents/operations/plugin/`), handlers making stateless HTTP calls — no shell, no MCP
 callback, no connection state. The ops profile is locked down to exactly those three
 tools, with memory, user profile, and curator off, and its whole procedure in SOUL.md
 (no skills toolset). The **authoring agent** now runs the same shape (ADR-0008, landed
