@@ -1,0 +1,57 @@
+# Cormac agent gateway (ported from archive/plugins/cormac-hermes-runtime,
+# minus the recycle CronJob). Install once per agent kind:
+#   helm install cormac-hermes-authoring deploy/charts/hermes -f deploy/charts/hermes/values-authoring.yaml
+#   helm install cormac-hermes-ops       deploy/charts/hermes -f deploy/charts/hermes/values-ops.yaml
+# The entrypoint (deploy/docker/hermes-entrypoint.sh) selects the baked
+# profile via PROFILE and applies the ADR-0008 lockdown before the gateway
+# starts. Only the staging lane (metered Sonnet) ever runs in-cluster
+# (ADR-0007); the dev/codex lane is host-only.
+serviceName: cormac-hermes-authoring
+replicas: 1
+port: 8644
+# The gateway API server answers /health (verified against v2026.6.19 in the
+# S5 smoke). probes.enabled exists as the escape hatch if a future upstream
+# bump drops it.
+healthPath: /health
+probes:
+  enabled: true
+
+image:
+  repository: ghcr.io/serenica-digital/cormac-hermes
+  tag: dev # set to the commit sha at deploy
+  pullPolicy: IfNotPresent
+imagePullSecret: ghcr-pull
+
+service:
+  port: 8644
+
+# Block until the control plane answers; the plugin tools are stateless HTTP,
+# but the first turn should not race the control plane's startup.
+waitForControlPlaneUrl: http://cormac-control-plane:8080/health
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 1Gi
+
+secretName: cormac-secrets
+
+env:
+  PROFILE: cormac-authoring
+  API_SERVER_PORT: "8644"
+  CORMAC_CONTROL_PLANE_URL: http://cormac-control-plane:8080
+
+# HERMES_API_KEY becomes API_SERVER_KEY in the entrypoint. The ops release
+# swaps CORMAC_AGENT_TOKEN for CORMAC_OPS_AGENT_TOKEN (values-ops.yaml).
+secretEnv:
+  - HERMES_API_KEY
+  - ANTHROPIC_API_KEY
+  - CORMAC_AGENT_TOKEN
+
+# Ephemeral by design: a spot kill loses in-flight conversation state, which
+# is acceptable on the dev substrate. Durable session storage is out of scope.
+emptyDirMounts:
+  - name: data
+    path: /opt/data

@@ -1,0 +1,34 @@
+# Control plane, production-shaped: a builder stage resolves the workspace
+# and prunes to production dependencies with `pnpm deploy` (workspace packages
+# included as real deps); the runtime stage carries only that tree, runs as
+# the unprivileged node user, and has no pnpm. tsx is a regular dependency —
+# it is the sanctioned runtime loader until the compiled-dist migration
+# (tracked; the workspace packages export raw TS today). Build context is the
+# repo root:
+#   docker build -f deploy/docker/Dockerfile.control-plane .
+# Config is process env only (src/config.ts); nothing is baked in.
+FROM node:22-slim AS builder
+
+WORKDIR /app
+RUN corepack enable
+
+# evals/* are workspace importers in the lockfile, so they must be present
+# for --frozen-lockfile to resolve.
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc tsconfig.base.json tsconfig.json ./
+COPY packages ./packages
+COPY apps ./apps
+COPY evals ./evals
+COPY scripts ./scripts
+
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @cormac/control-plane deploy --prod --legacy /out
+
+FROM node:22-slim
+
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=builder --chown=node:node /out .
+
+EXPOSE 8080
+USER node
+CMD ["node_modules/.bin/tsx", "src/index.ts"]

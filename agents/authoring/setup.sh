@@ -31,7 +31,7 @@ set -euo pipefail
 PROFILE=cormac-authoring
 
 if [[ ! -d "$HOME/.hermes/profiles/$PROFILE/plugins/cormac-authoring" ]]; then
-  echo "cormac-authoring plugin not installed in the profile; run profile/sync.sh first" >&2
+  echo "cormac-authoring plugin not installed in the profile; run agents/authoring/sync.sh first" >&2
   exit 1
 fi
 

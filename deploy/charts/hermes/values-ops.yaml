@@ -1,0 +1,14 @@
+# Release: cormac-hermes-ops (the injection-facing agent; minimal surface,
+# ADR-0008 posture applied by the entrypoint).
+serviceName: cormac-hermes-ops
+port: 8645
+service:
+  port: 8645
+env:
+  PROFILE: cormac-operations
+  API_SERVER_PORT: "8645"
+  CORMAC_CONTROL_PLANE_URL: http://cormac-control-plane:8080
+secretEnv:
+  - HERMES_API_KEY
+  - ANTHROPIC_API_KEY
+  - CORMAC_OPS_AGENT_TOKEN

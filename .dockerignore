@@ -1,0 +1,19 @@
+# Build-context hygiene (ported from archive/.dockerignore). The archive is a
+# full second monorepo with its own node_modules; excluding it keeps the
+# context small and the COPY layers honest.
+archive
+**/node_modules
+**/dist
+**/build
+.git
+.jarvis
+.claude
+docs
+tools
+supabase/.temp
+supabase/.branches
+coverage
+*.log
+.env
+.env.*
+deploy/rendered

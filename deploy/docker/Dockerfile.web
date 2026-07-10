@@ -1,0 +1,39 @@
+# Web surface: multi-stage. Stage 1 builds the static bundle with the values
+# baked in (vite.config.ts define block reads the UNPREFIXED server-side names
+# SUPABASE_URL / SUPABASE_ANON_KEY / CORMAC_API_URL); stage 2 serves dist/
+# with nginx. Build under `infisical run --env=staging` so the Supabase args
+# come from the vault (both are public values; nothing secret is baked):
+#   infisical run --env=staging -- sh -c 'docker build -f deploy/docker/Dockerfile.web \
+#     --build-arg SUPABASE_URL --build-arg SUPABASE_ANON_KEY \
+#     --build-arg CORMAC_API_URL=https://<api-origin> .'
+# WEB_BASE is the escape hatch for sub-path routing on a shared ingress host.
+FROM node:22-slim AS builder
+
+WORKDIR /app
+RUN corepack enable
+
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc tsconfig.base.json tsconfig.json ./
+COPY packages ./packages
+COPY apps ./apps
+COPY evals ./evals
+COPY scripts ./scripts
+
+RUN pnpm install --frozen-lockfile
+
+ARG SUPABASE_URL=""
+ARG SUPABASE_ANON_KEY=""
+ARG CORMAC_API_URL=""
+ARG WEB_BASE=/
+
+ENV SUPABASE_URL=$SUPABASE_URL \
+    SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
+    CORMAC_API_URL=$CORMAC_API_URL
+
+RUN pnpm --filter @cormac/web exec vite build --base "$WEB_BASE"
+
+FROM nginx:alpine
+
+COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+COPY deploy/docker/web-nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 5174

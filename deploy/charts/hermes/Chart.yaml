@@ -1,0 +1,11 @@
+apiVersion: v2
+name: cormac-hermes
+description: >-
+  Cormac agent gateway (Hermes runtime, ADR-0008 locked-down profile). One
+  chart, installed once per agent kind (releases cormac-hermes-authoring and
+  cormac-hermes-ops via values-authoring.yaml / values-ops.yaml). ClusterIP
+  only; there is deliberately no ingress template (the runtime is private,
+  ADR-0001).
+type: application
+version: 0.1.0
+appVersion: "0.0.0"

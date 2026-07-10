@@ -26,7 +26,7 @@ around it.
 - **`terminal` is per-platform and OFF for `api_server` by default.** Without
   it the agent silently falls back to approval-gated `execute_code`, which
   stalls a `/v1/responses` interview (see above). Enabling it is part of
-  profile setup (`evals/workbook-authoring/profile/setup.sh`).
+  profile setup (`agents/authoring/setup.sh`).
 - **`config.yaml` is Hermes-owned.** `hermes tools enable` and friends rewrite
   it (`platform_toolsets`). Never track or sync that file; apply settings only
   as idempotent `hermes config set` / `hermes tools enable` calls. (A sync

@@ -18,3 +18,4 @@ supabase/.temp/
 
 # Personal Claude Code settings (machine-specific hook paths)
 .claude/settings.local.json
+deploy/rendered/

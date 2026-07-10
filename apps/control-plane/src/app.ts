@@ -1,7 +1,7 @@
 import { createRemoteJWKSet } from 'jose';
 import { createServiceClient, type Db } from './db.js';
 import { isProdLike, type Config } from './config.js';
-import type { RuntimeClient } from './runtime/types.js';
+import type { RuntimeLanes } from './runtime/types.js';
 
 export type JwksResolver = ReturnType<typeof createRemoteJWKSet>;
 
@@ -21,14 +21,14 @@ export interface AppContext {
    */
   hsSecret: Uint8Array | null;
   /**
-   * The Hermes transport (ADR-0001), injectable so tests fake it. Null when the
-   * runtime is not configured; the capture route then refuses with 503 instead
-   * of half-working.
+   * The Hermes transport lanes (ADR-0001), injectable so tests fake them. A
+   * null lane means that agent runtime is not configured; its route refuses
+   * with 503 instead of half-working, and the other lane is unaffected.
    */
-  runtime: RuntimeClient | null;
+  runtimes: RuntimeLanes;
 }
 
-export function buildAppContext(config: Config, runtime: RuntimeClient | null = null): AppContext {
+export function buildAppContext(config: Config, runtimes?: Partial<RuntimeLanes> | null): AppContext {
   const db = createServiceClient(config.SUPABASE_URL, config.SUPABASE_SERVICE_ROLE_KEY);
   // Supabase signs user tokens asymmetrically (ES256) and publishes the public
   // keys at this JWKS. Verifying against it is the production-correct path; the
@@ -39,5 +39,11 @@ export function buildAppContext(config: Config, runtime: RuntimeClient | null = 
     isProdLike(config.APP_ENV) || !config.SUPABASE_JWT_SECRET
       ? null
       : new TextEncoder().encode(config.SUPABASE_JWT_SECRET);
-  return { config, db, jwks, hsSecret, runtime };
+  return {
+    config,
+    db,
+    jwks,
+    hsSecret,
+    runtimes: { authoring: runtimes?.authoring ?? null, operations: runtimes?.operations ?? null },
+  };
 }

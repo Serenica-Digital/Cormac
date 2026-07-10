@@ -1,0 +1,19 @@
+# The Cormac agent gateway image: the pinned upstream Hermes runtime plus BOTH
+# locked-down profiles baked in (ADR-0008); PROFILE selects one at start. The
+# tag matches the CLI the eval profiles are proven against (v0.17.0 /
+# 2026.6.19). Secrets are env-injected at deploy (HERMES_API_KEY,
+# ANTHROPIC_API_KEY, agent token); nothing sensitive enters this image.
+#   docker build -f deploy/docker/Dockerfile.hermes .
+FROM nousresearch/hermes-agent:v2026.6.19
+
+COPY agents/authoring/SOUL.md   /profiles/cormac-authoring/SOUL.md
+COPY agents/authoring/skills    /profiles/cormac-authoring/skills
+COPY agents/authoring/plugin    /profiles/cormac-authoring/plugins/cormac-authoring
+COPY agents/operations/SOUL.md  /profiles/cormac-operations/SOUL.md
+COPY agents/operations/plugin   /profiles/cormac-operations/plugins/cormac-ops
+
+COPY deploy/docker/hermes-entrypoint.sh /hermes-entrypoint.sh
+RUN chmod 755 /hermes-entrypoint.sh && \
+    find /profiles -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null; true
+
+ENTRYPOINT ["/hermes-entrypoint.sh"]

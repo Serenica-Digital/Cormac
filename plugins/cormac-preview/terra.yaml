@@ -1,0 +1,14 @@
+resource_id: cormac-preview
+name: Cormac Preview Stack
+icon: ""
+description: >-
+  Meeting-spike adapter that installs Cormac's portable control-plane, web,
+  authoring-gateway, and operations-gateway Helm charts into one Juno project.
+  Requires pre-created ghcr-pull and cormac-secrets Kubernetes Secrets.
+category: Development
+tags:
+  - cormac
+  - serenica
+  - application
+  - preview
+fields: []

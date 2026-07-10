@@ -44,6 +44,21 @@ Requires the local stack (`pnpm db:start`); the script runs under
 through the sanctioned `purge_workspace` path; auth users are kept so persona
 user ids stay stable.
 
+## Staging preview accounts (not the demo seed)
+
+The demo seed never runs against staging (the guard above; control register
+row 23). For previewing a deployed build wired to staging (the kind smoke, the
+Juno substrate work), two kinds of accounts exist on the staging project:
+
+| Email | What it is |
+| --- | --- |
+| `owner-e2e-*@test.local`, `owner-ops-*@test.local` | created by `seed:authoring-e2e` / `seed:ops-e2e`; random unrecorded passwords (sign-in is not their purpose; agent tokens are) |
+| `owner@test.local` | manual convenience account (2026-07-10), password `cormac-kind-demo`, owner of both e2e workspaces, for browser sign-in against a deployed preview |
+
+Staging holds synthetic data only. These are not personas, the smoke script
+does not use them, and they should be removed or re-passworded whenever
+staging credentials rotate (see the key-rotation runbook).
+
 ## Agent-token caveat
 
 There is one live binding per agent kind (the vault token's hash is unique, so

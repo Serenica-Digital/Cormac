@@ -1,0 +1,8 @@
+# kind smoke overlay.
+image:
+  repository: cormac/web
+  tag: dev
+  pullPolicy: Never
+imagePullSecret: ""
+ingress:
+  enabled: false

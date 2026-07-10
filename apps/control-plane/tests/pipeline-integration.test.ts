@@ -79,7 +79,7 @@ describe.skipIf(!env.ready)('capture -> hold -> decide -> apply pipeline', () =>
       .single();
     recordId = rec.data!.id as string;
 
-    server = await buildServer(loadConfig(), fakeRuntime);
+    server = await buildServer(loadConfig(), { operations: fakeRuntime });
   });
 
   afterAll(async () => {
@@ -169,7 +169,7 @@ describe.skipIf(!env.ready)('capture -> hold -> decide -> apply pipeline', () =>
       },
     };
 
-    const evilServer = await buildServer(loadConfig(), evilRuntime);
+    const evilServer = await buildServer(loadConfig(), { operations: evilRuntime });
     try {
       const capture = await evilServer.inject({
         method: 'POST',

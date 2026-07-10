@@ -53,6 +53,7 @@ comma-separated. Non-file evidence is plain prose with no path.
 | 24 | API rate limiting | Not built. Appears in the v0 architecture diagram; there is no rate limiting in v2 code | — | [known-gaps-and-roadmap.md](known-gaps-and-roadmap.md) | Planned |
 | 25 | Backups exist and restore is drilled | Local stack is disposable; staging is managed Supabase (backup tier to confirm); no restore drill has been run | — | [known-gaps-and-roadmap.md](known-gaps-and-roadmap.md) | Planned |
 | 26 | The workbook file itself never leaves the browser; the uploaded detection profile carries limited samples | `.xlsx` parsing is fully in-browser ([parse.ts](../../apps/web/src/workbook/parse.ts)); the detection profile uploads up to 3 sample values per column and 2 sample rows per sheet ([detect.ts](../../apps/web/src/workbook/detect.ts)); parsed grids persist unencrypted in browser localStorage ([store.ts](../../apps/web/src/workbook/store.ts)) | code review; detection correctness has a test but the boundary itself does not | [data-handling.md](data-handling.md) | Partial |
+| 27 | The only unauthenticated endpoints are the health probes (`/health`, `/api/health`), which return static status and touch no data | The two probe routes return a constant body ([human.ts](../../apps/control-plane/src/routes/human.ts)); every other handler runs behind `authenticate` + a capability guard (rows 8-9) | `apps/control-plane/tests/health.test.ts` | [architecture-and-trust-boundary.md](architecture-and-trust-boundary.md) | Verified |
 
 ## How to use this register
 
