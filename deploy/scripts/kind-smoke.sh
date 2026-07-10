@@ -51,6 +51,16 @@ WEB_PF=$!
 trap 'kill $CP_PF $WEB_PF 2>/dev/null || true' EXIT
 sleep 3
 
+# The web bundle bakes its API URL at image build; a stale bake fails only in
+# the browser ("Failed to fetch"), so check it mechanically here.
+BAKED=$(kubectl -n "$NS" exec deploy/cormac-web -- sh -c \
+  "grep -roh 'http://localhost:[0-9]*' /usr/share/nginx/html/assets | sort -u" | grep -v ':9999' || true)
+if [ "$BAKED" != "http://localhost:8080" ]; then
+  echo "WARNING: web bundle bakes API URL '$BAKED', expected http://localhost:8080." >&2
+  echo "Rebuild: infisical run --env=staging -- sh -c 'docker build -f deploy/docker/Dockerfile.web \\" >&2
+  echo "  --build-arg SUPABASE_URL --build-arg SUPABASE_ANON_KEY --build-arg CORMAC_API_URL=http://localhost:8080 -t cormac/web:dev .'" >&2
+fi
+
 echo "--- control plane /health:"; curl -fsS http://localhost:18080/health; echo
 echo "--- web / (expect 200):"; curl -s -o /dev/null -w "%{http_code}\n" http://localhost:15174/
 echo "--- web SPA fallback (expect 200):"; curl -s -o /dev/null -w "%{http_code}\n" http://localhost:15174/records/deep-route
