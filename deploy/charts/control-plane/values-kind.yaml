@@ -1,0 +1,17 @@
+# kind smoke overlay: locally built image loaded via `kind load`, no pull
+# secret, no ingress (port-forward), staging Supabase env comes from the same
+# derived Secret as everywhere else.
+image:
+  repository: cormac/control-plane
+  tag: dev
+  pullPolicy: Never
+imagePullSecret: ""
+ingress:
+  enabled: false
+env:
+  APP_ENV: staging
+  API_PORT: "8080"
+  CORS_ORIGINS: "http://localhost:15174"
+  SUPABASE_URL: https://tcemqghhhfllvmmncshe.supabase.co
+  HERMES_MODEL: cormac-authoring
+  HERMES_TIMEOUT_MS: "120000"

@@ -1,0 +1,65 @@
+# Cormac v2 control plane (ported from archive/plugins/cormac-api; terra.yaml
+# operator fields re-nested — this is a plain Helm chart, ADR-0003).
+# PLACEHOLDER values are finalized per target (kind smoke / Juno session).
+serviceName: cormac-control-plane
+replicas: 1
+port: 8080
+healthPath: /health
+
+image:
+  repository: ghcr.io/serenica-digital/cormac-control-plane
+  tag: dev # set to the commit sha at deploy
+  pullPolicy: IfNotPresent
+# docker-registry Secret; create it BEFORE any workload references the image
+# (the June 2026 pull-secret race). Empty string disables.
+imagePullSecret: ghcr-pull
+
+service:
+  port: 8080
+
+# No ClusterIssuer exists on the Juno shared cluster; TLS stays off there.
+# Path-based mode under a shared host needs no rewrite: the backend already
+# serves under /api plus /health.
+ingress:
+  enabled: false
+  className: nginx
+  host: "" # PLACEHOLDER (set in-session once the routing shape is known)
+  path: /
+  tls:
+    enabled: false
+    clusterIssuer: ""
+  annotations: {}
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+# The k8s Secret holding every secretEnv value; created by
+# deploy/scripts/secrets-from-infisical.sh, never by this chart.
+secretName: cormac-secrets
+
+# Non-secret runtime env -> ConfigMap. Cross-service URLs use in-cluster
+# Service DNS. HERMES_URL stays unset for the floor scope (capture/authoring
+# answer 503 without it); the stretch flip is:
+#   HERMES_URL: http://cormac-hermes-authoring:8644   (+ HERMES_MODEL: cormac-authoring)
+# or
+#   HERMES_URL: http://cormac-hermes-ops:8645         (+ HERMES_MODEL: cormac-operations)
+# then `kubectl rollout restart deploy/cormac-control-plane`.
+env:
+  APP_ENV: staging
+  API_PORT: "8080"
+  CORS_ORIGINS: "" # PLACEHOLDER (the web origin, set in-session)
+  SUPABASE_URL: https://tcemqghhhfllvmmncshe.supabase.co
+  SUPABASE_ANON_KEY: "" # non-secret publishable key; PLACEHOLDER (from the staging vault)
+  HERMES_MODEL: cormac-authoring
+  HERMES_TIMEOUT_MS: "120000"
+
+# Secret runtime env -> secretKeyRef into secretName.
+secretEnv:
+  - SUPABASE_SERVICE_ROLE_KEY
+  - HERMES_API_KEY
+
+emptyDirMounts: []

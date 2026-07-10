@@ -1,0 +1,6 @@
+# kind smoke overlay (combine with values-authoring.yaml or values-ops.yaml).
+image:
+  repository: cormac/hermes
+  tag: dev
+  pullPolicy: Never
+imagePullSecret: ""

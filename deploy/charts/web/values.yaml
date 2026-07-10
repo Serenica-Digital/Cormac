@@ -1,0 +1,40 @@
+# Cormac v2 web surface (ported from archive/plugins/cormac-web). The bundle
+# is static: SUPABASE_URL / SUPABASE_ANON_KEY / CORMAC_API_URL are baked at
+# image build (deploy/docker/Dockerfile.web build args), so this chart has no
+# env and no secrets. Changing the API origin means rebuilding the image
+# (deploy/scripts/build-push.sh --only web), not editing values here.
+serviceName: cormac-web
+replicas: 1
+port: 5174
+healthPath: /
+
+image:
+  repository: ghcr.io/serenica-digital/cormac-web
+  tag: dev # set to the commit sha at deploy
+  pullPolicy: IfNotPresent
+imagePullSecret: ghcr-pull
+
+service:
+  port: 5174
+
+ingress:
+  enabled: false
+  className: nginx
+  host: "" # PLACEHOLDER (set in-session)
+  path: /
+  tls:
+    enabled: false
+    clusterIssuer: ""
+  annotations: {}
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 128Mi
+
+secretName: cormac-secrets
+env: {}
+secretEnv: []
+emptyDirMounts: []

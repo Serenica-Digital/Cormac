@@ -1,0 +1,14 @@
+# Release: cormac-hermes-authoring (defaults in values.yaml already describe
+# the authoring shape; this file exists so both releases are explicit).
+serviceName: cormac-hermes-authoring
+port: 8644
+service:
+  port: 8644
+env:
+  PROFILE: cormac-authoring
+  API_SERVER_PORT: "8644"
+  CORMAC_CONTROL_PLANE_URL: http://cormac-control-plane:8080
+secretEnv:
+  - HERMES_API_KEY
+  - ANTHROPIC_API_KEY
+  - CORMAC_AGENT_TOKEN

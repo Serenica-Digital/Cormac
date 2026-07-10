@@ -1,0 +1,6 @@
+apiVersion: v2
+name: cormac-control-plane
+description: Cormac control plane (the only writer; ADR-0003 plain-Kubernetes posture)
+type: application
+version: 0.1.0
+appVersion: "0.0.0"
