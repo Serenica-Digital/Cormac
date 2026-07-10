@@ -90,9 +90,10 @@ Cleanup: `helm uninstall` the four releases; delete `cormac-secrets` and
 `ghcr-pull`; revoke the session PAT; revoke/re-mint staging agent tokens if
 exposure is suspected.
 
-## Known limits (deliberate, this round)
+## Known limits (each tracked)
 
 - Gateway conversation state lives on an emptyDir: a spot-instance kill mid
-  interview loses the conversation. Acceptable on the dev substrate.
-- No CI image pipeline yet; `build-push.sh` is the manual path.
-- Control-plane image ships dev deps (tsx path, no compile step) — follow-up.
+  interview loses the conversation (#96).
+- No CI image pipeline yet; `build-push.sh` is the manual path (#95).
+- The control-plane image is pruned to prod deps and runs non-root, but still
+  executes TS source via tsx; compiled-dist migration is #94.
