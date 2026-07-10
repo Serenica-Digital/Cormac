@@ -37,3 +37,14 @@ export interface RuntimeClient {
   /** Send one interview turn on the workspace's named conversation (authoring agent). */
   sendAuthoringTurn(input: AuthoringTurnInput): Promise<AuthoringTurnOutcome>;
 }
+
+/**
+ * One client per agent kind: the gateways are separate processes with
+ * separate lockdowns (ADR-0005/0008), so the control plane holds one lane
+ * per kind. A null lane means that agent is not deployed; its feature
+ * answers 503 while the other lane keeps working.
+ */
+export interface RuntimeLanes {
+  authoring: RuntimeClient | null;
+  operations: RuntimeClient | null;
+}

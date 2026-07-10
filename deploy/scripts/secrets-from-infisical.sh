@@ -2,7 +2,7 @@
 # Create/update the one k8s Secret every chart consumes, as a DERIVED COPY of
 # the Infisical staging environment (Infisical stays the sole authority,
 # ADR-0005/0006; there is no ESO on clusters we do not control). Explicit
-# allowlist, never a blanket export: host-lane names (HERMES_URL,
+# allowlist, never a blanket export: host-lane names (legacy HERMES_URL,
 # CORMAC_CONTROL_PLANE_URL, SUPABASE_DB_*) must not enter the cluster —
 # in-cluster URLs are chart ConfigMap values. Applies straight to the current
 # kubecontext; writes no file.

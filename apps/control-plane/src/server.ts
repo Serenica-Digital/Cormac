@@ -4,7 +4,7 @@ import { ZodError } from 'zod';
 import { ProblemError } from './shared.js';
 import { buildAppContext } from './app.js';
 import type { Config } from './config.js';
-import type { RuntimeClient } from './runtime/types.js';
+import type { RuntimeLanes } from './runtime/types.js';
 import { registerHumanRoutes } from './routes/human.js';
 import { registerMemberRoutes } from './routes/members.js';
 import { registerOperatorRoutes } from './routes/operator.js';
@@ -19,11 +19,11 @@ import './types.js';
  */
 export async function buildServer(
   config: Config,
-  runtime: RuntimeClient | null = null,
+  runtimes: Partial<RuntimeLanes> | null = null,
 ): Promise<FastifyInstance> {
   const fastify = Fastify({ logger: true });
 
-  fastify.decorate('app', buildAppContext(config, runtime));
+  fastify.decorate('app', buildAppContext(config, runtimes));
 
   // Allowlist, not origin: true. Origins off the list get no CORS headers.
   const corsOrigins = config.CORS_ORIGINS.split(',')

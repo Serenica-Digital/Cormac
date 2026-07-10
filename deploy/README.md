@@ -39,15 +39,16 @@ non-secrets ride the chart ConfigMap, secrets ride `cormac-secrets`
 (`SUPABASE_SERVICE_ROLE_KEY`, `HERMES_API_KEY`; gateways add
 `ANTHROPIC_API_KEY` and their agent token). In-cluster URLs are Service DNS
 (`http://cormac-control-plane:8080`); the vault's host-lane URLs
-(`HERMES_URL`, `CORMAC_CONTROL_PLANE_URL`) never enter the cluster. The web
+(`CORMAC_CONTROL_PLANE_URL` and friends) never enter the cluster. The web
 bundle is static: changing its API origin means rebuilding the image, not
 editing values.
 
-`HERMES_URL` is unset by default in the control-plane chart (capture and
-authoring answer 503). To wire a lane: set `HERMES_URL` +
-`HERMES_MODEL` in the ConfigMap values (authoring:
-`http://cormac-hermes-authoring:8644` / `cormac-authoring`; ops:
-`http://cormac-hermes-ops:8645` / `cormac-operations`), upgrade, restart.
+The control plane holds one runtime lane per agent kind
+(`HERMES_AUTHORING_URL`, `HERMES_OPS_URL`); both are wired to the in-cluster
+gateway Services by default, so the interview and capture work
+simultaneously. Blank a lane's URL in values to disable it (its feature
+answers 503; the other lane is unaffected) — do that when a deployment
+deliberately omits the gateway pods.
 
 ## Shared-cluster session runbook (Juno)
 

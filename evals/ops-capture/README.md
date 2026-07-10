@@ -40,7 +40,7 @@ pnpm ops:hub run                                  # dev lane gateway (Codex gpt-
 pnpm ops:batch -- --label dev-smoke               # the protocol
 ```
 
-The control plane must point `HERMES_URL` at the ops gateway (`:8645`) for capture runs.
+The control plane reaches the ops gateway via `HERMES_OPS_URL` (`:8645`); `pnpm cp:dev` wires both lanes.
 Metered evidence lane (ADR-0007): `INFISICAL_ENV=staging pnpm ops:hub run` (staging
 gateway, Sonnet) with the dev control plane and dev data — the sanctioned mixed mode.
 

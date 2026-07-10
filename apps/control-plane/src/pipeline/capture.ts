@@ -35,11 +35,16 @@ export async function captureUpdate(
   ctx: RequestContext,
   text: string,
 ): Promise<CaptureResult> {
-  const { db, runtime } = app;
+  const { db } = app;
+  const runtime = app.runtimes.operations;
   const { workspaceId, userId } = ctx;
 
   if (!runtime) {
-    throw new ProblemError(503, 'runtime_unavailable', 'The agent runtime is not configured');
+    throw new ProblemError(
+      503,
+      'runtime_unavailable',
+      'The operations agent runtime is not configured',
+    );
   }
 
   const contractRow = await getActiveContract(db, workspaceId);

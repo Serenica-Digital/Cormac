@@ -186,9 +186,13 @@ export function registerHumanRoutes(app: FastifyInstance): void {
     { preHandler: [authenticate, requireCapability('publish_contract')] },
     async (request) => {
       const ctx = requireCtx(request);
-      const { runtime } = request.server.app;
+      const runtime = request.server.app.runtimes.authoring;
       if (!runtime) {
-        throw new ProblemError(503, 'runtime_unavailable', 'The agent runtime is not configured');
+        throw new ProblemError(
+          503,
+          'runtime_unavailable',
+          'The authoring agent runtime is not configured',
+        );
       }
       const { text } = authoringTurnBody.parse(request.body);
       return runtime.sendAuthoringTurn({ workspaceId: ctx.workspaceId, text });

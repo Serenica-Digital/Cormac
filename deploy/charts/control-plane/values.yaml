@@ -42,19 +42,18 @@ resources:
 secretName: cormac-secrets
 
 # Non-secret runtime env -> ConfigMap. Cross-service URLs use in-cluster
-# Service DNS. HERMES_URL stays unset for the floor scope (capture/authoring
-# answer 503 without it); the stretch flip is:
-#   HERMES_URL: http://cormac-hermes-authoring:8644   (+ HERMES_MODEL: cormac-authoring)
-# or
-#   HERMES_URL: http://cormac-hermes-ops:8645         (+ HERMES_MODEL: cormac-operations)
-# then `kubectl rollout restart deploy/cormac-control-plane`.
+# Service DNS. Both agent lanes are wired by default; set a lane's URL to ""
+# to disable it (its feature answers 503, the other lane keeps working). A
+# lane whose gateway pods are absent fails at call time, so blank the URL if
+# a deployment deliberately omits the gateways.
 env:
   APP_ENV: staging
   API_PORT: "8080"
   CORS_ORIGINS: "" # PLACEHOLDER (the web origin, set in-session)
   SUPABASE_URL: https://tcemqghhhfllvmmncshe.supabase.co
   SUPABASE_ANON_KEY: "" # non-secret publishable key; PLACEHOLDER (from the staging vault)
-  HERMES_MODEL: cormac-authoring
+  HERMES_AUTHORING_URL: http://cormac-hermes-authoring:8644
+  HERMES_OPS_URL: http://cormac-hermes-ops:8645
   HERMES_TIMEOUT_MS: "120000"
 
 # Secret runtime env -> secretKeyRef into secretName.

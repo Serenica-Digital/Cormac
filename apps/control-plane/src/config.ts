@@ -19,12 +19,13 @@ const configSchema = z.object({
   SUPABASE_JWT_SECRET: z.string().min(32).optional(),
   API_PORT: z.coerce.number().int().positive().default(8080),
   CORS_ORIGINS: z.string().default(''),
-  // The Hermes runtime (ADR-0001). Optional: the HTTP pipeline and the
-  // /agent/* surface work without it; capture and authoring turns answer 503.
-  HERMES_URL: z.string().url().optional(),
+  // The Hermes runtime lanes (ADR-0001): one gateway process per agent kind
+  // (ADR-0005/0008), so one URL per lane. Each is optional: an unset lane
+  // answers 503 on its feature (authoring turns / capture) and the rest of
+  // the surface works. One API key serves both gateways by convention.
+  HERMES_AUTHORING_URL: z.string().url().optional(),
+  HERMES_OPS_URL: z.string().url().optional(),
   HERMES_API_KEY: z.string().min(1).optional(),
-  // The profile name doubles as the model id on /v1/responses.
-  HERMES_MODEL: z.string().min(1).default('cormac-authoring'),
   HERMES_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
 });
 
