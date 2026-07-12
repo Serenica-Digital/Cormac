@@ -78,3 +78,18 @@ client workbook ships at `docs/dev/relationship-crm-example.xlsx` (`d3c107a`). O
 the human-played interview (ADR-0004 criterion 3) — the web interview UI now exists, so
 the owner click-through is the unblock; the #76 skill wording pass; the pane track
 stays deferred (ADR-0009/0010).
+
+## Road to beta (2026-07-12)
+
+Direction set with the owner (full detail in `roadmap.md`): the target is an **open self-serve
+beta on the EKS path** (ADR-0003), with **SMS as a core beta surface** (not a deferred door,
+web still first per ADR-0010), and a design-partner pilot as the intermediate checkpoint. A
+verification pass found the beta-blocking gaps prior work had not started: a client's data never
+becomes records (no workbook import; onboarding yields an empty CRM), the app is reachable only
+on local kind (agent features 503 without a deployed runtime; Juno blocked, #97), and there is
+no self-serve signup (workspace creation is operator-only). The tracker was restructured the same
+day: milestones **Beta 1-5**, issues **#98-109**, eight labeled **P0** (the first P0-labeled work
+in v2); the stale pane-first milestones M1-M8 were archived. The two build long poles to start now
+are data import (#98) and EKS (#68); the two owner-side external clocks to start now are A2P 10DLC
+(#102) and SMTP+OAuth registrations (#103). The 2026-07-09 "next step is the human-played
+interview" framing is folded into Beta 1 and the pilot checkpoint.
