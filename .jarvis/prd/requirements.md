@@ -39,9 +39,10 @@ Durable outcomes and constraints the rebuild must preserve. Each carries its ori
   contract. Schema-only onboarding leaves an empty CRM and fails the core promise (keep the
   spreadsheet you already trust). Verified 2026-07-12: no import path exists in v2; the data
   model is import-ready (stable record IDs, contract-versioned records). Tracked #98 (Beta 1).
-- SMS is a core beta surface per the 2026-07-12 roadmap (owner decision), not a deferred later
-  door; web remains the first surface (ADR-0010). The pipeline is already door-agnostic, so SMS
-  is an inbound adapter plus a confirm-by-text trust UX. Tracked #101/#102 (Beta 5).
+- SMS is a core beta surface per the 2026-07-12 roadmap (owner decision, ADR-0013), not a
+  deferred later door; web remains the first surface (ADR-0010). The pipeline is already
+  door-agnostic, so SMS is an inbound adapter plus a confirm-by-text trust UX. Tracked
+  #101/#102 (Beta 5).
 - The authoring interview is consultative and free-form with checkpoints (structure
   agreed, fill, review), not batched question rounds. One-shot contract authoring is
   proven insufficient on real workbooks (v0 spike: invalid and unstable across runs).
@@ -69,4 +70,5 @@ Durable outcomes and constraints the rebuild must preserve. Each carries its ori
 - (settled) The ops/authoring privilege split is per-agent-kind capability sets on
   `/agent/*`, one profile instance per (workspace, agent kind) — ADR-0005.
 - (active) A2P 10DLC registration for the SMS door: SMS is now a core beta surface (2026-07-12
-  roadmap); registration is filed as #102 and should start now given the long carrier lead time.
+  roadmap, ADR-0013); registration is filed as #102 and should start now given the long carrier
+  lead time.

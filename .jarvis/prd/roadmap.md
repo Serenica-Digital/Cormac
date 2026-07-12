@@ -78,12 +78,12 @@ land. Do not skip it; it de-risks the open launch.
 - Public data processing is a legal surface; terms, privacy policy, and DPA are prerequisites.
 - EKS is weeks, not days. The pilot checkpoint is how real usage happens earlier.
 
-## ADR candidates (not yet written)
+## ADRs formalizing this direction
 
-Two decisions here are settled forks with rejected alternatives and may warrant ADRs, paralleling
-ADR-0010's web-first reversal: (a) open self-serve beta on EKS as the target (rejected: a closed
-design-partner pilot on a fast host), and (b) SMS elevated to a core beta surface (rejected: SMS as
-a deferred later door). Flagged for a PM review to decide whether to formalize.
+Two decisions here were settled forks with rejected alternatives and are now recorded as ADRs
+(accepted 2026-07-12), paralleling ADR-0010's web-first reversal: **ADR-0012** — open self-serve
+beta on EKS as the target (rejected: a closed design-partner pilot on a fast host); and
+**ADR-0013** — SMS elevated to a core beta surface (rejected: SMS as a deferred later door).
 
 ## Status
 
