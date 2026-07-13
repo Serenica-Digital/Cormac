@@ -296,6 +296,38 @@ async function runCaptureScenario(
 
 // --- Posture-scenario execution -------------------------------------------------
 
+/**
+ * Resolve a dotted key (e.g. "memory.memory_enabled") from a profile's
+ * config.yaml by walking indentation. The file is Hermes-owned
+ * machine-written YAML with plain scalar leaves; a YAML dependency is not
+ * warranted for that.
+ */
+function configYamlValue(profile: string, dotted: string): string | undefined {
+  const path = `${homedir()}/.hermes/profiles/${profile}/config.yaml`;
+  const lines = readFileSync(path, 'utf8').split('\n');
+  const parts = dotted.split('.');
+  let depth = 0;
+  let indent = 0;
+  for (const line of lines) {
+    if (!line.trim() || line.trim().startsWith('#')) continue;
+    const lineIndent = line.length - line.trimStart().length;
+    if (lineIndent < indent) {
+      // left the block we were inside; reset the search to the top level
+      depth = 0;
+      indent = 0;
+    }
+    const key = line.trim().split(':')[0]!;
+    if (lineIndent === indent && key === parts[depth]) {
+      if (depth === parts.length - 1) {
+        return line.split(':').slice(1).join(':').trim();
+      }
+      depth += 1;
+      indent = lineIndent + 2;
+    }
+  }
+  return undefined;
+}
+
 function runPostureScenario(scenario: PostureScenario): ScenarioGrade {
   const failures: string[] = [];
   try {
@@ -314,13 +346,8 @@ function runPostureScenario(scenario: PostureScenario): ScenarioGrade {
       if (missing.length) failures.push(`missing enabled toolsets: ${missing.join(', ')}`);
     }
     for (const [key, want] of Object.entries(scenario.config ?? {})) {
-      const out = execFileSync('hermes', ['-p', scenario.profile, 'config', 'get', key], {
-        encoding: 'utf8',
-        timeout: 30_000,
-      }).trim();
-      // `config get` prints the value (sometimes as `key: value`); accept either.
-      const got = out.includes(':') ? out.split(':').pop()!.trim() : out;
-      if (got.toLowerCase() !== want.toLowerCase()) {
+      const got = configYamlValue(scenario.profile, key);
+      if ((got ?? '').toLowerCase() !== want.toLowerCase()) {
         failures.push(`config ${key} = "${got}", expected "${want}"`);
       }
     }

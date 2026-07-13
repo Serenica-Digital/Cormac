@@ -7,9 +7,17 @@ set -euo pipefail
 CONV="${1:?usage: send-turn.sh <conversation> <message>}"
 MSG="${2:?usage: send-turn.sh <conversation> <message>}"
 
-ENV_FILE="$HOME/.hermes/profiles/cormac-authoring/.env"
-KEY="$(grep '^API_SERVER_KEY=' "$ENV_FILE" | cut -d= -f2-)"
-PORT="$(grep '^API_SERVER_PORT=' "$ENV_FILE" | cut -d= -f2- || true)"
+# The gateway key comes from the injected environment (ADR-0005 as amended:
+# profiles hold no .env; Infisical is the authority). Run under
+# `infisical run --env=dev --` or export HERMES_API_KEY. The old profile-.env
+# read stays as a fallback for pre-amendment setups.
+KEY="${HERMES_API_KEY:-}"
+PORT="${API_SERVER_PORT:-}"
+if [ -z "$KEY" ] && [ -f "$HOME/.hermes/profiles/cormac-authoring/.env" ]; then
+  KEY="$(grep '^API_SERVER_KEY=' "$HOME/.hermes/profiles/cormac-authoring/.env" | cut -d= -f2-)"
+  PORT="$(grep '^API_SERVER_PORT=' "$HOME/.hermes/profiles/cormac-authoring/.env" | cut -d= -f2- || true)"
+fi
+[ -n "$KEY" ] || { echo "HERMES_API_KEY not set; run under infisical run --env=dev" >&2; exit 2; }
 
 BODY="$(CONV="$CONV" MSG="$MSG" python3 -c 'import json,os; print(json.dumps({"model":"cormac-authoring","input":os.environ["MSG"],"conversation":os.environ["CONV"],"store":True}))')"
 

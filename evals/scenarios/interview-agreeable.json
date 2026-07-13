@@ -13,9 +13,14 @@
     "Consultative feel: the agent leads, asks one thing at a time, recaps at checkpoints.",
     "The attention beat ran: semantic tags elicited for date columns (last_touch / follow_up).",
     "Dropped formula columns had their meaning captured, not just discarded.",
-    "The final whole-contract review happened and got explicit agreement."
+    "The final whole-contract review happened and got explicit agreement.",
+    "Cadence: related questions batched (firm fundamentals together, ONE consolidated trust/permissions checkpoint); no single-fact ping-pong. Count the client turns to publish against the budget."
   ],
   "budget": {
-    "maxStepWallMs": 120000
+    "maxStepWallMs": 120000,
+    "maxInterviewTurns": 12,
+    "metered": {
+      "maxInterviewTurns": 12
+    }
   }
 }

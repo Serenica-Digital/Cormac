@@ -56,7 +56,14 @@ never billable evidence.
    scenario's `maxTurns`. Then run the gates:
    `npm run validate <produced contract>` and `npm run diff <produced> <golden>`
    (from `evals/workbook-authoring/`), and judge the scenario's criteria from the
-   transcript. Record everything in the cycle report.
+   transcript. **Count the client turns to publish and grade them against
+   `budget.maxInterviewTurns` — a turn-budget breach FAILS the scenario even
+   when the contract is valid.** The owner's standard: a client should never
+   sit through question ping-pong; the skill must draft from the workbook and
+   confirm in batches. Cadence fixes belong in the interview skill
+   (`evals/workbook-authoring/profile/skills/interview/SKILL.md`) — and check
+   PR #110 (cadence retune) first so the loop never forks a competing fix of
+   the same file. Record everything in the cycle report.
 5. **Improve.** For each FAIL/regression, diagnose from evidence, then fix at the
    right layer: agent profile text (`evals/*/profile/`, then re-`sync.sh`),
    scenario bug (wrong expectation), or harness bug. Branch

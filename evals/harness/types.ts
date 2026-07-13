@@ -77,8 +77,15 @@ export interface Budget {
   maxStepWallMs?: number;
   /** Min prompt-cache hit ratio (0-1) across the scenario's model calls, from the gateway log. */
   minCacheRatio?: number;
+  /**
+   * Interview scenarios: max client turns to publish, graded by the
+   * eval-cycle player. Distinct from the scenario's maxTurns hard cap: the
+   * cap aborts the run, the budget fails the grade. A 19-turn interview is
+   * an obnoxious client experience even when the contract comes out right.
+   */
+  maxInterviewTurns?: number;
   /** Metered-lane bounds; only enforced when the runner is told --lane metered. */
-  metered?: { maxStepWallMs?: number; minCacheRatio?: number };
+  metered?: { maxStepWallMs?: number; minCacheRatio?: number; maxInterviewTurns?: number };
 }
 
 export interface CaptureScenario {
