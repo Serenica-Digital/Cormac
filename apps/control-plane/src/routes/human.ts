@@ -7,7 +7,7 @@ import { captureUpdate } from '../pipeline/capture.js';
 import { decideProposal } from '../pipeline/apply.js';
 import { commitHumanChanges } from '../pipeline/commit.js';
 import { publishContract } from '../pipeline/contract.js';
-import { proposalsView, recordTimeline } from '../pipeline/queries.js';
+import { conversationView, proposalsView, recordTimeline } from '../pipeline/queries.js';
 import type { ProposalStatus } from '../rows.js';
 import {
   getActiveContract,
@@ -65,6 +65,18 @@ export function registerHumanRoutes(app: FastifyInstance): void {
       const ctx = requireCtx(request);
       const { text } = captureBody.parse(request.body);
       return captureUpdate(request.server.app, ctx, text);
+    },
+  );
+
+  // The conversation: a read view over source messages, stored agent replies,
+  // and (via the proposals query) what Cormac proposed. Nothing here writes.
+  app.get(
+    '/api/workspaces/:workspaceId/conversation',
+    { preHandler: [authenticate, requireCapability('read_records')] },
+    async (request) => {
+      const ctx = requireCtx(request);
+      const messages = await conversationView(request.server.app, ctx.workspaceId);
+      return { messages };
     },
   );
 

@@ -5,7 +5,10 @@ import {
   getProposalStatuses,
   getRecord,
   getSourceMessageContents,
+  getUserEmail,
   listAuditEventsForRecord,
+  listConversationMessages,
+  listProposalMeta,
   listProposals,
 } from '../repo.js';
 
@@ -22,6 +25,8 @@ export interface ProposalView {
   id: string;
   status: string;
   createdAt: string;
+  /** When a decision landed (applied/rejected); null while pending. */
+  decidedAt: string | null;
   sourceMessageId: string;
   uncertain: boolean;
   notes?: string;
@@ -119,6 +124,7 @@ export async function proposalsView(
       id: row.id,
       status: row.status,
       createdAt: row.created_at,
+      decidedAt: row.decided_at,
       sourceMessageId: row.source_message_id,
       uncertain: proposal.uncertain,
       notes: proposal.notes,
@@ -127,4 +133,67 @@ export async function proposalsView(
   }
 
   return views;
+}
+
+export interface ConversationEntry {
+  /** Source message id, or `<id>:note` for the agent's reply to it. */
+  id: string;
+  at: string;
+  role: 'user' | 'cormac';
+  text: string;
+  channel: string | null;
+  /** The author's email for user turns, so teammates can tell who spoke. */
+  author: string | null;
+}
+
+/**
+ * The Cormac conversation as a server-side view over the pipeline's own
+ * tables: user turns are source_messages, agent turns are the stored
+ * agent_note (a held proposal is the agent's reply and rides the proposals
+ * query instead). Direct-edit and import provenance rows (their proposal has
+ * a human `created_by`) are bookkeeping, not speech, and never appear.
+ */
+export async function conversationView(
+  app: AppContext,
+  workspaceId: string,
+  limit = 200,
+): Promise<ConversationEntry[]> {
+  const [messages, proposals] = await Promise.all([
+    listConversationMessages(app.db, workspaceId, limit),
+    listProposalMeta(app.db, workspaceId),
+  ]);
+  const directSources = new Set(
+    proposals.filter((p) => p.created_by != null).map((p) => p.source_message_id),
+  );
+
+  const emails = new Map<string, string | null>();
+  for (const m of messages) {
+    if (m.user_id && !emails.has(m.user_id)) {
+      emails.set(m.user_id, await getUserEmail(app.db, m.user_id));
+    }
+  }
+
+  const entries: ConversationEntry[] = [];
+  for (const m of messages) {
+    if (directSources.has(m.id)) continue;
+    entries.push({
+      id: m.id,
+      at: m.created_at,
+      role: 'user',
+      text: m.content,
+      channel: m.channel,
+      author: m.user_id ? (emails.get(m.user_id) ?? null) : null,
+    });
+    if (m.agent_note) {
+      entries.push({
+        id: `${m.id}:note`,
+        at: m.created_at,
+        role: 'cormac',
+        text: m.agent_note,
+        channel: null,
+        author: null,
+      });
+    }
+  }
+  return entries;
 }

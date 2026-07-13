@@ -271,6 +271,61 @@ export async function listAuditEventsForRecord(
   return (data as AuditEventRow[] | null) ?? [];
 }
 
+/** Store the agent's conversational reply on the message it answered. */
+export async function setSourceMessageAgentNote(
+  db: Db,
+  input: { workspaceId: string; sourceMessageId: string; note: string },
+): Promise<void> {
+  const { error } = await db
+    .from('source_messages')
+    .update({ agent_note: input.note })
+    .eq('workspace_id', input.workspaceId)
+    .eq('id', input.sourceMessageId);
+  if (error) throw new Error(`setSourceMessageAgentNote: ${error.message}`);
+}
+
+export interface ConversationMessageRow {
+  id: string;
+  channel: SourceChannel;
+  user_id: string | null;
+  content: string;
+  agent_note: string | null;
+  created_at: string;
+}
+
+/** The most recent messages of a workspace's conversation, oldest first. */
+export async function listConversationMessages(
+  db: Db,
+  workspaceId: string,
+  limit: number,
+): Promise<ConversationMessageRow[]> {
+  const { data, error } = await db
+    .from('source_messages')
+    .select('id, channel, user_id, content, agent_note, created_at')
+    .eq('workspace_id', workspaceId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`listConversationMessages: ${error.message}`);
+  return (((data as ConversationMessageRow[] | null) ?? [])).reverse();
+}
+
+export interface ProposalMetaRow {
+  id: string;
+  source_message_id: string;
+  status: ProposalStatus;
+  created_by: string | null;
+}
+
+/** Lightweight proposal metadata for the whole workspace (conversation view). */
+export async function listProposalMeta(db: Db, workspaceId: string): Promise<ProposalMetaRow[]> {
+  const { data, error } = await db
+    .from('agent_proposals')
+    .select('id, source_message_id, status, created_by')
+    .eq('workspace_id', workspaceId);
+  if (error) throw new Error(`listProposalMeta: ${error.message}`);
+  return (data as ProposalMetaRow[] | null) ?? [];
+}
+
 export interface SourceMessageContent {
   id: string;
   channel: SourceChannel;

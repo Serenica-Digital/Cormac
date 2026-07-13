@@ -8,6 +8,7 @@ import type {
   BusinessRecordRow,
   CaptureResult,
   CommitResult,
+  ConversationEntry,
   CreateWorkspaceResult,
   DecisionResult,
   Me,
@@ -178,9 +179,22 @@ export function useCapture(workspaceId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (text: string) => api.post<CaptureResult>(`${ws(workspaceId)}/capture`, { text }),
-    onSuccess: () => {
+    // Settled, not success: the source message is stored before the runtime
+    // runs, so the conversation gains a row even when the run errors.
+    onSettled: () => {
       void qc.invalidateQueries({ queryKey: ['proposals', workspaceId] });
+      void qc.invalidateQueries({ queryKey: ['conversation', workspaceId] });
     },
+  });
+}
+
+/** The Cormac conversation: a server-side view over the pipeline's tables. */
+export function useConversation(workspaceId: string, enabled = true) {
+  return useQuery({
+    queryKey: ['conversation', workspaceId],
+    queryFn: () => api.get<{ messages: ConversationEntry[] }>(`${ws(workspaceId)}/conversation`),
+    select: (d) => d.messages,
+    enabled,
   });
 }
 
