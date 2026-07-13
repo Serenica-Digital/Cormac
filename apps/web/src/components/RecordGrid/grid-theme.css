@@ -13,14 +13,20 @@
   --ln-typeface: var(--font-sans);
   --ln-font-md: 0.9375rem; /* --text-sm: grid text matches the app */
   --ln-font-sm: 0.8125rem; /* --text-xs */
+  --ln-padding-horizontal-cell: 12px;
 
-  /* Ledger lines, not zebra: hairline row borders carry the rhythm. */
-  --ln-bg-row-alternate: transparent;
+  /* Soft alternate-row tint over warm paper; lines carry the rest. */
+  --ln-bg-row-alternate: color-mix(in srgb, var(--color-ink) 2.5%, transparent);
 }
 
-/* The Book is the page; the surrounding chrome draws the edges. */
+/* The Book is the page; the surrounding chrome draws the outer edges. The
+ * ledger look inside: row rules + faint column rules on every cell. */
 .ln-grid [data-ln-viewport='true'] {
   border: none;
+}
+.ln-grid [data-ln-cell] {
+  border-bottom: 1px solid var(--border);
+  border-inline-end: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
 }
 
 /* Header: quiet, label-like, clearly not a row of data. */
@@ -28,6 +34,7 @@
   font-size: var(--ln-font-sm);
   font-weight: 600;
   color: var(--muted-foreground);
+  border-bottom: 1px solid var(--input);
 }
 
 /* Editable cells read as editable before anyone commits to a double-click. */

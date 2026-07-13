@@ -123,6 +123,8 @@ export interface TimelineEntry {
   channel: string | null;
   proposalId: string | null;
   proposalStatus: string | null;
+  /** Human-authored change (grid edit, import): the source is provenance, not speech. */
+  direct?: boolean;
   before: Record<string, unknown> | null;
   after: Record<string, unknown> | null;
 }

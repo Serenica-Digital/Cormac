@@ -69,7 +69,9 @@ export function Timeline({
             )}
           </div>
 
-          {e.utterance && (
+          {/* Only quote things someone actually said; a direct edit's source
+              content is provenance, not speech. */}
+          {e.utterance && !e.direct && (
             <blockquote className="mt-1.5 border-l-2 border-ledger-200 pl-3 text-sm text-stone-700 italic">
               “{e.utterance}”
             </blockquote>

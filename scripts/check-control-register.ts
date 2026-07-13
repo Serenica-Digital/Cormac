@@ -56,11 +56,6 @@ const QA_EXEMPT: { path: string; reason: string }[] = [
     reason:
       'Presentation: the People page mirrors server rules in UI. The enforced invariants are rows 9-10 (membership suite).',
   },
-  {
-    path: 'apps/web/tests/proposal-card.test.tsx',
-    reason:
-      'Presentation: approve/reject render gating. The enforced control is row 9 (approve_proposal in the RBAC matrix).',
-  },
 ];
 
 const ROOT = join(import.meta.dirname, '..');

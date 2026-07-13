@@ -33,8 +33,8 @@ export function ContractPage() {
   return (
     <div className="mx-auto w-full max-w-4xl">
       <PageHeader
-        title={doc.name}
-        sub={`Structure, version ${version} — how Cormac understands your book. Every change it proposes is checked against this.`}
+        title="Structure"
+        sub={`How Cormac understands your book (version ${version}). Every change it proposes is checked against this.`}
       />
 
       <div className="space-y-6">

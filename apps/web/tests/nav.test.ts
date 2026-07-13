@@ -2,79 +2,54 @@ import { describe, expect, it } from 'vitest';
 import { ROLES } from '@cormac/authz';
 import { buildNav } from '@/lib/nav';
 
-const destinations = (groups: ReturnType<typeof buildNav>) =>
-  groups.flatMap((g) => g.items.map((i) => i.to));
+const items = (groups: ReturnType<typeof buildNav>) => groups.flatMap((g) => g.items);
+const destinations = (groups: ReturnType<typeof buildNav>) => items(groups).map((i) => i.to);
 
 describe('buildNav', () => {
-  it('leads with setup before the book is live, everyday pages disabled', () => {
-    const groups = buildNav({ live: false, role: 'owner' });
-    expect(groups[0]?.items.map((i) => i.label)).toEqual([
-      'Get started',
-      'Your workbook',
-      'Talk with Cormac',
-    ]);
-    expect(groups[0]?.items.every((i) => !i.disabled)).toBe(true);
-
-    const book = groups[1];
-    expect(book?.label).toBe('Your book');
-    expect(book?.items.map((i) => i.label)).toEqual(['Book', 'History']);
-    expect(book?.items.every((i) => i.disabled && i.hint === 'Opens after setup')).toBe(true);
-
-    // Structure is meaningless before publish; it must not appear at all.
-    expect(destinations(groups)).not.toContain('contract');
-  });
-
-  it('leads with the Book once live, setup in a quieter group', () => {
-    const groups = buildNav({ live: true, role: 'owner' });
-    expect(groups[0]?.items.map((i) => i.label)).toEqual(['Book', 'History']);
-    expect(groups[0]?.items.map((i) => i.to)).toEqual(['records', 'audit']);
-
-    const setup = groups[1];
-    expect(setup?.label).toBe('Setup');
-    expect(setup?.items.map((i) => i.label)).toEqual([
-      'Structure',
-      'Your workbook',
-      'Talk with Cormac',
-    ]);
-
-    const all = groups.flatMap((g) => g.items);
-    expect(all.every((i) => !i.disabled)).toBe(true);
-    expect(all.map((i) => i.to)).not.toContain('start');
-  });
-
-  it('tells non-setup roles where things stand during setup, without the tools', () => {
-    for (const role of ['manager', 'member', 'read_only'] as const) {
-      const groups = buildNav({ live: false, role });
-      expect(groups[0]?.items, role).toEqual([
-        { to: 'start', label: 'Get started', hint: 'Setup is underway' },
-      ]);
-      const dests = destinations(groups);
-      expect(dests, role).not.toContain('workbook');
-      expect(dests, role).not.toContain('interview');
+  it('is one flat group with the same shape at every stage', () => {
+    for (const role of ROLES) {
+      for (const live of [false, true]) {
+        const groups = buildNav({ live, role });
+        expect(groups, `${role} live=${live}`).toHaveLength(1);
+        expect(groups[0]?.label, `${role} live=${live}`).toBeUndefined();
+        const dests = destinations(groups);
+        expect(dests.slice(0, 3), `${role} live=${live}`).toEqual([
+          'records',
+          'audit',
+          'contract',
+        ]);
+      }
     }
   });
 
-  it('shows non-setup roles the Structure but not the setup tools once live', () => {
+  it('leads with the Book; reference pages open after setup', () => {
+    const before = items(buildNav({ live: false, role: 'owner' }));
+    expect(before.map((i) => i.label)).toEqual(['Book', 'History', 'Structure', 'People']);
+    expect(before[0]?.disabled).toBeUndefined();
+    expect(before[0]?.hint).toBe('Set it up with Cormac');
+    expect(before.slice(1, 3).every((i) => i.disabled && i.hint === 'Opens after setup')).toBe(
+      true,
+    );
+
+    const after = items(buildNav({ live: true, role: 'owner' }));
+    expect(after.every((i) => !i.disabled)).toBe(true);
+    expect(after.map((i) => i.label)).toEqual(['Book', 'History', 'Structure', 'People']);
+  });
+
+  it('tells non-setup roles where things stand, without the tools', () => {
     for (const role of ['manager', 'member', 'read_only'] as const) {
-      const groups = buildNav({ live: true, role });
-      expect(groups[0]?.items.map((i) => i.to), role).toEqual(['records', 'audit']);
-      expect(
-        groups[1]?.items.map((i) => i.to),
-        role,
-      ).toEqual(['contract']);
-      const dests = destinations(groups);
-      expect(dests, role).not.toContain('workbook');
-      expect(dests, role).not.toContain('interview');
+      const before = items(buildNav({ live: false, role }));
+      expect(before[0]?.hint, role).toBe('Setup is underway');
     }
   });
 
-  it('keeps task pages (import, inbox) off the rail for every role and stage', () => {
-    // Import is a toolbar action on the Book; the old Inbox merged into it.
+  it('keeps dissolved pages (inbox, import, workbook, interview, start) off the rail', () => {
     for (const role of ROLES) {
       for (const live of [false, true]) {
         const dests = destinations(buildNav({ live, role }));
-        expect(dests, `${role} live=${live}`).not.toContain('import');
-        expect(dests, `${role} live=${live}`).not.toContain('inbox');
+        for (const gone of ['inbox', 'import', 'workbook', 'interview', 'start']) {
+          expect(dests, `${role} live=${live}`).not.toContain(gone);
+        }
       }
     }
   });
@@ -82,33 +57,23 @@ describe('buildNav', () => {
   it('reveals People only to roles that manage members (role-gating hides)', () => {
     for (const role of ROLES) {
       for (const live of [false, true]) {
-        const groups = buildNav({ live, role });
-        const workspace = groups.find((g) => g.label === 'Workspace');
-        if (role === 'owner' || role === 'agent_admin') {
-          expect(workspace?.items, `${role} live=${live}`).toEqual([
-            { to: 'members', label: 'People', hint: 'Who can work in this book' },
-          ]);
-        } else {
-          expect(workspace, `${role} live=${live}`).toBeUndefined();
-        }
+        const dests = destinations(buildNav({ live, role }));
+        expect(dests.includes('members'), `${role} live=${live}`).toBe(
+          role === 'owner' || role === 'agent_admin',
+        );
       }
     }
   });
 
   it('never renders a disabled item for role reasons, only for stage reasons', () => {
-    // Role-gating hides; disabled items are reserved for "opens after setup".
     for (const role of ROLES) {
-      const disabled = buildNav({ live: false, role })
-        .flatMap((g) => g.items)
-        .filter((i) => i.disabled);
+      const disabled = items(buildNav({ live: false, role })).filter((i) => i.disabled);
       expect(
         disabled.every((i) => i.hint === 'Opens after setup'),
         role,
       ).toBe(true);
       expect(
-        buildNav({ live: true, role })
-          .flatMap((g) => g.items)
-          .some((i) => i.disabled),
+        items(buildNav({ live: true, role })).some((i) => i.disabled),
         role,
       ).toBe(false);
     }

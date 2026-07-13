@@ -31,12 +31,12 @@ export function gridColumnType(
 export function gridColumnSize(
   field: ContractField,
   isIdentity: boolean,
-): { width: number; widthMin: number; widthFlex: number } {
-  if (isIdentity) return { width: 220, widthMin: 180, widthFlex: 1.2 };
-  if (field.type === 'text') return { width: 240, widthMin: 180, widthFlex: 2 };
-  if (field.type === 'boolean') return { width: 110, widthMin: 90, widthFlex: 0.5 };
-  if (field.type === 'number') return { width: 130, widthMin: 100, widthFlex: 0.6 };
+): { width: number; widthMin: number; widthMax: number; widthFlex: number } {
+  if (isIdentity) return { width: 220, widthMin: 180, widthMax: 340, widthFlex: 1.2 };
+  if (field.type === 'text') return { width: 240, widthMin: 180, widthMax: 560, widthFlex: 2 };
+  if (field.type === 'boolean') return { width: 110, widthMin: 90, widthMax: 150, widthFlex: 0.5 };
+  if (field.type === 'number') return { width: 130, widthMin: 100, widthMax: 180, widthFlex: 0.6 };
   if (field.type === 'date' || field.type === 'datetime')
-    return { width: 150, widthMin: 120, widthFlex: 0.6 };
-  return { width: 170, widthMin: 130, widthFlex: 1 };
+    return { width: 150, widthMin: 120, widthMax: 200, widthFlex: 0.6 };
+  return { width: 170, widthMin: 130, widthMax: 320, widthFlex: 1 };
 }

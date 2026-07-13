@@ -1,4 +1,4 @@
-import type { Contract, Proposal } from '@cormac/contract';
+import type { Contract } from '@cormac/contract';
 import { safeParseProposal, validateProposalAgainstContract } from '@cormac/contract';
 import { ProblemError } from '../shared.js';
 import type { AppContext } from '../app.js';
@@ -74,7 +74,9 @@ export async function commitHumanChanges(
     workspaceId,
     channel: input.channel,
     userId,
-    content: input.note ?? defaultNote(proposal),
+    content:
+      input.note ??
+      (input.channel === 'excel' ? 'Imported from a spreadsheet.' : 'Edited directly in the book.'),
   });
   const proposalRow = await insertProposal(db, {
     workspaceId,
@@ -109,12 +111,4 @@ export async function commitHumanChanges(
   }
 
   return { proposalId: proposalRow.id, applied: (data as AppliedChange[]) ?? [] };
-}
-
-/** A human-readable provenance line for the record timeline when the caller gives none. */
-function defaultNote(proposal: Proposal): string {
-  const n = proposal.changes.length;
-  const ops = new Set(proposal.changes.map((c) => c.op));
-  const verb = ops.size === 1 ? [...ops][0] : 'change';
-  return `Direct ${verb}: ${n} record${n === 1 ? '' : 's'}`;
 }

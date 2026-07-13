@@ -1,14 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createBrowserRouter, Navigate, RouterProvider, useParams } from 'react-router';
 import { RequireAuth } from './auth/RequireAuth';
-import { Spinner } from './components/kit';
 import { SignIn } from './pages/SignIn';
 import { AuthCallback } from './pages/AuthCallback';
 import { WorkspacePicker } from './pages/WorkspacePicker';
-import { WorkspaceLayout, useWorkspaceStage } from './pages/WorkspaceLayout';
-import { GetStarted } from './pages/GetStarted';
-import { Interview } from './pages/Interview';
-import { Workbook } from './pages/Workbook';
+import { WorkspaceLayout } from './pages/WorkspaceLayout';
 import { ImportWorkbook } from './pages/ImportWorkbook';
 import { Records } from './pages/Records';
 import { RecordDetail } from './pages/RecordDetail';
@@ -19,22 +15,11 @@ import { OperatorLayout } from './pages/operator/OperatorLayout';
 import { OperatorWorkspaces } from './pages/operator/OperatorWorkspaces';
 import { OperatorWorkspaceDetail } from './pages/operator/OperatorWorkspaceDetail';
 
-/** Lands on the Book once live; on setup before then. */
-function WorkspaceIndex() {
-  const { workspaceId = '' } = useParams();
-  const stage = useWorkspaceStage(workspaceId);
-  if (stage === 'pending') {
-    return (
-      <div className="flex justify-center py-20 text-stone-400">
-        <Spinner />
-      </div>
-    );
-  }
-  return <Navigate to={stage === 'live' ? 'records' : 'start'} replace />;
-}
-
-/** The Inbox merged into the Book (Cormac panel); old links still resolve. */
-function InboxRedirect() {
+/**
+ * The Book is the workspace's home at every stage (setup and live are the
+ * same room). Old doors - start, interview, workbook, inbox - still resolve.
+ */
+function ToBook() {
   const { workspaceId = '' } = useParams();
   return <Navigate to={`/w/${workspaceId}/records`} replace />;
 }
@@ -67,17 +52,18 @@ const router = createBrowserRouter([
         path: '/w/:workspaceId',
         element: <WorkspaceLayout />,
         children: [
-          { index: true, element: <WorkspaceIndex /> },
-          { path: 'start', element: <GetStarted /> },
-          { path: 'interview', element: <Interview /> },
-          { path: 'workbook', element: <Workbook /> },
-          { path: 'inbox', element: <InboxRedirect /> },
+          { index: true, element: <Navigate to="records" replace /> },
           { path: 'records', element: <Records /> },
-          { path: 'import', element: <ImportWorkbook /> },
           { path: 'records/:recordId', element: <RecordDetail /> },
+          { path: 'import', element: <ImportWorkbook /> },
           { path: 'contract', element: <ContractPage /> },
           { path: 'audit', element: <AuditPage /> },
           { path: 'members', element: <Members /> },
+          // Dissolved pages; their jobs live in the Book now.
+          { path: 'start', element: <ToBook /> },
+          { path: 'interview', element: <ToBook /> },
+          { path: 'workbook', element: <ToBook /> },
+          { path: 'inbox', element: <ToBook /> },
         ],
       },
     ],
