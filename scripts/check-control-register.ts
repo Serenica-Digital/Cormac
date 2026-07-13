@@ -66,6 +66,11 @@ const QA_EXEMPT: { path: string; reason: string }[] = [
     reason:
       'Correctness of the contract meta-schema (semantic tag shape/type guard). The write gate that enforces contracts is rows 5-7; semantics grant no write ability.',
   },
+  {
+    path: 'apps/control-plane/tests/config-hermes-urls.test.ts',
+    reason:
+      'Correctness of per-agent-kind gateway URL selection (pure config wiring, no auth or data). The runtime credential posture is row 3; a URL grants no capability.',
+  },
 ];
 
 const ROOT = join(import.meta.dirname, '..');
