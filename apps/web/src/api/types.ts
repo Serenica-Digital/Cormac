@@ -98,6 +98,11 @@ export interface DecisionResult {
   applied: Array<{ op: 'create' | 'update'; objectApiName: string; recordId: string }>;
 }
 
+export interface CommitResult {
+  proposalId: string;
+  applied: Array<{ op: 'create' | 'update'; objectApiName: string; recordId: string }>;
+}
+
 export interface BusinessRecordRow {
   id: string;
   workspace_id: string;

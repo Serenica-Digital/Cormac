@@ -7,6 +7,7 @@ import type {
   AuthoringTurnOutcome,
   BusinessRecordRow,
   CaptureResult,
+  CommitResult,
   CreateWorkspaceResult,
   DecisionResult,
   Me,
@@ -192,6 +193,24 @@ export function useDecision(workspaceId: string) {
       }),
     onSuccess: () => {
       for (const key of ['proposals', 'records', 'audit'] as const) {
+        void qc.invalidateQueries({ queryKey: [key, workspaceId] });
+      }
+    },
+  });
+}
+
+/**
+ * Direct human edits and workbook import (ADR-0014): a batch of structured
+ * changes applied through the control plane's governed commit gate. Invalidates
+ * the same queries a decision does, since it rewrites records.
+ */
+export function useCommitRecords(workspaceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { changes: unknown[]; channel?: 'web' | 'excel'; note?: string }) =>
+      api.post<CommitResult>(`${ws(workspaceId)}/records/commit`, input),
+    onSuccess: () => {
+      for (const key of ['records', 'proposals', 'audit'] as const) {
         void qc.invalidateQueries({ queryKey: [key, workspaceId] });
       }
     },
