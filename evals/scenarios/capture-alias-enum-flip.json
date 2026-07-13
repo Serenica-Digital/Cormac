@@ -1,0 +1,36 @@
+{
+  "id": "capture-alias-enum-flip",
+  "kind": "capture",
+  "description": "Vocabulary alias ('the brokerage') plus an exact enum flip to former.",
+  "steps": [
+    {
+      "do": "capture",
+      "utterance": "The brokerage Stonebridge is done working with us, mark them former."
+    }
+  ],
+  "assertions": [
+    {
+      "step": 0,
+      "outcome": "proposal"
+    },
+    {
+      "step": 0,
+      "change": {
+        "op": "update",
+        "objectApiName": "organization",
+        "targetSeed": "Stonebridge Group",
+        "valuesInclude": {
+          "status": "former"
+        }
+      }
+    }
+  ],
+  "budget": {
+    "maxStepWallMs": 90000,
+    "minCacheRatio": 0.5,
+    "metered": {
+      "maxStepWallMs": 30000,
+      "minCacheRatio": 0.75
+    }
+  }
+}

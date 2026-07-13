@@ -1,0 +1,1 @@
+{"note": "Baselines land here after the first accepted run: one <scenario-id>.json per scenario ({scenarioId, status, acceptedAt, note}). Updated deliberately by the eval-cycle loop or a human, never by the runner."}

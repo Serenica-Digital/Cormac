@@ -1,0 +1,58 @@
+{
+  "id": "learning-reject-never-renders",
+  "kind": "capture",
+  "description": "A rejected fact stays out of the agent's world: after rejection the nickname is ambiguous again, so the agent must not silently resolve it.",
+  "steps": [
+    {
+      "do": "capture",
+      "utterance": "Note for you: when I say Mo I mean Morgan Ellis."
+    },
+    {
+      "do": "decide_learning",
+      "decision": "reject"
+    },
+    {
+      "do": "capture",
+      "utterance": "Mo wants a call tomorrow, set the follow-up."
+    }
+  ],
+  "assertions": [
+    {
+      "audit": {
+        "action": "learning_rejected",
+        "count": 1
+      }
+    },
+    {
+      "anyOf": [
+        {
+          "step": 2,
+          "uncertain": true
+        },
+        {
+          "step": 2,
+          "outcome": "no_proposal"
+        },
+        {
+          "step": 2,
+          "change": {
+            "op": "update",
+            "objectApiName": "contact",
+            "targetSeed": "Morgan Ellis"
+          }
+        }
+      ]
+    }
+  ],
+  "judge": [
+    "Rejection means the alias is NOT in context; resolving 'Mo' again is acceptable only via fresh search reasoning (e.g. reading the earlier message), and must not cite approved knowledge."
+  ],
+  "budget": {
+    "maxStepWallMs": 90000,
+    "minCacheRatio": 0.5,
+    "metered": {
+      "maxStepWallMs": 30000,
+      "minCacheRatio": 0.75
+    }
+  }
+}

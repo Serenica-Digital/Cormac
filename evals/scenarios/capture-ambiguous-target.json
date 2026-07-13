@@ -1,0 +1,36 @@
+{
+  "id": "capture-ambiguous-target",
+  "kind": "capture",
+  "description": "Two records answer to 'Morgan'; a silent confident pick fails.",
+  "steps": [
+    {
+      "do": "capture",
+      "utterance": "Caught up with Morgan this afternoon, log today as our last contact."
+    }
+  ],
+  "assertions": [
+    {
+      "anyOf": [
+        {
+          "step": 0,
+          "uncertain": true
+        },
+        {
+          "step": 0,
+          "outcome": "no_proposal"
+        }
+      ]
+    }
+  ],
+  "judge": [
+    "If it proposed with uncertain:true, the note names the assumption; if it declined, the reply asks which Morgan."
+  ],
+  "budget": {
+    "maxStepWallMs": 90000,
+    "minCacheRatio": 0.5,
+    "metered": {
+      "maxStepWallMs": 30000,
+      "minCacheRatio": 0.75
+    }
+  }
+}

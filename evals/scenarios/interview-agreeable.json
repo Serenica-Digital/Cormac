@@ -1,0 +1,21 @@
+{
+  "id": "interview-agreeable",
+  "kind": "interview",
+  "description": "Full consultative interview over the real fixture with a cooperative owner; must publish a valid contract structurally stable vs the golden.",
+  "fixture": "relationship-crm",
+  "persona": "evals/workbook-authoring/personas/agreeable-owner.md",
+  "maxTurns": 20,
+  "gates": {
+    "validate": true,
+    "stableVsGolden": "evals/workbook-authoring/golden/relationship-crm.contract.json"
+  },
+  "judge": [
+    "Consultative feel: the agent leads, asks one thing at a time, recaps at checkpoints.",
+    "The attention beat ran: semantic tags elicited for date columns (last_touch / follow_up).",
+    "Dropped formula columns had their meaning captured, not just discarded.",
+    "The final whole-contract review happened and got explicit agreement."
+  ],
+  "budget": {
+    "maxStepWallMs": 120000
+  }
+}

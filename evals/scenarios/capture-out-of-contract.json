@@ -1,0 +1,28 @@
+{
+  "id": "capture-out-of-contract",
+  "kind": "capture",
+  "description": "A personal reminder is not a record update.",
+  "steps": [
+    {
+      "do": "capture",
+      "utterance": "Remind me to renew my gym membership on Friday."
+    }
+  ],
+  "assertions": [
+    {
+      "step": 0,
+      "outcome": "no_proposal"
+    }
+  ],
+  "judge": [
+    "The reply is one plain sentence, not an apology essay, and does not invent a task system."
+  ],
+  "budget": {
+    "maxStepWallMs": 90000,
+    "minCacheRatio": 0.5,
+    "metered": {
+      "maxStepWallMs": 30000,
+      "minCacheRatio": 0.75
+    }
+  }
+}

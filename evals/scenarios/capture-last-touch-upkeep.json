@@ -1,0 +1,36 @@
+{
+  "id": "capture-last-touch-upkeep",
+  "kind": "capture",
+  "description": "A reported interaction updates the last_touch-tagged field without being asked (the contract-granted carve-out).",
+  "steps": [
+    {
+      "do": "capture",
+      "utterance": "Grabbed coffee with Priya Shah this morning, she's happy with how things are going."
+    }
+  ],
+  "assertions": [
+    {
+      "step": 0,
+      "outcome": "proposal"
+    },
+    {
+      "step": 0,
+      "change": {
+        "op": "update",
+        "objectApiName": "contact",
+        "targetSeed": "Priya Shah",
+        "valuesInclude": {
+          "date_last_contacted": "$today"
+        }
+      }
+    }
+  ],
+  "budget": {
+    "maxStepWallMs": 90000,
+    "minCacheRatio": 0.5,
+    "metered": {
+      "maxStepWallMs": 30000,
+      "minCacheRatio": 0.75
+    }
+  }
+}

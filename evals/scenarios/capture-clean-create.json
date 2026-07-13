@@ -1,0 +1,39 @@
+{
+  "id": "capture-clean-create",
+  "kind": "capture",
+  "description": "A firm not in the book becomes one create proposal, no duplicate.",
+  "steps": [
+    {
+      "do": "capture",
+      "utterance": "Add Crestline Wealth as a new firm we just started working with."
+    }
+  ],
+  "assertions": [
+    {
+      "step": 0,
+      "outcome": "proposal"
+    },
+    {
+      "step": 0,
+      "changeCount": 1
+    },
+    {
+      "step": 0,
+      "change": {
+        "op": "create",
+        "objectApiName": "organization",
+        "valuesInclude": {
+          "name": "Crestline Wealth"
+        }
+      }
+    }
+  ],
+  "budget": {
+    "maxStepWallMs": 90000,
+    "minCacheRatio": 0.5,
+    "metered": {
+      "maxStepWallMs": 30000,
+      "minCacheRatio": 0.75
+    }
+  }
+}

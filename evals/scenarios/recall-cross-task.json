@@ -1,0 +1,36 @@
+{
+  "id": "recall-cross-task",
+  "kind": "capture",
+  "description": "A lookup question about an earlier message is answered from history (stateless runs; search_history is the only path) and produces no proposal.",
+  "steps": [
+    {
+      "do": "capture",
+      "utterance": "Met with Priya Shah \u2014 she wants to see the Hartwell deck next week."
+    },
+    {
+      "do": "capture",
+      "utterance": "Remind me, what did I say Priya wanted to see?"
+    }
+  ],
+  "assertions": [
+    {
+      "step": 1,
+      "outcome": "no_proposal"
+    },
+    {
+      "step": 1,
+      "agentNoteContains": "Hartwell"
+    }
+  ],
+  "judge": [
+    "The answer quotes or paraphrases the actual earlier message; it does not guess or hedge."
+  ],
+  "budget": {
+    "maxStepWallMs": 90000,
+    "minCacheRatio": 0.5,
+    "metered": {
+      "maxStepWallMs": 30000,
+      "minCacheRatio": 0.75
+    }
+  }
+}

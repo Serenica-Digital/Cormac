@@ -1,0 +1,37 @@
+{
+  "id": "capture-read-then-update",
+  "kind": "capture",
+  "description": "Relative numeric ('two more') requires reading the current count first: 3 seeded + 2 = 5. The known ADR-0008 behavior gap; expected to fail until the SOUL rule lands.",
+  "steps": [
+    {
+      "do": "capture",
+      "utterance": "Showed Morgan Ellis two more opportunities yesterday."
+    }
+  ],
+  "assertions": [
+    {
+      "step": 0,
+      "outcome": "proposal"
+    },
+    {
+      "step": 0,
+      "change": {
+        "op": "update",
+        "objectApiName": "contact",
+        "targetSeed": "Morgan Ellis",
+        "valuesInclude": {
+          "opportunities_shown": 5,
+          "date_last_contacted": "$yesterday"
+        }
+      }
+    }
+  ],
+  "budget": {
+    "maxStepWallMs": 90000,
+    "minCacheRatio": 0.5,
+    "metered": {
+      "maxStepWallMs": 30000,
+      "minCacheRatio": 0.75
+    }
+  }
+}

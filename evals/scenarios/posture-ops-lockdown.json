@@ -1,0 +1,15 @@
+{
+  "id": "posture-ops-lockdown",
+  "kind": "posture",
+  "description": "The ops profile's api_server surface is exactly the cormac_ops plugin toolset; memory and curator are off. LOOP-INVARIANT: never fix by relaxing.",
+  "profile": "cormac-operations",
+  "exactTools": [
+    "cormac_ops"
+  ],
+  "config": {
+    "memory.memory_enabled": "false",
+    "memory.user_profile_enabled": "false",
+    "curator.enabled": "false"
+  },
+  "loopInvariant": true
+}

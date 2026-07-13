@@ -1,0 +1,58 @@
+{
+  "id": "learning-loop",
+  "kind": "capture",
+  "description": "The full governed-learning loop: nickname staged from conversation, human approves, next capture resolves the nickname from the compiled context.",
+  "steps": [
+    {
+      "do": "capture",
+      "utterance": "Just got off the phone with Morgan Ellis. By the way, when I say Mo I mean Morgan Ellis."
+    },
+    {
+      "do": "decide_learning",
+      "decision": "approve"
+    },
+    {
+      "do": "capture",
+      "utterance": "Mo confirmed for Thursday, set her follow-up for then."
+    }
+  ],
+  "assertions": [
+    {
+      "learning": {
+        "kind": "alias",
+        "status": "approved",
+        "variant": "Mo",
+        "targetSeed": "Morgan Ellis"
+      }
+    },
+    {
+      "audit": {
+        "action": "learning_approved",
+        "count": 1
+      }
+    },
+    {
+      "step": 2,
+      "outcome": "proposal"
+    },
+    {
+      "step": 2,
+      "change": {
+        "op": "update",
+        "objectApiName": "contact",
+        "targetSeed": "Morgan Ellis",
+        "valuesHaveKeys": [
+          "follow_up_date"
+        ]
+      }
+    }
+  ],
+  "budget": {
+    "maxStepWallMs": 90000,
+    "minCacheRatio": 0.5,
+    "metered": {
+      "maxStepWallMs": 30000,
+      "minCacheRatio": 0.75
+    }
+  }
+}
