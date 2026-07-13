@@ -49,6 +49,9 @@ export function buildNav({ live, role }: { live: boolean; role: Role }): NavGrou
       items: [
         { to: 'inbox', label: 'Inbox', hint: 'Tell Cormac what happened' },
         { to: 'records', label: 'Records', hint: 'Your book, up to date' },
+        ...(can(role, 'edit_records')
+          ? [{ to: 'import', label: 'Import', hint: 'Add rows from a spreadsheet' }]
+          : []),
         { to: 'audit', label: 'History', hint: 'Every change, kept' },
       ],
     });

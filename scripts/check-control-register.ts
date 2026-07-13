@@ -37,6 +37,11 @@ const QA_EXEMPT: { path: string; reason: string }[] = [
       'Correctness of in-browser workbook shape detection; the data-handling posture (what leaves the browser) is register row 26.',
   },
   {
+    path: 'apps/web/tests/mapImport.test.ts',
+    reason:
+      'Correctness of in-browser workbook->records mapping and type coercion; the enforced write gate is register row 27 (commit endpoint) and the data boundary is row 26.',
+  },
+  {
     path: 'apps/web/tests/nav.test.ts',
     reason:
       'Presentation: role/stage-gated navigation copy. The enforced controls are server-side authz, rows 8-11.',

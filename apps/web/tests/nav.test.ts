@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ROLES } from '@cormac/authz';
+import { can, ROLES } from '@cormac/authz';
 import { buildNav } from '@/lib/nav';
 
 const destinations = (groups: ReturnType<typeof buildNav>) =>
@@ -26,8 +26,8 @@ describe('buildNav', () => {
 
   it('leads with everyday work once live, setup in a quieter group', () => {
     const groups = buildNav({ live: true, role: 'owner' });
-    expect(groups[0]?.items.map((i) => i.label)).toEqual(['Inbox', 'Records', 'History']);
-    expect(groups[0]?.items.map((i) => i.to)).toEqual(['inbox', 'records', 'audit']);
+    expect(groups[0]?.items.map((i) => i.label)).toEqual(['Inbox', 'Records', 'Import', 'History']);
+    expect(groups[0]?.items.map((i) => i.to)).toEqual(['inbox', 'records', 'import', 'audit']);
 
     const setup = groups[1];
     expect(setup?.label).toBe('Setup');
@@ -57,10 +57,11 @@ describe('buildNav', () => {
   it('shows non-setup roles the Structure but not the setup tools once live', () => {
     for (const role of ['manager', 'member', 'read_only'] as const) {
       const groups = buildNav({ live: true, role });
-      expect(
-        groups[0]?.items.map((i) => i.to),
-        role,
-      ).toEqual(['inbox', 'records', 'audit']);
+      // Import rides the everyday group only for roles that can edit records.
+      const everyday = can(role, 'edit_records')
+        ? ['inbox', 'records', 'import', 'audit']
+        : ['inbox', 'records', 'audit'];
+      expect(groups[0]?.items.map((i) => i.to), role).toEqual(everyday);
       expect(
         groups[1]?.items.map((i) => i.to),
         role,
@@ -68,6 +69,15 @@ describe('buildNav', () => {
       const dests = destinations(groups);
       expect(dests, role).not.toContain('workbook');
       expect(dests, role).not.toContain('interview');
+    }
+  });
+
+  it('reveals Import only to roles that can edit records, and never before live', () => {
+    for (const role of ROLES) {
+      const liveDests = destinations(buildNav({ live: true, role }));
+      expect(liveDests.includes('import'), role).toBe(can(role, 'edit_records'));
+      // Import is an everyday action; it must not appear during setup.
+      expect(destinations(buildNav({ live: false, role })), role).not.toContain('import');
     }
   });
 

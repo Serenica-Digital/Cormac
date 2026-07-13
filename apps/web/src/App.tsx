@@ -9,6 +9,7 @@ import { WorkspaceLayout, useWorkspaceStage } from './pages/WorkspaceLayout';
 import { GetStarted } from './pages/GetStarted';
 import { Interview } from './pages/Interview';
 import { Workbook } from './pages/Workbook';
+import { ImportWorkbook } from './pages/ImportWorkbook';
 import { Inbox } from './pages/Inbox';
 import { Records } from './pages/Records';
 import { RecordDetail } from './pages/RecordDetail';
@@ -67,6 +68,7 @@ const router = createBrowserRouter([
           { path: 'workbook', element: <Workbook /> },
           { path: 'inbox', element: <Inbox /> },
           { path: 'records', element: <Records /> },
+          { path: 'import', element: <ImportWorkbook /> },
           { path: 'records/:recordId', element: <RecordDetail /> },
           { path: 'contract', element: <ContractPage /> },
           { path: 'audit', element: <AuditPage /> },
