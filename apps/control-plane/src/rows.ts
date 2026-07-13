@@ -102,3 +102,23 @@ export interface AgentTokenRow {
   created_at: string;
   revoked_at: string | null;
 }
+
+export type LearnedStatus = 'pending' | 'approved' | 'rejected';
+
+export interface LearnedKnowledgeRow {
+  id: string;
+  workspace_id: string;
+  kind: 'alias' | 'enum_synonym';
+  object_api_name: string;
+  record_id: string | null;
+  variant: string | null;
+  field_api_name: string | null;
+  synonym: string | null;
+  canonical_option: string | null;
+  status: LearnedStatus;
+  rationale: string | null;
+  source_message_id: string | null;
+  created_at: string;
+  decided_by: string | null;
+  decided_at: string | null;
+}

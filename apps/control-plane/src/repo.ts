@@ -1,10 +1,12 @@
-import { buildContextDisplay, type Contract } from '@cormac/contract';
+import { buildContextDisplay, type Contract, type LearnedView } from '@cormac/contract';
 import type { Role } from './shared.js';
 import type { Db } from './db.js';
 import type {
   AuditEventRow,
   BusinessRecordRow,
   ContractVersionRow,
+  LearnedKnowledgeRow,
+  LearnedStatus,
   MembershipRow,
   ProposalRow,
   ProposalStatus,
@@ -699,4 +701,168 @@ export async function revokeAgentToken(db: Db, tokenId: string): Promise<void> {
     .eq('id', tokenId)
     .is('revoked_at', null);
   if (error) throw new Error(`revokeAgentToken: ${error.message}`);
+}
+
+// --- History search (the agent's recall path; knowledge-layer spike) ---------
+
+export interface SourceMessageHit {
+  id: string;
+  channel: SourceChannel;
+  content: string;
+  agent_note: string | null;
+  created_at: string;
+}
+
+/**
+ * Case-insensitive substring search over a workspace's source messages, most
+ * recent first. Content here is what users typed into capture (plus the
+ * agent's stored reply); record values and sensitive fields never live in this
+ * table, so returning matches to the agent stays inside what it already saw.
+ */
+export async function searchSourceMessages(
+  db: Db,
+  workspaceId: string,
+  query: string,
+  limit: number,
+): Promise<SourceMessageHit[]> {
+  // Escape LIKE wildcards; strip PostgREST or= syntax characters (comma,
+  // parens) rather than escaping them — they are never load-bearing in a
+  // human search needle.
+  const escaped = query.replace(/[%_\\]/g, (m) => `\\${m}`).replace(/[(),]/g, ' ');
+  const { data, error } = await db
+    .from('source_messages')
+    .select('id, channel, content, agent_note, created_at')
+    .eq('workspace_id', workspaceId)
+    .or(`content.ilike.%${escaped}%,agent_note.ilike.%${escaped}%`)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`searchSourceMessages: ${error.message}`);
+  return (data as SourceMessageHit[] | null) ?? [];
+}
+
+// --- Learned knowledge (governed typed learning; knowledge-layer spike) ------
+
+export async function insertLearnedKnowledge(
+  db: Db,
+  input: {
+    workspaceId: string;
+    kind: 'alias' | 'enum_synonym';
+    objectApiName: string;
+    recordId?: string;
+    variant?: string;
+    fieldApiName?: string;
+    synonym?: string;
+    canonicalOption?: string;
+    rationale?: string;
+    sourceMessageId?: string;
+  },
+): Promise<LearnedKnowledgeRow> {
+  const { data, error } = await db
+    .from('learned_knowledge')
+    .insert({
+      workspace_id: input.workspaceId,
+      kind: input.kind,
+      object_api_name: input.objectApiName,
+      record_id: input.recordId ?? null,
+      variant: input.variant ?? null,
+      field_api_name: input.fieldApiName ?? null,
+      synonym: input.synonym ?? null,
+      canonical_option: input.canonicalOption ?? null,
+      rationale: input.rationale ?? null,
+      source_message_id: input.sourceMessageId ?? null,
+      status: 'pending',
+    })
+    .select('*')
+    .single();
+  return must(data as LearnedKnowledgeRow | null, error, 'insertLearnedKnowledge');
+}
+
+export async function listLearnedKnowledge(
+  db: Db,
+  workspaceId: string,
+  status?: LearnedStatus,
+): Promise<LearnedKnowledgeRow[]> {
+  let query = db
+    .from('learned_knowledge')
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .order('created_at', { ascending: false });
+  if (status) query = query.eq('status', status);
+  const { data, error } = await query;
+  if (error) throw new Error(`listLearnedKnowledge: ${error.message}`);
+  return (data as LearnedKnowledgeRow[] | null) ?? [];
+}
+
+export async function getLearnedKnowledge(
+  db: Db,
+  workspaceId: string,
+  learningId: string,
+): Promise<LearnedKnowledgeRow | null> {
+  const { data, error } = await db
+    .from('learned_knowledge')
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .eq('id', learningId)
+    .maybeSingle();
+  if (error) throw new Error(`getLearnedKnowledge: ${error.message}`);
+  return (data as LearnedKnowledgeRow | null) ?? null;
+}
+
+export async function setLearnedDecision(
+  db: Db,
+  input: {
+    workspaceId: string;
+    learningId: string;
+    status: 'approved' | 'rejected';
+    decidedBy: string | null;
+  },
+): Promise<void> {
+  const { error } = await db
+    .from('learned_knowledge')
+    .update({
+      status: input.status,
+      decided_by: input.decidedBy,
+      decided_at: new Date().toISOString(),
+    })
+    .eq('workspace_id', input.workspaceId)
+    .eq('id', input.learningId)
+    .eq('status', 'pending');
+  if (error) throw new Error(`setLearnedDecision: ${error.message}`);
+}
+
+/**
+ * Assemble the approved rows into the render layer's LearnedView shape. Alias
+ * rows join their bound record; a missing or archived record yields
+ * record: null, which renders nothing (the FK cascade usually removes the row
+ * first, but archive is soft). The output order does not matter: the renderer
+ * sorts rendered lines for byte stability.
+ */
+export async function listApprovedLearnedViews(
+  db: Db,
+  workspaceId: string,
+): Promise<LearnedView[]> {
+  const rows = await listLearnedKnowledge(db, workspaceId, 'approved');
+  const views: LearnedView[] = [];
+  for (const row of rows) {
+    if (row.kind === 'alias') {
+      if (!row.record_id || !row.variant) continue;
+      const record = await getRecord(db, workspaceId, row.record_id);
+      views.push({
+        kind: 'alias',
+        objectApiName: row.object_api_name,
+        variant: row.variant,
+        record: record && !record.archived_at ? { data: record.data } : null,
+      });
+    } else {
+      if (!row.field_api_name || !row.synonym || !row.canonical_option) continue;
+      views.push({
+        kind: 'enum_synonym',
+        objectApiName: row.object_api_name,
+        fieldApiName: row.field_api_name,
+        synonym: row.synonym,
+        canonicalOption: row.canonical_option,
+      });
+    }
+  }
+  return views;
 }

@@ -11,13 +11,17 @@ import { conversationView, proposalsView, recordTimeline } from '../pipeline/que
 import type { ProposalStatus } from '../rows.js';
 import {
   getActiveContract,
+  getLearnedKnowledge,
   getRecord,
   getUserEmail,
+  insertAuditEvent,
   insertWorkbookSnapshot,
   isPlatformAdmin,
   listAuditEvents,
+  listLearnedKnowledge,
   listRecords,
   listWorkspacesForUser,
+  setLearnedDecision,
 } from '../repo.js';
 
 const captureBody = z.object({ text: z.string().min(1).max(4000) });
@@ -105,6 +109,68 @@ export function registerHumanRoutes(app: FastifyInstance): void {
       const { proposalId } = request.params as { proposalId: string };
       const { decision, keep } = decisionBody.parse(request.body);
       return decideProposal(request.server.app, ctx, proposalId, decision, keep);
+    },
+  );
+
+  // Learned knowledge: what the agent has proposed to remember. Read rides
+  // read_records; the decision is a trust action and rides approve_proposal.
+  // Only approved rows ever enter the agent's compiled context.
+  app.get(
+    '/api/workspaces/:workspaceId/learning',
+    { preHandler: [authenticate, requireCapability('read_records')] },
+    async (request) => {
+      const ctx = requireCtx(request);
+      const { status } = request.query as { status?: string };
+      const filter =
+        status && ['pending', 'approved', 'rejected'].includes(status)
+          ? (status as 'pending' | 'approved' | 'rejected')
+          : undefined;
+      const learning = await listLearnedKnowledge(request.server.app.db, ctx.workspaceId, filter);
+      return { learning };
+    },
+  );
+
+  app.post(
+    '/api/workspaces/:workspaceId/learning/:learningId/decision',
+    { preHandler: [authenticate, requireCapability('approve_proposal')] },
+    async (request) => {
+      const ctx = requireCtx(request);
+      const { learningId } = request.params as { learningId: string };
+      const { decision } = z.object({ decision: z.enum(['approve', 'reject']) }).parse(request.body);
+      const { db } = request.server.app;
+
+      const row = await getLearnedKnowledge(db, ctx.workspaceId, learningId);
+      if (!row) throw ProblemError.notFound('Learning proposal not found');
+      if (row.status !== 'pending') {
+        throw ProblemError.unprocessable(`Already ${row.status}`);
+      }
+
+      const status = decision === 'approve' ? 'approved' : 'rejected';
+      await setLearnedDecision(db, {
+        workspaceId: ctx.workspaceId,
+        learningId,
+        status,
+        decidedBy: ctx.userId,
+      });
+      await insertAuditEvent(db, {
+        workspaceId: ctx.workspaceId,
+        actorType: 'user',
+        actorId: ctx.userId,
+        action: `learning_${status}`,
+        objectApiName: row.object_api_name,
+        recordId: row.record_id,
+        before: null,
+        after: {
+          kind: row.kind,
+          variant: row.variant,
+          fieldApiName: row.field_api_name,
+          synonym: row.synonym,
+          canonicalOption: row.canonical_option,
+        },
+        sourceMessageId: row.source_message_id,
+        proposalId: null,
+      });
+      return { learningId, status };
     },
   );
 

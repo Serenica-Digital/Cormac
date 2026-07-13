@@ -17,8 +17,10 @@ import {
   getProposalBySourceMessage,
   getRecord,
   getSourceMessage,
+  insertLearnedKnowledge,
   insertProposal,
   listRecordSummaries,
+  searchSourceMessages,
 } from '../repo.js';
 
 const submitContractBody = z.object({ contract: z.unknown() });
@@ -28,6 +30,25 @@ const submitProposalBody = z.object({
   notes: z.string().max(2000).optional(),
   uncertain: z.boolean().optional(),
 });
+const proposeLearningBody = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('alias'),
+    taskId: z.string().uuid(),
+    objectApiName: z.string().min(1),
+    recordId: z.string().uuid(),
+    variant: z.string().min(1).max(120),
+    rationale: z.string().max(500).optional(),
+  }),
+  z.object({
+    kind: z.literal('enum_synonym'),
+    taskId: z.string().uuid(),
+    objectApiName: z.string().min(1),
+    fieldApiName: z.string().min(1),
+    synonym: z.string().min(1).max(120),
+    canonicalOption: z.string().min(1).max(200),
+    rationale: z.string().max(500).optional(),
+  }),
+]);
 
 function contractSummary(contract: Contract, version: number): string {
   const objects = contract.objects.map((o) => `${o.apiName}(${o.fields.length} fields)`).join(', ');
@@ -226,6 +247,108 @@ export function registerAgentRoutes(app: FastifyInstance): void {
         createdBy: null,
       });
       return { proposalId: row.id, status: row.status, changeCount: parsed.data.changes.length };
+    },
+  );
+
+  // propose_learning (operations): stage a typed learned fact for human
+  // review. This NEVER changes what the agent knows by itself: rows enter the
+  // compiled context only after a human approves them (the memory-off
+  // invariant's governed alternative; red-team evidence backs the gate).
+  // Everything is validated against the contract before it is held.
+  app.post(
+    '/agent/learning',
+    { preHandler: [requireAgentCapability('propose_learning')] },
+    async (request) => {
+      const ctx = requireAgentCtx(request);
+      const body = proposeLearningBody.parse(request.body);
+      const { db } = request.server.app;
+
+      // The taskId is the source message the control plane created at capture;
+      // an agent cannot invent one (same discipline as submit_proposal).
+      const source = await getSourceMessage(db, ctx.workspaceId, body.taskId);
+      if (!source) throw ProblemError.notFound('Unknown task');
+
+      const contractRow = await getActiveContract(db, ctx.workspaceId);
+      if (!contractRow) throw ProblemError.unprocessable('This workspace has no active contract');
+      const contract = contractRow.document as Contract;
+      const object = contract.objects.find((o) => o.apiName === body.objectApiName);
+      if (!object) {
+        throw ProblemError.unprocessable(`Unknown object "${body.objectApiName}"`);
+      }
+
+      if (body.kind === 'alias') {
+        const record = await getRecord(db, ctx.workspaceId, body.recordId);
+        if (!record || record.archived_at || record.object_api_name !== body.objectApiName) {
+          throw ProblemError.unprocessable('Alias must bind to a live record of the named object');
+        }
+      } else {
+        const field = object.fields.find((f) => f.apiName === body.fieldApiName);
+        if (!field || field.type !== 'enum') {
+          throw ProblemError.unprocessable(
+            `"${body.fieldApiName}" is not an enum field on "${body.objectApiName}"`,
+          );
+        }
+        if (!field.enumOptions?.includes(body.canonicalOption)) {
+          throw ProblemError.unprocessable(
+            `"${body.canonicalOption}" is not an option of "${body.fieldApiName}"`,
+          );
+        }
+      }
+
+      let row;
+      try {
+        row = await insertLearnedKnowledge(db, {
+          workspaceId: ctx.workspaceId,
+          kind: body.kind,
+          objectApiName: body.objectApiName,
+          recordId: body.kind === 'alias' ? body.recordId : undefined,
+          variant: body.kind === 'alias' ? body.variant : undefined,
+          fieldApiName: body.kind === 'enum_synonym' ? body.fieldApiName : undefined,
+          synonym: body.kind === 'enum_synonym' ? body.synonym : undefined,
+          canonicalOption: body.kind === 'enum_synonym' ? body.canonicalOption : undefined,
+          rationale: body.rationale,
+          sourceMessageId: body.taskId,
+        });
+      } catch (err) {
+        // The partial unique index: an identical fact is already pending or
+        // approved. Idempotent from the agent's point of view.
+        if (err instanceof Error && err.message.includes('duplicate key')) {
+          return { status: 'already_known' };
+        }
+        throw err;
+      }
+      return { learningId: row.id, status: row.status };
+    },
+  );
+
+  // search_history (operations): recall over past capture messages and stored
+  // agent replies, most recent first, capped. Record values and sensitive
+  // fields never live in source messages, so this returns only what already
+  // passed through capture.
+  app.get(
+    '/agent/history',
+    { preHandler: [requireAgentCapability('read_history')] },
+    async (request) => {
+      const ctx = requireAgentCtx(request);
+      const { query } = request.query as { query?: string };
+      if (!query || query.trim().length < 2) {
+        throw ProblemError.badRequest('Missing or too-short query (min 2 characters)');
+      }
+      const { db } = request.server.app;
+
+      const hits = await searchSourceMessages(db, ctx.workspaceId, query.trim(), 10);
+      const results = [];
+      for (const hit of hits) {
+        const proposal = await getProposalBySourceMessage(db, ctx.workspaceId, hit.id);
+        results.push({
+          when: hit.created_at,
+          channel: hit.channel,
+          message: hit.content,
+          agentReply: hit.agent_note,
+          outcome: proposal ? proposal.status : 'no_proposal',
+        });
+      }
+      return { matchCount: results.length, results };
     },
   );
 }
