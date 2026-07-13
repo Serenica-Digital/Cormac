@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router';
 import { Card } from '@/components/ui/card';
 import { useContract, useRecordTimeline } from '../api/hooks';
 import { objectFor, recordTitle } from '../contract-helpers';
+import { useRecordTitles } from '../lib/titles';
 import { Timeline } from '../components/Timeline';
 import { ErrorNote, PageHeader, SectionLabel, Spinner } from '../components/kit';
 import { formatValue } from '@/lib/format';
@@ -10,6 +11,7 @@ export function RecordDetail() {
   const { workspaceId = '', recordId = '' } = useParams();
   const contract = useContract(workspaceId);
   const timeline = useRecordTimeline(workspaceId, recordId);
+  const titleById = useRecordTitles(workspaceId, contract.data?.contract);
 
   if (timeline.isPending) {
     return (
@@ -29,7 +31,7 @@ export function RecordDetail() {
         to={`/w/${workspaceId}/records`}
         className="text-sm text-stone-400 hover:text-stone-600"
       >
-        ← Records
+        ← Your book
       </Link>
       <PageHeader title={recordTitle(object, record.data)} sub={object?.label} />
 
@@ -45,7 +47,10 @@ export function RecordDetail() {
                 >
                   <dt className="shrink-0 text-sm text-stone-500 sm:w-40">{f.label}</dt>
                   <dd className="font-mono text-sm break-words text-ink">
-                    {formatValue(record.data[f.apiName])}
+                    {f.type === 'relationship' && typeof record.data[f.apiName] === 'string'
+                      ? (titleById.get(record.data[f.apiName] as string) ??
+                        formatValue(record.data[f.apiName]))
+                      : formatValue(record.data[f.apiName])}
                   </dd>
                 </div>
               ))}
@@ -55,7 +60,7 @@ export function RecordDetail() {
         <div>
           <SectionLabel>Timeline</SectionLabel>
           <div className="mt-3">
-            <Timeline entries={entries} />
+            <Timeline entries={entries} object={object} titleFor={(id) => titleById.get(id)} />
           </div>
         </div>
       </div>

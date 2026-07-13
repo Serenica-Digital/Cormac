@@ -1,15 +1,26 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type DragEvent } from 'react';
 import { Link, useParams } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useCommitRecords, useContract } from '../api/hooks';
 import { useCan } from '../lib/authz';
+import { fieldKindWord } from '../contract-helpers';
 import { EmptyState, ErrorNote, PageHeader, Spinner } from '../components/kit';
 import { parseWorkbookFile } from '../workbook/parse';
 import { loadParsedWorkbook, saveParsedWorkbook } from '../workbook/store';
 import { autoMap, buildCreateChanges, chunk, sheetColumns, type Mapping } from '../workbook/mapImport';
 import type { ParsedWorkbook } from '../workbook/types';
 import { formatValue } from '@/lib/format';
+
+/** Radix Select rejects empty-string values; this stands in for "no column". */
+const SKIP = '__skip';
 
 export function ImportWorkbook() {
   const { workspaceId = '' } = useParams();
@@ -23,6 +34,7 @@ export function ImportWorkbook() {
   const [activeObject, setActiveObject] = useState<string | null>(null);
   const [mapping, setMapping] = useState<Mapping>({});
   const [running, setRunning] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [result, setResult] = useState<{ created: number; skipped: number; failed: number; errors: string[] } | null>(
     null,
   );
@@ -32,10 +44,12 @@ export function ImportWorkbook() {
   const sheet = parsed?.sheets[sheetIndex];
   const columns = useMemo(() => (sheet ? sheetColumns(sheet) : []), [sheet]);
 
-  // Re-run the auto-map whenever the target object or sheet changes.
+  // Re-run the auto-map when the target object, the sheet, or the parsed
+  // workbook itself changes (columns is memoized per sheet, so a fresh upload
+  // re-maps too; without it, an in-place upload left every field on "skip").
   useEffect(() => {
     if (object && columns.length) setMapping(autoMap(object, columns));
-  }, [object?.apiName, sheetIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [object?.apiName, sheetIndex, columns]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const build = useMemo(
     () => (object && sheet ? buildCreateChanges(object, sheet, mapping) : { changes: [], skipped: 0 }),
@@ -50,6 +64,13 @@ export function ImportWorkbook() {
     setParsed(wb);
     setSheetIndex(0);
     setResult(null);
+  };
+
+  const onDrop = (e: DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) void onFile(file);
   };
 
   const runImport = async () => {
@@ -113,9 +134,6 @@ export function ImportWorkbook() {
     );
   }
 
-  const selectCls =
-    'rounded-md border border-stone-200 bg-card px-2 py-1 text-sm text-ink outline-none focus:border-ledger-400';
-
   return (
     <div className="space-y-5">
       <Link
@@ -136,17 +154,18 @@ export function ImportWorkbook() {
           <div className="flex flex-wrap items-center gap-3 text-sm">
             <span className="font-medium text-ink">{parsed.workbookName}</span>
             {parsed.sheets.length > 1 && (
-              <select
-                className={selectCls}
-                value={sheetIndex}
-                onChange={(e) => setSheetIndex(Number(e.target.value))}
-              >
-                {parsed.sheets.map((s, i) => (
-                  <option key={s.name} value={i}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+              <Select value={String(sheetIndex)} onValueChange={(v) => setSheetIndex(Number(v))}>
+                <SelectTrigger className="w-44" size="sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {parsed.sheets.map((s, i) => (
+                    <SelectItem key={s.name} value={String(i)}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
             <span className="text-stone-400">
               {sheet ? `${Math.max(sheet.grid.length - sheet.headerRowIndex - 1, 0)} rows` : ''}
@@ -162,8 +181,20 @@ export function ImportWorkbook() {
             </label>
           </div>
         ) : (
-          <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-stone-300 py-8 text-sm text-stone-500 hover:border-ledger-400">
-            <span>Upload your .xlsx workbook</span>
+          <label
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={onDrop}
+            className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed py-8 text-sm transition-colors ${
+              dragOver
+                ? 'border-ledger-400 bg-ledger-50/60 text-ledger-800'
+                : 'border-stone-300 text-stone-500 hover:border-ledger-400'
+            }`}
+          >
+            <span>Drop your .xlsx workbook here, or click to choose it</span>
             <span className="text-xs text-stone-400">It is parsed in your browser; the file never leaves your device.</span>
             <input
               type="file"
@@ -207,26 +238,29 @@ export function ImportWorkbook() {
                   <div className="w-52 shrink-0 text-sm">
                     <span className="font-medium text-ink">{f.label}</span>
                     {f.required && <span className="text-red-500"> *</span>}
-                    <span className="ml-1.5 text-xs text-stone-400">{f.type}</span>
+                    <span className="ml-1.5 text-xs text-stone-400">{fieldKindWord(f.type)}</span>
                   </div>
-                  <select
-                    className={selectCls}
+                  <Select
                     disabled={!f.editableByUser}
-                    value={mapping[f.apiName] ?? ''}
-                    onChange={(e) =>
-                      setMapping((m) => ({
-                        ...m,
-                        [f.apiName]: e.target.value === '' ? null : Number(e.target.value),
-                      }))
+                    value={mapping[f.apiName] == null ? SKIP : String(mapping[f.apiName])}
+                    onValueChange={(v) =>
+                      setMapping((m) => ({ ...m, [f.apiName]: v === SKIP ? null : Number(v) }))
                     }
                   >
-                    <option value="">{f.editableByUser ? '(skip)' : '(managed by Cormac)'}</option>
-                    {columns.map((c) => (
-                      <option key={c.index} value={c.index}>
-                        {c.header}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-56" size="sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={SKIP}>
+                        {f.editableByUser ? '(skip)' : '(managed by Cormac)'}
+                      </SelectItem>
+                      {columns.map((c) => (
+                        <SelectItem key={c.index} value={String(c.index)}>
+                          {c.header}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               ))}
             </div>
@@ -237,7 +271,8 @@ export function ImportWorkbook() {
             <div className="flex flex-wrap items-baseline gap-2">
               <h2 className="text-sm font-semibold text-ink">Preview</h2>
               <span className="text-xs text-stone-400">
-                {build.changes.length} rows ready
+                {build.changes.length} row{build.changes.length === 1 ? '' : 's'} ready
+                {build.changes.length > 5 ? ` · showing the first 5` : ''}
                 {build.skipped > 0 ? ` · ${build.skipped} skipped (missing a required field)` : ''}
               </span>
             </div>

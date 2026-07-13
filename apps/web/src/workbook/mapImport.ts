@@ -34,6 +34,12 @@ export function autoMap(object: ContractObject, columns: SheetColumn[]): Mapping
 
   const mapping: Mapping = {};
   for (const f of object.fields) {
+    // Fields Cormac manages never map; a filled-but-disabled control would
+    // read as "this column imports" when it cannot.
+    if (!f.editableByUser) {
+      mapping[f.apiName] = null;
+      continue;
+    }
     const candidates = [f.excelColumn, f.label, f.apiName].filter(Boolean).map((s) => norm(s!));
     const hit = candidates.map((c) => byNorm.get(c)).find((i) => i !== undefined);
     mapping[f.apiName] = hit ?? null;
