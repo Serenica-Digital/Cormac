@@ -56,6 +56,11 @@ const QA_EXEMPT: { path: string; reason: string }[] = [
     reason:
       'Presentation: the People page mirrors server rules in UI. The enforced invariants are rows 9-10 (membership suite).',
   },
+  {
+    path: 'packages/contract/tests/semantic.test.ts',
+    reason:
+      'Correctness of the contract meta-schema (semantic tag shape/type guard). The write gate that enforces contracts is rows 5-7; semantics grant no write ability.',
+  },
 ];
 
 const ROOT = join(import.meta.dirname, '..');

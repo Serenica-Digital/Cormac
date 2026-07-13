@@ -33,6 +33,16 @@ export const apiName = z
   .string()
   .regex(/^[a-z][a-z0-9_]*$/, 'apiName must be snake_case (lowercase, digits, underscores)');
 
+/**
+ * Attention semantics: a date field can carry what it MEANS to the business's
+ * rhythm, so surfaces and agents can act on it without hardcoding column
+ * names. `last_touch` = when this record was last contacted/worked;
+ * `follow_up` = when it next needs attention. Set during the authoring
+ * interview; optional everywhere.
+ */
+export const FIELD_SEMANTICS = ['last_touch', 'follow_up'] as const;
+export type FieldSemantic = (typeof FIELD_SEMANTICS)[number];
+
 export const contractFieldSchema = z
   .object({
     fieldId: z.string().min(1), // stable id, independent of label or column
@@ -46,6 +56,7 @@ export const contractFieldSchema = z
     editableByAgent: z.boolean().default(false),
     sensitive: z.boolean().default(false),
     excelColumn: z.string().optional(),
+    semantic: z.enum(FIELD_SEMANTICS).optional(),
   })
   .superRefine((field, ctx) => {
     if (field.type === 'enum' && (!field.enumOptions || field.enumOptions.length === 0)) {
@@ -58,6 +69,12 @@ export const contractFieldSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: `relationship field "${field.apiName}" requires relationshipTargetType`,
+      });
+    }
+    if (field.semantic && field.type !== 'date' && field.type !== 'datetime') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `semantic "${field.semantic}" on "${field.apiName}" requires a date or datetime field`,
       });
     }
   });

@@ -121,7 +121,7 @@ export async function seedOpsBook(
     ['Morgan Ellis', 'Hartwell Capital', { coverage_area: 'Southeast', opportunities_shown: 3, date_last_contacted: '2026-06-24' }],
     ['Dana Morgan', 'Meridian Sports Group', { sport: 'Baseball', date_last_contacted: '2026-06-30' }],
     ['James Carter', 'Bluewater Holdings', { coverage_area: 'Northeast', opportunities_shown: 5, date_last_contacted: '2026-07-01', notes: 'Negotiating the marina package.' }],
-    ['Priya Shah', 'Ashford & Gray', { coverage_area: 'Mid-Atlantic', date_last_contacted: '2026-06-18' }],
+    ['Priya Shah', 'Ashford & Gray', { coverage_area: 'Mid-Atlantic', date_last_contacted: '2026-06-18', follow_up_date: '2026-07-11' }],
     ['Tom Okafor', 'Beacon Point Advisors', { date_last_contacted: '2026-05-29' }],
     ['Elaine Fischer', 'Northgate Banking', { coverage_area: 'Pacific Northwest' }],
     ['Ruth Calloway', 'Summit Ridge Partners', { notes: 'Left the firm? Bounced email 2026-05.' }],
