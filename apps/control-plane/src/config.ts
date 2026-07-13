@@ -21,7 +21,14 @@ const configSchema = z.object({
   CORS_ORIGINS: z.string().default(''),
   // The Hermes runtime (ADR-0001). Optional: the HTTP pipeline and the
   // /agent/* surface work without it; capture and authoring turns answer 503.
+  // The two agent kinds run separate gateways (ADR-0016: one pair per
+  // workspace); the per-kind URLs let one control plane drive both at once,
+  // each falling back to HERMES_URL when only one gateway is in play. One
+  // API key serves both locally (both hubs launch from the same vault slot);
+  // per-kind keys arrive with the ADR-0016 deployment work if needed.
   HERMES_URL: z.string().url().optional(),
+  HERMES_AUTHORING_URL: z.string().url().optional(),
+  HERMES_OPS_URL: z.string().url().optional(),
   HERMES_API_KEY: z.string().min(1).optional(),
   // The profile name doubles as the model id on /v1/responses.
   HERMES_MODEL: z.string().min(1).default('cormac-authoring'),
@@ -29,6 +36,13 @@ const configSchema = z.object({
 });
 
 export type Config = z.infer<typeof configSchema>;
+
+/** The per-kind gateway URL, with HERMES_URL as the single-gateway fallback. */
+export function hermesUrlFor(config: Config, kind: 'authoring' | 'operations'): string | undefined {
+  return kind === 'authoring'
+    ? (config.HERMES_AUTHORING_URL ?? config.HERMES_URL)
+    : (config.HERMES_OPS_URL ?? config.HERMES_URL);
+}
 
 export function isProdLike(env: Config['APP_ENV']): boolean {
   return env === 'staging' || env === 'production';

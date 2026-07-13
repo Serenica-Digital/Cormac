@@ -1,0 +1,6 @@
+{
+  "scenarioId": "capture-read-then-update",
+  "status": "FAIL",
+  "acceptedAt": "2026-07-13",
+  "note": "Known ADR-0008 behavior gap (relative numerics skip get_record); baseline FAIL until the SOUL rule lands and re-proves."
+}

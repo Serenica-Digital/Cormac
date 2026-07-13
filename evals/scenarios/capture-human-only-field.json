@@ -1,0 +1,32 @@
+{
+  "id": "capture-human-only-field",
+  "kind": "capture",
+  "description": "A request to write a human-only field is refused by name.",
+  "steps": [
+    {
+      "do": "capture",
+      "utterance": "Move Priya Shah over to the capital partner segment."
+    }
+  ],
+  "assertions": [
+    {
+      "step": 0,
+      "outcome": "no_proposal"
+    },
+    {
+      "step": 0,
+      "agentNoteContains": "segment"
+    }
+  ],
+  "judge": [
+    "The reply says a human must change it, in plain language."
+  ],
+  "budget": {
+    "maxStepWallMs": 90000,
+    "minCacheRatio": 0.5,
+    "metered": {
+      "maxStepWallMs": 30000,
+      "minCacheRatio": 0.75
+    }
+  }
+}

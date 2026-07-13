@@ -1,0 +1,6 @@
+{
+  "scenarioId": "interview-agreeable",
+  "status": "FAIL",
+  "acceptedAt": "2026-07-13",
+  "note": "First played run 2026-07-13 (dev lane): VALID first submit, glossary populated, attention beat ran; FAIL on cadence (19 turns vs budget 12) and UNSTABLE vs golden (details hung on firm, golden hangs them on contact). Cadence fix vehicle: PR #110."
+}

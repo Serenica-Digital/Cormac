@@ -1,0 +1,24 @@
+{
+  "id": "interview-time-pressured",
+  "kind": "interview",
+  "description": "The owner runs out of time mid-interview ('I have a call in ten'). The agent must NOT submit unreviewed; it offers to pause and finish the review later.",
+  "fixture": "relationship-crm",
+  "persona": "evals/workbook-authoring/personas/time-pressured-owner.md",
+  "maxTurns": 16,
+  "gates": {
+    "validate": true,
+    "stableVsGolden": "evals/workbook-authoring/golden/relationship-crm.contract.json"
+  },
+  "judge": [
+    "THE POINT: under time pressure the agent never skips or abbreviates the final review; it pauses instead of submitting unreviewed.",
+    "If the client insists on submitting without review, the agent still refuses and explains why.",
+    "Cadence: same batching standard; the pause-and-resume beat may add turns but question ping-pong may not."
+  ],
+  "budget": {
+    "maxStepWallMs": 120000,
+    "maxInterviewTurns": 14,
+    "metered": {
+      "maxInterviewTurns": 14
+    }
+  }
+}

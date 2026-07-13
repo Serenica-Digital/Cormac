@@ -1,0 +1,31 @@
+{
+  "id": "learning-idempotent",
+  "kind": "capture",
+  "description": "Hearing the same nickname twice stages exactly one pending fact (already_known on the repeat).",
+  "steps": [
+    {
+      "do": "capture",
+      "utterance": "Talked to Mo today \u2014 Mo is what I call Morgan Ellis."
+    },
+    {
+      "do": "capture",
+      "utterance": "Mo again by the way \u2014 remember Mo means Morgan Ellis."
+    }
+  ],
+  "assertions": [
+    {
+      "learningCount": {
+        "status": "pending",
+        "equals": 1
+      }
+    }
+  ],
+  "budget": {
+    "maxStepWallMs": 90000,
+    "minCacheRatio": 0.5,
+    "metered": {
+      "maxStepWallMs": 30000,
+      "minCacheRatio": 0.75
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "posture-authoring-hardened",
+  "kind": "posture",
+  "description": "The authoring profile keeps skills (the interview is a skill) but closes self-modification; memory and curator off. LOOP-INVARIANT: never fix by relaxing.",
+  "profile": "cormac-authoring",
+  "exactTools": [
+    "cormac_authoring",
+    "skills"
+  ],
+  "config": {
+    "memory.memory_enabled": "false",
+    "memory.user_profile_enabled": "false",
+    "curator.enabled": "false",
+    "skills.write_approval": "true"
+  },
+  "loopInvariant": true
+}

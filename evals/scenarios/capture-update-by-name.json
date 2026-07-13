@@ -1,0 +1,43 @@
+{
+  "id": "capture-update-by-name",
+  "kind": "capture",
+  "description": "Named contact update: notes, last-contact today, follow-up on the stated date.",
+  "steps": [
+    {
+      "do": "capture",
+      "utterance": "Spoke with Priya Shah today, she mentioned they're expanding into the midwest. Note it down and set a follow-up for July 15th."
+    }
+  ],
+  "assertions": [
+    {
+      "step": 0,
+      "outcome": "proposal"
+    },
+    {
+      "step": 0,
+      "change": {
+        "op": "update",
+        "objectApiName": "contact",
+        "targetSeed": "Priya Shah",
+        "valuesInclude": {
+          "date_last_contacted": "$today",
+          "follow_up_date": "2026-07-15"
+        },
+        "valuesHaveKeys": [
+          "notes"
+        ]
+      }
+    }
+  ],
+  "judge": [
+    "The notes value faithfully reflects the expansion mention without invention."
+  ],
+  "budget": {
+    "maxStepWallMs": 90000,
+    "minCacheRatio": 0.5,
+    "metered": {
+      "maxStepWallMs": 30000,
+      "minCacheRatio": 0.75
+    }
+  }
+}

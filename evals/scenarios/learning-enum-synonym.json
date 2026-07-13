@@ -1,0 +1,44 @@
+{
+  "id": "learning-enum-synonym",
+  "kind": "capture",
+  "description": "A client-vocabulary word for an enum option gets staged as an enum synonym.",
+  "steps": [
+    {
+      "do": "capture",
+      "utterance": "Northgate Banking went dark on us. When I say a firm went dark, that means they're former \u2014 mark them."
+    }
+  ],
+  "assertions": [
+    {
+      "step": 0,
+      "outcome": "proposal"
+    },
+    {
+      "step": 0,
+      "change": {
+        "op": "update",
+        "objectApiName": "organization",
+        "targetSeed": "Northgate Banking",
+        "valuesInclude": {
+          "status": "former"
+        }
+      }
+    },
+    {
+      "learning": {
+        "kind": "enum_synonym",
+        "status": "pending",
+        "synonym": "went dark",
+        "canonicalOption": "former"
+      }
+    }
+  ],
+  "budget": {
+    "maxStepWallMs": 90000,
+    "minCacheRatio": 0.5,
+    "metered": {
+      "maxStepWallMs": 30000,
+      "minCacheRatio": 0.75
+    }
+  }
+}

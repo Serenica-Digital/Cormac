@@ -8,7 +8,9 @@ import type {
 } from './types.js';
 
 /**
- * The production RuntimeClient over the ADR-0001 transport. Two lanes:
+ * The production RuntimeClient over the ADR-0001 transport. Two lanes, two
+ * gateways (one per agent kind, ADR-0016; locally they may resolve to the
+ * same URL via the HERMES_URL fallback):
  *
  * - Authoring turns ride POST /v1/responses on the named conversation
  *   `authoring:<workspaceId>` — server-side state carries the interview
@@ -20,7 +22,8 @@ import type {
  */
 export class HermesRuntime implements RuntimeClient {
   constructor(
-    private readonly client: HermesClient,
+    private readonly authoringClient: HermesClient,
+    private readonly opsClient: HermesClient,
     private readonly model: string,
   ) {}
 
@@ -30,7 +33,7 @@ export class HermesRuntime implements RuntimeClient {
 
   async sendAuthoringTurn(input: AuthoringTurnInput): Promise<AuthoringTurnOutcome> {
     const conversation = HermesRuntime.conversationFor(input.workspaceId);
-    const result = await this.client.sendResponse({
+    const result = await this.authoringClient.sendResponse({
       model: this.model,
       conversation,
       input: input.text,
@@ -39,7 +42,7 @@ export class HermesRuntime implements RuntimeClient {
   }
 
   async runCaptureTask(input: CaptureTaskInput): Promise<CaptureTaskOutcome> {
-    const runId = await this.client.submitRun({
+    const runId = await this.opsClient.submitRun({
       // The task brief names the taskId the agent must pass to submit_proposal;
       // the control plane created it, the agent cannot invent one.
       input: [
@@ -51,7 +54,7 @@ export class HermesRuntime implements RuntimeClient {
       instructions: input.context,
       sessionId: input.taskId,
     });
-    const result = await this.client.streamRunToCompletion(runId);
+    const result = await this.opsClient.streamRunToCompletion(runId);
     if (result.status === 'failed') {
       throw new Error(`capture run ${runId} failed: ${result.error}`);
     }
