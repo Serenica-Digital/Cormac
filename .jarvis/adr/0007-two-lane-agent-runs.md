@@ -77,3 +77,14 @@ run` when the slot lacks the name (verified). Forgetting it fails loud (401), no
 - **Per-request model override on the gateway:** not supported by the platform
   (`-m/--provider` pair with one-shots; gateway model overrides are interactive
   slash-commands only) — hence `config set` at launch.
+
+## Clarification (2026-07-13, owner ruling)
+
+The evidence rule gates claims and verdicts, never merges to `dev`. Sessions had
+silently inflated "metered re-proof pending (#76)" into "do not merge PR #110"; the
+owner rejected that reading and #110 merged to dev the same day (merge `4125497`).
+Merge owner-wanted improvements to the work trunk and attach the evidence caveat to
+the claims: VERDICT.md, ADR claims, and cost/behavior conclusions still update only
+from metered staging runs. Gating follow-up edits (docs, PRD) on a merge the session
+can perform itself is the same misread; the pattern recurred once (2026-07-13,
+architecture edits held "until #117 merges") before this clarification was written.

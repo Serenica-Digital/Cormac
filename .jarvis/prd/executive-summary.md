@@ -93,3 +93,26 @@ in v2); the stale pane-first milestones M1-M8 were archived. The two build long 
 are data import (#98) and EKS (#68); the two owner-side external clocks to start now are A2P 10DLC
 (#102) and SMTP+OAuth registrations (#103). The 2026-07-09 "next step is the human-played
 interview" framing is folded into Beta 1 and the pilot checkpoint.
+
+## Current stage (2026-07-13)
+
+The Book is on `dev` (#112/#116: one fused room, flat nav, create-only workbook import,
+the `semantic` attention tag, per-change decisions, server-side conversation). The
+interview cadence retune (PR #110) merged to dev the same day by owner direction,
+settling a process rule now recorded in ADR-0007: the evidence rule gates claims, never
+merges; the metered re-proof (#76) still gates the claims and now covers cadence, the
+attention beat, the ops `last_touch` carve-out, and the learning/recall steps. An
+owner-commissioned agent-system round produced ADR-0015 (workspace knowledge layer: the
+CRM is the agent's memory) and ADR-0016 (runtime fleet: one gateway pair per workspace,
+conversations rebuilt from server truth), both Proposed and awaiting owner decision. The
+governed-learning spike (PR #117: `learned_knowledge`, `propose_learning` +
+`search_history`, review routes, prefix compile, control-register row 29) and the agent
+eval suite (PR #122: 18 machine-graded scenarios over the real product path, tracked
+baselines, an orchestrator-model eval-cycle skill for a recurring self-improvement loop;
+issue #121) both merged to dev 2026-07-13; post-merge verification 111/111 tests across
+24 files, typecheck, and `check:controls` green (29 rows). The suite's first full run:
+15 PASS / 1 FAIL / 2 MANUAL — the FAIL reproduces the known ADR-0008 relative-numeric
+gap, and the played interview published a valid contract on first submit but ran 19
+turns against a new graded budget of 12 (dev lane). Open: ADR-0015/0016 accept/reject;
+the post-retune cadence re-play (started, result never recorded); the beta long poles
+(#68, #100) and owner-side clocks (#102, #103) unchanged.

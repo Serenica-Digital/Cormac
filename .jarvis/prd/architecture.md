@@ -57,8 +57,9 @@ flowchart TB
   workspace context rides the `instructions` seam. Transport pattern is live-proven in the
   sibling Jarvis project (see `.jarvis/research/jarvis-project-digest.md`).
 - **Contract + knowledge layer**: published versioned contract per workspace; typed
-  governed learning (record-bound aliases, enum synonyms) behind a review gate; compiled
-  into the cached prefix. Prose memory rejected by design. Date/datetime fields may carry
+  governed learning (record-bound aliases, enum synonyms) behind a review gate; built as
+  `learned_knowledge` with propose-only staging and audited human decisions (PR #117,
+  register row 29); compiled into the cached prefix. Prose memory rejected by design. Date/datetime fields may carry
   an optional `semantic` tag (`last_touch` | `follow_up`), so surfaces and agents act on
   attention meaning without hardcoded column names (drives the Book's "what needs you
   today" greeting, chips, and default ordering; the authoring interview elicits it, and
@@ -88,9 +89,10 @@ Both agents reach data through the control plane's `/agent/*` API; the seam ques
 only ever how a tool call leaves the model. For the **operations agent** it is settled
 (ADR-0008): typed tools registered by the per-profile `cormac-ops` plugin
 (`evals/ops-capture/plugin/`), handlers making stateless HTTP calls — no shell, no MCP
-callback, no connection state. The ops profile is locked down to exactly those three
-tools, with memory, user profile, and curator off, and its whole procedure in SOUL.md
-(no skills toolset). The **authoring agent** now runs the same shape (ADR-0008, landed
+callback, no connection state. The ops profile is locked down to exactly those five
+tools (`search_records`, `get_record`, `submit_proposal`, plus ADR-0015's
+`propose_learning` and `search_history`, landed with PR #117), with memory, user
+profile, and curator off, and its whole procedure in SOUL.md (no skills toolset). The **authoring agent** now runs the same shape (ADR-0008, landed
 2026-07-08, PR #75): a typed `cormac-authoring` plugin (`read_workbook`,
 `submit_contract`) over `/agent/*`, terminal and all default toolsets off. It **keeps**
 the skills toolset — the interview is a skill — and neutralizes self-modification with

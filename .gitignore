@@ -18,3 +18,9 @@ supabase/.temp/
 
 # Personal Claude Code settings (machine-specific hook paths)
 .claude/settings.local.json
+
+# Rendered Helm output (regenerable from charts; carries the staging Supabase URL)
+deploy/rendered/
+
+# macOS noise
+.DS_Store
