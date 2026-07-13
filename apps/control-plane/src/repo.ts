@@ -297,15 +297,17 @@ export async function getProposalStatuses(
   db: Db,
   workspaceId: string,
   ids: string[],
-): Promise<Array<{ id: string; status: ProposalStatus }>> {
+): Promise<Array<{ id: string; status: ProposalStatus; created_by: string | null }>> {
   if (ids.length === 0) return [];
   const { data, error } = await db
     .from('agent_proposals')
-    .select('id, status')
+    .select('id, status, created_by')
     .eq('workspace_id', workspaceId)
     .in('id', ids);
   if (error) throw new Error(`getProposalStatuses: ${error.message}`);
-  return (data as Array<{ id: string; status: ProposalStatus }> | null) ?? [];
+  return (
+    (data as Array<{ id: string; status: ProposalStatus; created_by: string | null }> | null) ?? []
+  );
 }
 
 export interface WorkspaceMembership {

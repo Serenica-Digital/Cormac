@@ -38,6 +38,12 @@ export interface TimelineEntry {
   channel: string | null;
   proposalId: string | null;
   proposalStatus: string | null;
+  /**
+   * True when the change was authored directly by a human (grid edit,
+   * import): the source content is provenance, not something anyone said,
+   * so the UI must not quote it.
+   */
+  direct: boolean;
   before: Record<string, unknown> | null;
   after: Record<string, unknown> | null;
 }
@@ -63,10 +69,11 @@ export async function recordTimeline(
     getProposalStatuses(app.db, workspaceId, proposalIds),
   ]);
   const messageById = new Map(messages.map((m) => [m.id, m]));
-  const statusById = new Map(proposals.map((p) => [p.id, p.status]));
+  const proposalById = new Map(proposals.map((p) => [p.id, p]));
 
   return events.map((e) => {
     const message = e.source_message_id ? messageById.get(e.source_message_id) : undefined;
+    const proposal = e.proposal_id ? proposalById.get(e.proposal_id) : undefined;
     return {
       id: e.id,
       at: e.created_at,
@@ -75,7 +82,8 @@ export async function recordTimeline(
       utterance: message?.content ?? null,
       channel: message?.channel ?? null,
       proposalId: e.proposal_id,
-      proposalStatus: e.proposal_id ? (statusById.get(e.proposal_id) ?? null) : null,
+      proposalStatus: proposal?.status ?? null,
+      direct: proposal?.created_by != null,
       before: e.before,
       after: e.after,
     };

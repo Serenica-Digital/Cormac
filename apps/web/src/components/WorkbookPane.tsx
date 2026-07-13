@@ -1,13 +1,12 @@
-import { useRef, useState } from 'react';
-import { Link, useParams } from 'react-router';
-import { useContract, useWorkbookUpload } from '../api/hooks';
-import { useMyRole, can } from '../lib/authz';
+import { useMemo, useRef, useState } from 'react';
+import { useParams } from 'react-router';
 import { Button } from '@/components/ui/button';
-import { typeWord, WorkbookPreview } from '../components/WorkbookPreview';
-import { ErrorNote, PageHeader, SectionLabel, SetupPending, Spinner } from '../components/kit';
+import { useWorkbookUpload } from '../api/hooks';
+import { typeWord, WorkbookPreview } from './WorkbookPreview';
+import { ErrorNote, SectionLabel } from './kit';
 import { detectSheet, toDetectionProfile } from '../workbook/detect';
 import { parseWorkbookFile } from '../workbook/parse';
-import { saveParsedWorkbook } from '../workbook/store';
+import { loadParsedWorkbook, saveParsedWorkbook } from '../workbook/store';
 import type { DetectionProfile, ParsedWorkbook } from '../workbook/types';
 
 function slugify(name: string): string {
@@ -21,39 +20,45 @@ function slugify(name: string): string {
   );
 }
 
-/** Sharing a workbook feeds contract publishing, so it carries the same gate. */
-export function Workbook() {
-  const { workspaceId = '' } = useParams();
-  const { role } = useMyRole(workspaceId);
-  const contract = useContract(workspaceId);
-  if (role === null) {
-    return (
-      <div className="flex justify-center py-20 text-stone-400">
-        <Spinner />
-      </div>
-    );
-  }
-  if (!can(role, 'publish_contract')) {
-    return <SetupPending workspaceId={workspaceId} live={Boolean(contract.data)} />;
-  }
-  return <WorkbookUpload />;
-}
-
-function WorkbookUpload() {
+/**
+ * The Book's left pane before the book is live: the client's workbook, from
+ * upload through the interview. When Cormac mentions columns in the
+ * conversation beside it, they highlight here. The file itself never leaves
+ * the browser; only the structure summary is shared.
+ */
+export function WorkbookPane({ lastCormacText }: { lastCormacText?: string }) {
   const { workspaceId = '' } = useParams();
   const fileInput = useRef<HTMLInputElement>(null);
-  const [parsed, setParsed] = useState<ParsedWorkbook | null>(null);
+  const [parsed, setParsed] = useState<ParsedWorkbook | null>(() =>
+    loadParsedWorkbook(workspaceId),
+  );
   const [jsonProfile, setJsonProfile] = useState<DetectionProfile | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [uploaded, setUploaded] = useState(false);
   const [activeSheetName, setActiveSheetName] = useState<string | null>(null);
   const upload = useWorkbookUpload(workspaceId);
 
+  // Columns Cormac just mentioned in the conversation highlight in the preview.
+  const highlights = useMemo(() => {
+    const set = new Set<string>();
+    if (!lastCormacText || !parsed) return set;
+    const text = lastCormacText.toLowerCase();
+    for (const sheet of parsed.sheets) {
+      const headers = sheet.grid[sheet.headerRowIndex] ?? [];
+      for (const h of headers) {
+        const header = h.trim();
+        if (header.length >= 3 && text.includes(header.toLowerCase())) {
+          set.add(header.toLowerCase());
+        }
+      }
+    }
+    return set;
+  }, [lastCormacText, parsed]);
+
   async function onFile(file: File) {
     setParseError(null);
     setUploaded(false);
     setJsonProfile(null);
-    setParsed(null);
     try {
       if (import.meta.env.DEV && file.name.endsWith('.json')) {
         // Dev-only convenience: a pre-built detection profile (the eval fixtures).
@@ -85,12 +90,11 @@ function WorkbookUpload() {
     );
   }
 
-  function submit() {
+  function share() {
     const profile = jsonProfile ?? (parsed ? toDetectionProfile(parsed) : null);
     if (!profile) return;
-    const name = slugify(profile.workbookName);
     upload.mutate(
-      { name, profile },
+      { name: slugify(profile.workbookName), profile },
       {
         onSuccess: () => {
           setUploaded(true);
@@ -106,14 +110,19 @@ function WorkbookUpload() {
   const activeColumns = activeSheet ? detectSheet(activeSheet).columns : [];
 
   return (
-    <div className="mx-auto w-full max-w-4xl">
-      <PageHeader
-        title="Your workbook"
-        sub="Bring the spreadsheet your business lives in. Cormac reads a summary of its structure when you talk. The file itself never leaves your browser."
-      />
+    <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
+      <header className="mb-4">
+        <h1 className="font-display text-2xl font-[560] text-ink">Your workbook</h1>
+        <p className="mt-1 max-w-lg text-sm text-stone-500">
+          The spreadsheet your business lives in. Cormac reads its structure while you talk, and
+          turns it into your book. The file never leaves your browser.
+        </p>
+      </header>
 
       <div
-        className="mb-6 cursor-pointer rounded-xl border-2 border-dashed border-stone-300 bg-card/60 px-4 py-8 text-center transition-colors hover:border-ledger-400 hover:bg-ledger-50/40 md:px-6 md:py-10"
+        className={`mb-5 cursor-pointer rounded-xl border-2 border-dashed border-stone-300 bg-card/60 text-center transition-colors hover:border-ledger-400 hover:bg-ledger-50/40 ${
+          parsed ? 'px-4 py-4' : 'px-4 py-10'
+        }`}
         onClick={() => fileInput.current?.click()}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
@@ -122,12 +131,14 @@ function WorkbookUpload() {
           if (file) void onFile(file);
         }}
       >
-        <div className="font-display text-xl text-stone-600">
-          Drop your workbook here, or click to choose
+        <div className={`font-display text-stone-600 ${parsed ? 'text-sm' : 'text-xl'}`}>
+          {parsed ? 'Drop a different workbook, or click to choose' : 'Drop your workbook here, or click to choose'}
         </div>
-        <div className="mt-1 text-sm text-stone-400">
-          Excel files (.xlsx){import.meta.env.DEV ? ' — or a .detected.json fixture in dev' : ''}
-        </div>
+        {!parsed && (
+          <div className="mt-1 text-sm text-stone-400">
+            Excel files (.xlsx){import.meta.env.DEV ? ' — or a .detected.json fixture in dev' : ''}
+          </div>
+        )}
         <input
           ref={fileInput}
           type="file"
@@ -144,10 +155,18 @@ function WorkbookUpload() {
 
       {parsed && (
         <section className="animate-rise">
-          <SectionLabel>Check it looks right before sharing</SectionLabel>
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <SectionLabel>Check it looks right</SectionLabel>
+            {highlights.size > 0 && (
+              <span className="text-xs text-muted-foreground">
+                Cormac just mentioned {highlights.size} of your columns
+              </span>
+            )}
+          </div>
           <div className="mt-2">
             <WorkbookPreview
               sheets={parsed.sheets}
+              highlightHeaders={highlights}
               onHeaderRowChange={setHeaderRow}
               onActiveSheetChange={setActiveSheetName}
             />
@@ -180,20 +199,13 @@ function WorkbookUpload() {
       )}
 
       {ready && (
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <Button onClick={submit} busy={upload.isPending}>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <Button onClick={share} busy={upload.isPending}>
             Share with Cormac
           </Button>
           {uploaded && (
             <span className="text-sm text-ledger-700">
-              Cormac has your workbook — next,{' '}
-              <Link
-                to={`/w/${workspaceId}/interview`}
-                className="font-medium underline decoration-ledger-300 underline-offset-2 hover:decoration-ledger-600"
-              >
-                start the conversation
-              </Link>
-              .
+              Cormac has it — say hello in the conversation and set up your book.
             </span>
           )}
         </div>

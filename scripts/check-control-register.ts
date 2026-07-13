@@ -37,6 +37,11 @@ const QA_EXEMPT: { path: string; reason: string }[] = [
       'Correctness of in-browser workbook shape detection; the data-handling posture (what leaves the browser) is register row 26.',
   },
   {
+    path: 'apps/web/tests/mapImport.test.ts',
+    reason:
+      'Correctness of in-browser workbook->records mapping and type coercion; the enforced write gate is register row 27 (commit endpoint) and the data boundary is row 26.',
+  },
+  {
     path: 'apps/web/tests/nav.test.ts',
     reason:
       'Presentation: role/stage-gated navigation copy. The enforced controls are server-side authz, rows 8-11.',
@@ -52,9 +57,14 @@ const QA_EXEMPT: { path: string; reason: string }[] = [
       'Presentation: the People page mirrors server rules in UI. The enforced invariants are rows 9-10 (membership suite).',
   },
   {
-    path: 'apps/web/tests/proposal-card.test.tsx',
+    path: 'apps/web/tests/attention.test.ts',
     reason:
-      'Presentation: approve/reject render gating. The enforced control is row 9 (approve_proposal in the RBAC matrix).',
+      'Presentation: pure client-side "needs you" classification from semantic tags. It reads records the user can already see; writes stay behind rows 5-7 and 27.',
+  },
+  {
+    path: 'packages/contract/tests/semantic.test.ts',
+    reason:
+      'Correctness of the contract meta-schema (semantic tag shape/type guard). The write gate that enforces contracts is rows 5-7; semantics grant no write ability.',
   },
 ];
 

@@ -1,6 +1,6 @@
 # Control register
 
-> **Status:** canonical · **Last reviewed:** 2026-07-09
+> **Status:** canonical · **Last reviewed:** 2026-07-12
 
 The spine of this packet. Every security claim maps to an enforced control in
 code, the test that proves it, and the packet doc that summarizes it. If a
@@ -53,6 +53,7 @@ comma-separated. Non-file evidence is plain prose with no path.
 | 24 | API rate limiting | Not built. Appears in the v0 architecture diagram; there is no rate limiting in v2 code | — | [known-gaps-and-roadmap.md](known-gaps-and-roadmap.md) | Planned |
 | 25 | Backups exist and restore is drilled | Local stack is disposable; staging is managed Supabase (backup tier to confirm); no restore drill has been run | — | [known-gaps-and-roadmap.md](known-gaps-and-roadmap.md) | Planned |
 | 26 | The workbook file itself never leaves the browser; the uploaded detection profile carries limited samples | `.xlsx` parsing is fully in-browser ([parse.ts](../../apps/web/src/workbook/parse.ts)); the detection profile uploads up to 3 sample values per column and 2 sample rows per sheet ([detect.ts](../../apps/web/src/workbook/detect.ts)); parsed grids persist unencrypted in browser localStorage ([store.ts](../../apps/web/src/workbook/store.ts)) | code review; detection correctness has a test but the boundary itself does not | [data-handling.md](data-handling.md) | Partial |
+| 27 | Direct human record edits and workbook import apply through one governed gate: authorization, human-editability, and an atomic apply audited as a user change | `commitHumanChanges` ([commit.ts](../../apps/control-plane/src/pipeline/commit.ts)) behind `requireCapability('edit_records')` (rides the approve set, so a member cannot self-apply); validated for human editability via `validateProposalAgainstContract(..., { editableBy: 'user' })`; written by `apply_proposal` with `created_by` set to the user | `apps/control-plane/tests/commit.test.ts` | [identity-and-access.md](identity-and-access.md) | Verified |
 
 ## How to use this register
 

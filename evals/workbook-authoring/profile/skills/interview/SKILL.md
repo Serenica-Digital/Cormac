@@ -47,6 +47,14 @@ You have two tools; you call them directly (there is no shell).
      **Rule:** when the client confirms the set is closed, encode it as an `enum` with
      those values as `enumOptions` — never as free-text `string`. Default to `string` only
      when the set is genuinely open.
+   - **attention (ask once per object that has date fields).** Ask how they spot who
+     needs a touch when they scan this list ("when you look at this sheet on a Monday,
+     how do you tell who needs a call: a follow-up column, a last-contact date?"). A date
+     column that means "when I last touched them" gets `"semantic": "last_touch"`; one
+     that means "when they next need attention" gets `"semantic": "follow_up"`. Cormac
+     uses these tags to surface follow-ups due and relationships going quiet, so capture
+     them whenever the client has such a rhythm. Skip the question only when the object
+     has no date columns and none are agreed.
    - how they refer to a record when they talk about it (identity). Record what they
      actually say, including the backup ("by name, firm if I forget") — the backup
      belongs in the identity fields too
@@ -58,7 +66,9 @@ You have two tools; you call them directly (there is no shell).
    Checkpoint when each object feels settled; recap it back in plain language.
 5. **Review (checkpoint) — non-skippable.** Before anything is published, walk the whole
    contract back in plain language: every object, its details, choices, identity, aliases,
-   the assistant's write permissions, and what is marked sensitive. Get the client's
+   the assistant's write permissions, what is marked sensitive, and any attention rules in
+   the client's own terms ("I'll treat 'Date Last Contacted' as when you last touched
+   someone, and surface follow-ups from 'Follow-Up Date' — right?"). Get the client's
    explicit agreement. This review always happens — never submit without it, and never
    skip or abbreviate it under time pressure. If the client is out of time ("I have a call
    in ten"), do not submit unreviewed: offer to pause and finish the review later. Anything
@@ -78,7 +88,10 @@ be a real field on the object), `aliases: [{ "canonical", "variants": [...] }]`.
 Each field: `fieldId` (stable, e.g. `fld_full_name`), `apiName` (snake_case), `label`,
 `type` (one of `string`, `text`, `number`, `boolean`, `date`, `datetime`, `enum`,
 `email`, `phone`, `relationship`), `required`, `editableByUser`, `editableByAgent`,
-`sensitive`, optional `excelColumn` (the source column header, keep it for traceability).
+`sensitive`, optional `excelColumn` (the source column header, keep it for traceability),
+optional `semantic` (`"last_touch"` or `"follow_up"`; valid on `date`/`datetime` fields
+only). `semantic` records what the date means to the business's rhythm: `last_touch` is
+when the record was last contacted or worked, `follow_up` is when it next needs attention.
 An `enum` field must carry non-empty `enumOptions`. A `relationship` field must carry
 `relationshipTargetType` (the target object's `apiName`).
 
@@ -102,3 +115,10 @@ comma-separated string or an array will fail ("Expected object, received string/
 Drop any column that is clearly a formula or derived value (e.g. "Days Since Contact"
 computed from a date). Confirm with the client if unsure — but when they say "I never
 touch it, it's a formula," drop it without further ceremony.
+
+A dropped formula is still evidence. A derived column like "Days Since Contact" is the
+client's attention rule written down; drop the column, keep the meaning. Trace it to its
+source date field, confirm in plain terms ("so 'Days Since Contact' counts from 'Date
+Last Contacted', and that's how you spot who's gone quiet?"), and set the source field's
+`semantic` accordingly. Never let the rule a formula encoded leave the contract with the
+formula.

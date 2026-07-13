@@ -48,30 +48,22 @@ const PASSWORD = process.env.SMOKE_PASSWORD ?? 'cormac-demo';
 const SHOTS = new URL('../../.jarvis/tmp/notes/render-smoke/shots/', import.meta.url).pathname;
 mkdirSync(SHOTS, { recursive: true });
 
-const PAGES = [
-  'start',
-  'interview',
-  'workbook',
-  'inbox',
-  'records',
-  'contract',
-  'audit',
-  'members',
-];
+// start/interview/workbook/inbox redirect into the Book (records) now.
+const PAGES = ['records', 'import', 'contract', 'audit', 'members'];
 const VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
   { name: 'mobile', width: 390, height: 844 },
 ];
 
 // Role expectations for the demo personas (docs/dev/demo-accounts.md):
-// what the sidebar reveals and whether the capture box exists. Checked on
-// desktop only (the mobile sidebar lives in a sheet).
+// what the sidebar reveals and whether the Cormac panel's composer exists.
+// Checked on desktop only (the mobile sidebar lives in a sheet).
 const ROLE_CHECKS = {
-  owner: { people: true, setupTools: true, capture: true },
-  admin: { people: true, setupTools: true, capture: true },
-  manager: { people: false, setupTools: false, capture: true },
-  member: { people: false, setupTools: false, capture: true },
-  viewer: { people: false, setupTools: false, capture: false },
+  owner: { people: true, capture: true },
+  admin: { people: true, capture: true },
+  manager: { people: false, capture: true },
+  member: { people: false, capture: true },
+  viewer: { people: false, capture: false },
 };
 
 const problems = [];
@@ -147,10 +139,12 @@ for (const vp of VIEWPORTS) {
       console.log(`[${vp.name}] ws${wi}/${p} ok=${flags.length === 0} ${flags.join(' | ')}`);
     }
 
-    // Role flows: the nav and the capture box must match the persona.
+    // Role flows: the nav and the Cormac panel must match the persona. The
+    // composer lives in the Book's panel; pre-live it belongs to setup
+    // runners, live it belongs to capture-capable roles.
     const checks = EMAIL.endsWith('@demo.test') ? ROLE_CHECKS[EMAIL.split('@')[0]] : null;
     if (vp.name === 'desktop' && checks) {
-      await page.goto(`${BASE}/w/${ws}/inbox`, { waitUntil: 'networkidle' });
+      await page.goto(`${BASE}/w/${ws}/records`, { waitUntil: 'networkidle' });
       await page.waitForTimeout(400);
       const nav = await page
         .locator('[data-slot="sidebar-content"]')
@@ -164,17 +158,22 @@ for (const vp of VIEWPORTS) {
         }
       };
       expectNav('People', checks.people);
-      expectNav('Talk with Cormac', checks.setupTools);
+      for (const label of ['Book', 'History', 'Structure']) expectNav(label, true);
 
-      const hasCapture = (await page.locator('form textarea').count()) > 0;
-      if (hasCapture !== checks.capture) {
-        problems.push(
-          `[role] ws${wi}: capture box ${checks.capture ? 'missing' : 'present'} for ${EMAIL}`,
-        );
-      }
-      if (!checks.capture) {
-        const viewingNote = await page.getByText("You're viewing this book").count();
-        if (viewingNote === 0) problems.push(`[role] ws${wi}: viewer note missing for ${EMAIL}`);
+      const isLive = !nav.includes('Opens after setup');
+      if (isLive) {
+        const hasCapture = (await page.locator('aside form textarea').count()) > 0;
+        if (hasCapture !== checks.capture) {
+          problems.push(
+            `[role] ws${wi}: capture box ${checks.capture ? 'missing' : 'present'} for ${EMAIL}`,
+          );
+        }
+        if (!checks.capture) {
+          // A viewer never gets decision buttons, no matter what is pending.
+          if ((await page.getByRole('button', { name: 'Approve' }).count()) > 0) {
+            problems.push(`[role] ws${wi}: viewer sees an Approve button`);
+          }
+        }
       }
 
       // Direct URL must not out-privilege the nav.
@@ -193,7 +192,7 @@ for (const vp of VIEWPORTS) {
 
     // Mobile: exercise the sidebar sheet trigger on one page.
     if (vp.name === 'mobile') {
-      await page.goto(`${BASE}/w/${ws}/inbox`, { waitUntil: 'networkidle' });
+      await page.goto(`${BASE}/w/${ws}/records`, { waitUntil: 'networkidle' });
       const trigger = page.locator('header button').first();
       if (await trigger.isVisible()) {
         await trigger.click();

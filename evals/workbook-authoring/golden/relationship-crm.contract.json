@@ -31,9 +31,9 @@
         { "fieldId": "fld_relationship_lead", "apiName": "relationship_lead", "label": "Relationship lead", "type": "string", "editableByUser": true, "editableByAgent": false, "excelColumn": "Relationship Lead" },
         { "fieldId": "fld_coverage_area", "apiName": "coverage_area", "label": "Coverage area", "type": "string", "required": false, "editableByUser": true, "editableByAgent": true, "excelColumn": "Coverage Area" },
         { "fieldId": "fld_sport", "apiName": "sport", "label": "Sport", "type": "string", "required": false, "editableByUser": true, "editableByAgent": true, "excelColumn": "Sport" },
-        { "fieldId": "fld_date_last_contacted", "apiName": "date_last_contacted", "label": "Date last contacted", "type": "date", "editableByUser": true, "editableByAgent": true, "excelColumn": "Date Last Contacted" },
+        { "fieldId": "fld_date_last_contacted", "apiName": "date_last_contacted", "label": "Date last contacted", "type": "date", "editableByUser": true, "editableByAgent": true, "excelColumn": "Date Last Contacted", "semantic": "last_touch" },
         { "fieldId": "fld_days_since_contact", "apiName": "days_since_contact", "label": "Days since contact", "type": "number", "editableByUser": false, "editableByAgent": false, "excelColumn": "Days Since Contact" },
-        { "fieldId": "fld_follow_up_date", "apiName": "follow_up_date", "label": "Follow-up date", "type": "date", "editableByUser": true, "editableByAgent": true, "excelColumn": "Follow-Up Date" },
+        { "fieldId": "fld_follow_up_date", "apiName": "follow_up_date", "label": "Follow-up date", "type": "date", "editableByUser": true, "editableByAgent": true, "excelColumn": "Follow-Up Date", "semantic": "follow_up" },
         { "fieldId": "fld_opportunities_shown", "apiName": "opportunities_shown", "label": "Opportunities shown", "type": "number", "required": false, "editableByUser": true, "editableByAgent": true, "excelColumn": "Opportunities Shown" },
         { "fieldId": "fld_contact_notes", "apiName": "notes", "label": "Notes", "type": "text", "editableByUser": true, "editableByAgent": true, "excelColumn": "Notes" }
       ]
