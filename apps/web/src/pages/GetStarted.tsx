@@ -47,7 +47,7 @@ export function GetStarted() {
           sub="Cormac keeps it current from here. Tell it what happened; approve what's right."
         />
         <Button asChild size="lg">
-          <Link to={`/w/${workspaceId}/inbox`}>Open your Inbox</Link>
+          <Link to={`/w/${workspaceId}/records`}>Open your book</Link>
         </Button>
       </div>
     );

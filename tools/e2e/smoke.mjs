@@ -52,8 +52,8 @@ const PAGES = [
   'start',
   'interview',
   'workbook',
-  'inbox',
   'records',
+  'import',
   'contract',
   'audit',
   'members',
@@ -147,10 +147,12 @@ for (const vp of VIEWPORTS) {
       console.log(`[${vp.name}] ws${wi}/${p} ok=${flags.length === 0} ${flags.join(' | ')}`);
     }
 
-    // Role flows: the nav and the capture box must match the persona.
+    // Role flows: the nav and the Cormac panel must match the persona. The
+    // capture box lives in the Book's side panel and only exists once the
+    // book is live; a setup-stage workspace correctly shows none.
     const checks = EMAIL.endsWith('@demo.test') ? ROLE_CHECKS[EMAIL.split('@')[0]] : null;
     if (vp.name === 'desktop' && checks) {
-      await page.goto(`${BASE}/w/${ws}/inbox`, { waitUntil: 'networkidle' });
+      await page.goto(`${BASE}/w/${ws}/records`, { waitUntil: 'networkidle' });
       await page.waitForTimeout(400);
       const nav = await page
         .locator('[data-slot="sidebar-content"]')
@@ -166,15 +168,20 @@ for (const vp of VIEWPORTS) {
       expectNav('People', checks.people);
       expectNav('Talk with Cormac', checks.setupTools);
 
-      const hasCapture = (await page.locator('form textarea').count()) > 0;
-      if (hasCapture !== checks.capture) {
-        problems.push(
-          `[role] ws${wi}: capture box ${checks.capture ? 'missing' : 'present'} for ${EMAIL}`,
-        );
-      }
-      if (!checks.capture) {
-        const viewingNote = await page.getByText("You're viewing this book").count();
-        if (viewingNote === 0) problems.push(`[role] ws${wi}: viewer note missing for ${EMAIL}`);
+      const isLive = (await page.getByText("isn't set up yet").count()) === 0;
+      if (isLive) {
+        const hasCapture = (await page.locator('aside form textarea').count()) > 0;
+        if (hasCapture !== checks.capture) {
+          problems.push(
+            `[role] ws${wi}: capture box ${checks.capture ? 'missing' : 'present'} for ${EMAIL}`,
+          );
+        }
+        if (!checks.capture) {
+          const viewingNote = await page
+            .getByText('Changes waiting on a decision show here.')
+            .count();
+          if (viewingNote === 0) problems.push(`[role] ws${wi}: viewer note missing for ${EMAIL}`);
+        }
       }
 
       // Direct URL must not out-privilege the nav.
@@ -193,7 +200,7 @@ for (const vp of VIEWPORTS) {
 
     // Mobile: exercise the sidebar sheet trigger on one page.
     if (vp.name === 'mobile') {
-      await page.goto(`${BASE}/w/${ws}/inbox`, { waitUntil: 'networkidle' });
+      await page.goto(`${BASE}/w/${ws}/records`, { waitUntil: 'networkidle' });
       const trigger = page.locator('header button').first();
       if (await trigger.isVisible()) {
         await trigger.click();

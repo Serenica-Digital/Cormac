@@ -10,7 +10,6 @@ import { GetStarted } from './pages/GetStarted';
 import { Interview } from './pages/Interview';
 import { Workbook } from './pages/Workbook';
 import { ImportWorkbook } from './pages/ImportWorkbook';
-import { Inbox } from './pages/Inbox';
 import { Records } from './pages/Records';
 import { RecordDetail } from './pages/RecordDetail';
 import { ContractPage } from './pages/ContractPage';
@@ -20,7 +19,7 @@ import { OperatorLayout } from './pages/operator/OperatorLayout';
 import { OperatorWorkspaces } from './pages/operator/OperatorWorkspaces';
 import { OperatorWorkspaceDetail } from './pages/operator/OperatorWorkspaceDetail';
 
-/** Lands on the everyday Inbox once the book is live; on setup before then. */
+/** Lands on the Book once live; on setup before then. */
 function WorkspaceIndex() {
   const { workspaceId = '' } = useParams();
   const stage = useWorkspaceStage(workspaceId);
@@ -31,7 +30,13 @@ function WorkspaceIndex() {
       </div>
     );
   }
-  return <Navigate to={stage === 'live' ? 'inbox' : 'start'} replace />;
+  return <Navigate to={stage === 'live' ? 'records' : 'start'} replace />;
+}
+
+/** The Inbox merged into the Book (Cormac panel); old links still resolve. */
+function InboxRedirect() {
+  const { workspaceId = '' } = useParams();
+  return <Navigate to={`/w/${workspaceId}/records`} replace />;
 }
 
 const queryClient = new QueryClient({
@@ -66,7 +71,7 @@ const router = createBrowserRouter([
           { path: 'start', element: <GetStarted /> },
           { path: 'interview', element: <Interview /> },
           { path: 'workbook', element: <Workbook /> },
-          { path: 'inbox', element: <Inbox /> },
+          { path: 'inbox', element: <InboxRedirect /> },
           { path: 'records', element: <Records /> },
           { path: 'import', element: <ImportWorkbook /> },
           { path: 'records/:recordId', element: <RecordDetail /> },

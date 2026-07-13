@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { Button } from '@/components/ui/button';
-import {
-  useCommitRecords,
-  useContract,
-  useDecision,
-  useProposals,
-  useRecords,
-} from '../api/hooks';
+import { useCommitRecords, useContract, useProposals, useRecords } from '../api/hooks';
 import { useCan } from '../lib/authz';
-import { EmptyState, ErrorNote, PageHeader, Spinner } from '../components/kit';
-import { ProposalCard } from '../components/ProposalCard';
+import { EmptyState, ErrorNote, Spinner } from '../components/kit';
+import { CormacPanel } from '../components/CormacPanel';
 import { RecordGrid } from '../components/RecordGrid/RecordGrid';
 import { buildOverlay } from '../components/RecordGrid/overlay';
 import type { BusinessRecordRow } from '../api/types';
 
+/**
+ * The Book: the workspace's home. The grid IS the page, with Cormac in a side
+ * panel (ADR-0014). Cell edits stage here and commit as one audited batch;
+ * pending agent changes highlight on the cells they would touch and are
+ * decided in the panel.
+ */
 export function Records() {
   const { workspaceId = '' } = useParams();
   const contract = useContract(workspaceId);
@@ -23,10 +23,8 @@ export function Records() {
   const objectApiName = activeObject ?? objects[0]?.apiName;
   const records = useRecords(workspaceId, objectApiName);
   const pending = useProposals(workspaceId, 'pending');
-  const decision = useDecision(workspaceId);
   const commit = useCommitRecords(workspaceId);
   const can = useCan(workspaceId);
-  const canApprove = can('approve_proposal');
   const canEdit = can('edit_records');
 
   const object = objects.find((o) => o.apiName === objectApiName);
@@ -42,11 +40,6 @@ export function Records() {
   // Pending agent proposals, projected onto this object's grid.
   const { overlay, ghostRows, ghostIds } = useMemo(
     () => buildOverlay(pending.data ?? [], objectApiName),
-    [pending.data, objectApiName],
-  );
-  const objectProposals = useMemo(
-    () =>
-      (pending.data ?? []).filter((p) => p.changes.some((c) => c.objectApiName === objectApiName)),
     [pending.data, objectApiName],
   );
 
@@ -89,7 +82,7 @@ export function Records() {
 
   if (contract.isPending) {
     return (
-      <div className="flex justify-center py-16 text-stone-400">
+      <div className="flex flex-1 items-center justify-center text-stone-400">
         <Spinner />
       </div>
     );
@@ -97,17 +90,18 @@ export function Records() {
 
   if (contract.error) {
     return (
-      <div>
-        <PageHeader title="Records" />
-        <EmptyState
-          title="Your book isn't set up yet"
-          hint="One conversation with Cormac and your records will live here."
-          action={
-            <Button asChild variant="outline">
-              <Link to={`/w/${workspaceId}/start`}>Get started</Link>
-            </Button>
-          }
-        />
+      <div className="flex flex-1 items-center justify-center p-8">
+        <div className="w-full max-w-md">
+          <EmptyState
+            title="Your book isn't set up yet"
+            hint="One conversation with Cormac and your records will live here."
+            action={
+              <Button asChild variant="outline">
+                <Link to={`/w/${workspaceId}/start`}>Get started</Link>
+              </Button>
+            }
+          />
+        </div>
       </div>
     );
   }
@@ -115,95 +109,115 @@ export function Records() {
   const editCount = edits.size;
 
   return (
-    <div>
-      <PageHeader
-        title="Records"
-        sub={
-          canEdit
-            ? 'Your book, beside Cormac. Edit a cell to change it, or confirm a pending change; both apply through the same pipeline.'
-            : 'The current state of your book, beside Cormac. Pending changes show inline.'
-        }
-      />
+    <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+      <section className="flex min-h-0 min-w-0 flex-[2] flex-col">
+        <h1 className="sr-only">Your book</h1>
 
-      <div className="mb-4 flex flex-wrap gap-1">
-        {objects.map((o) => (
-          <button
-            key={o.apiName}
-            onClick={() => setActiveObject(o.apiName)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              o.apiName === objectApiName
-                ? 'bg-ink text-paper'
-                : 'text-stone-600 hover:bg-stone-100'
-            }`}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-
-      {objectProposals.length > 0 && (
-        <div className="mb-5 space-y-2">
-          <h2 className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
-            Pending changes ({objectProposals.length})
-          </h2>
-          {objectProposals.map((p) => (
-            <ProposalCard
-              key={p.id}
-              proposal={p}
-              contract={contract.data?.contract}
-              workspaceId={workspaceId}
-              onDecide={
-                canApprove ? (d) => decision.mutate({ proposalId: p.id, decision: d }) : undefined
-              }
-              deciding={decision.isPending && decision.variables?.proposalId === p.id}
-            />
+        {/* Toolbar: object tabs, count, actions. The grid below is the page. */}
+        <div className="flex flex-wrap items-center gap-x-1 gap-y-1 border-b border-border px-3 py-2">
+          {objects.map((o) => (
+            <button
+              key={o.apiName}
+              onClick={() => setActiveObject(o.apiName)}
+              className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+                o.apiName === objectApiName
+                  ? 'bg-ink text-paper'
+                  : 'text-stone-600 hover:bg-stone-100'
+              }`}
+            >
+              {o.label}
+            </button>
           ))}
-        </div>
-      )}
-
-      {editCount > 0 && (
-        <div className="mb-4 flex items-center gap-3 rounded-lg border border-ledger-200 bg-ledger-50/60 px-4 py-2.5">
-          <span className="text-sm text-ink">
-            {editCount} record{editCount === 1 ? '' : 's'} with unsaved edits
-          </span>
-          <div className="ml-auto flex gap-2">
-            <Button variant="outline" onClick={() => setEdits(new Map())} disabled={commit.isPending}>
-              Discard
-            </Button>
-            <Button onClick={saveEdits} busy={commit.isPending}>
-              Save changes
-            </Button>
+          {records.data && (
+            <span className="ml-2 text-xs text-stone-400">
+              {serverRows.length} record{serverRows.length === 1 ? '' : 's'}
+            </span>
+          )}
+          <div className="ml-auto flex items-center gap-3">
+            {canEdit && editCount === 0 && serverRows.length > 0 && (
+              <span className="hidden text-xs text-stone-400 xl:inline">
+                Double-click a cell to edit
+              </span>
+            )}
+            {canEdit && (
+              <Button asChild size="sm" variant="outline">
+                <Link to={`/w/${workspaceId}/import`}>Import</Link>
+              </Button>
+            )}
           </div>
         </div>
-      )}
-      {commit.error && <ErrorNote error={commit.error} />}
 
-      {records.isPending && (
-        <div className="flex justify-center py-8 text-stone-400">
-          <Spinner />
-        </div>
-      )}
-      {records.error && <ErrorNote error={records.error} />}
-      {serverRows.length === 0 && ghostRows.length === 0 && (
-        <EmptyState
-          title="No records yet"
-          hint="Import your workbook or capture a change to fill it."
-        />
-      )}
+        {commit.error && (
+          <div className="border-b border-border px-3 py-2">
+            <ErrorNote error={commit.error} />
+          </div>
+        )}
 
-      {displayRows.length > 0 && object && (
-        <div className="animate-rise h-[70vh] min-h-[24rem] min-w-0 overflow-hidden rounded-lg ring-1 ring-foreground/10">
-          <RecordGrid
-            workspaceId={workspaceId}
-            object={object}
-            rows={displayRows}
-            overlay={overlay}
-            ghostIds={ghostIds}
-            editing={canEdit}
-            onRowEdited={canEdit ? onRowEdited : undefined}
-          />
+        <div className="min-h-0 flex-1">
+          {records.isPending && (
+            <div className="flex h-full items-center justify-center text-stone-400">
+              <Spinner />
+            </div>
+          )}
+          {records.error && (
+            <div className="p-4">
+              <ErrorNote error={records.error} />
+            </div>
+          )}
+          {records.data && serverRows.length === 0 && ghostRows.length === 0 && (
+            <div className="flex h-full items-center justify-center p-8">
+              <div className="w-full max-w-md">
+                <EmptyState
+                  title="No records yet"
+                  hint="Bring in your spreadsheet, or tell Cormac what happened."
+                  action={
+                    canEdit ? (
+                      <Button asChild>
+                        <Link to={`/w/${workspaceId}/import`}>Import your rows</Link>
+                      </Button>
+                    ) : undefined
+                  }
+                />
+              </div>
+            </div>
+          )}
+          {displayRows.length > 0 && object && (
+            <RecordGrid
+              workspaceId={workspaceId}
+              object={object}
+              rows={displayRows}
+              overlay={overlay}
+              ghostIds={ghostIds}
+              editing={canEdit}
+              onRowEdited={canEdit ? onRowEdited : undefined}
+            />
+          )}
         </div>
-      )}
+
+        {/* Staged edits commit from here; pinned to the pane's bottom edge. */}
+        {editCount > 0 && (
+          <div className="flex items-center gap-3 border-t border-ledger-200 bg-ledger-50/60 px-4 py-2">
+            <span className="text-sm text-ink">
+              {editCount} record{editCount === 1 ? '' : 's'} with unsaved edits
+            </span>
+            <div className="ml-auto flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setEdits(new Map())}
+                disabled={commit.isPending}
+              >
+                Discard
+              </Button>
+              <Button size="sm" onClick={saveEdits} busy={commit.isPending}>
+                Save changes
+              </Button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <CormacPanel workspaceId={workspaceId} contract={contract.data?.contract} />
     </div>
   );
 }

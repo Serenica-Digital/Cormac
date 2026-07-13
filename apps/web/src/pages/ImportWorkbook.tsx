@@ -118,6 +118,12 @@ export function ImportWorkbook() {
 
   return (
     <div className="space-y-5">
+      <Link
+        to={`/w/${workspaceId}/records`}
+        className="text-sm text-stone-500 hover:text-stone-700"
+      >
+        ← Back to your book
+      </Link>
       <PageHeader
         title="Import your rows"
         sub="Bring the rows from your spreadsheet into your book. Only the columns you map are sent; the file stays on your device."
@@ -283,7 +289,7 @@ export function ImportWorkbook() {
                   </p>
                 )}
                 <Button asChild variant="outline" className="mt-2">
-                  <Link to={`/w/${workspaceId}/records`}>Open your records</Link>
+                  <Link to={`/w/${workspaceId}/records`}>Back to your book</Link>
                 </Button>
               </div>
             ) : (

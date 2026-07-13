@@ -15,15 +15,18 @@ export function ProposalCard({
   workspaceId,
   onDecide,
   deciding,
+  compact,
 }: {
   proposal: ProposalView;
   contract?: Contract;
   workspaceId: string;
   onDecide?: (decision: 'approve' | 'reject') => void;
   deciding?: boolean;
+  /** Narrow-column rendering (side panel): stacked field rows, tighter padding. */
+  compact?: boolean;
 }) {
   return (
-    <Card className="animate-rise gap-0 p-4">
+    <Card className={`animate-rise gap-0 ${compact ? 'p-3' : 'p-4'}`}>
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant={statusVariant(proposal.status)}>{proposal.status}</Badge>
         {proposal.uncertain && <Badge variant="pending">uncertain — check the assumption</Badge>}
@@ -60,9 +63,13 @@ export function ProposalCard({
                 {fieldNames.map((name) => (
                   <div
                     key={name}
-                    className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-x-3"
+                    className={
+                      compact
+                        ? 'flex flex-col gap-0.5'
+                        : 'flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-x-3'
+                    }
                   >
-                    <dt className="shrink-0 text-xs text-stone-500 sm:w-40">
+                    <dt className={`shrink-0 text-xs text-stone-500 ${compact ? '' : 'sm:w-40'}`}>
                       {fieldLabel(object, name)}
                     </dt>
                     <dd>

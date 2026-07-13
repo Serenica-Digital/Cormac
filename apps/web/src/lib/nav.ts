@@ -39,19 +39,14 @@ export function buildNav({ live, role }: { live: boolean; role: Role }): NavGrou
     groups.push({
       label: 'Your book',
       items: [
-        { to: 'inbox', label: 'Inbox', hint: 'Opens after setup', disabled: true },
-        { to: 'records', label: 'Records', hint: 'Opens after setup', disabled: true },
+        { to: 'records', label: 'Book', hint: 'Opens after setup', disabled: true },
         { to: 'audit', label: 'History', hint: 'Opens after setup', disabled: true },
       ],
     });
   } else {
     groups.push({
       items: [
-        { to: 'inbox', label: 'Inbox', hint: 'Tell Cormac what happened' },
-        { to: 'records', label: 'Records', hint: 'Your book, up to date' },
-        ...(can(role, 'edit_records')
-          ? [{ to: 'import', label: 'Import', hint: 'Add rows from a spreadsheet' }]
-          : []),
+        { to: 'records', label: 'Book', hint: 'Your records, beside Cormac' },
         { to: 'audit', label: 'History', hint: 'Every change, kept' },
       ],
     });
