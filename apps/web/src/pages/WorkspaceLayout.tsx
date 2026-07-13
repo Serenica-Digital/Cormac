@@ -2,6 +2,7 @@ import { Outlet, useLocation, useParams } from 'react-router';
 import { cn } from '@/lib/utils';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar, type WorkspaceStage } from '../components/app-sidebar';
+import { SearchPaletteHost } from '../components/SearchPalette';
 import { useContract, useWorkspaces } from '../api/hooks';
 import { useMyRole } from '../lib/authz';
 import { useSession } from '../auth/useSession';
@@ -56,6 +57,7 @@ export function WorkspaceLayout() {
           </div>
         )}
       </SidebarInset>
+      {stage === 'live' && <SearchPaletteHost workspaceId={workspaceId} />}
     </SidebarProvider>
   );
 }

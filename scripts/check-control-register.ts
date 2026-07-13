@@ -57,6 +57,11 @@ const QA_EXEMPT: { path: string; reason: string }[] = [
       'Presentation: the People page mirrors server rules in UI. The enforced invariants are rows 9-10 (membership suite).',
   },
   {
+    path: 'apps/web/tests/attention.test.ts',
+    reason:
+      'Presentation: pure client-side "needs you" classification from semantic tags. It reads records the user can already see; writes stay behind rows 5-7 and 27.',
+  },
+  {
     path: 'packages/contract/tests/semantic.test.ts',
     reason:
       'Correctness of the contract meta-schema (semantic tag shape/type guard). The write gate that enforces contracts is rows 5-7; semantics grant no write ability.',

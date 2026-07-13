@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { Link } from 'react-router';
 import type { Contract } from '@cormac/contract';
 import {
   AlertDialog,
@@ -16,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { useAuthoringTurn, useCapture, useDecision, useProposals } from '../api/hooks';
 import type { ProposalView } from '../api/types';
 import { fieldLabel, objectFor, recordTitle } from '../contract-helpers';
+import { dayOf, dayWord, type Attention, type AttentionItem } from '../lib/attention';
 import { useCan } from '../lib/authz';
 import { useRecordTitles } from '../lib/titles';
 import { ErrorNote } from './kit';
@@ -63,6 +65,7 @@ export function CormacPanel({
   workspaceId,
   stage,
   contract,
+  attention,
   canAdjust,
   onAdjust,
   onCormacSaid,
@@ -70,6 +73,8 @@ export function CormacPanel({
   workspaceId: string;
   stage: 'setup' | 'live';
   contract?: Contract;
+  /** What needs the user today (lib/attention.ts); drives the greeting. */
+  attention?: Attention;
   /** Whether "Adjust in the grid" applies to this proposal (active object, updates only). */
   canAdjust?: (p: ProposalView) => boolean;
   /** Stage the proposal's values as editable cells; the panel then rejects it. */
@@ -203,7 +208,10 @@ export function CormacPanel({
       </div>
 
       <div ref={scrollRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
-        {feed.length === 0 && (
+        {stage === 'live' && attention && (
+          <AttentionGreeting attention={attention} workspaceId={workspaceId} />
+        )}
+        {feed.length === 0 && !hasAttention(attention) && (
           <div className="py-8 text-center">
             <div className="font-display text-lg text-stone-500">
               {stage === 'setup' ? 'Start when you’re ready.' : 'This is your line to Cormac.'}
@@ -292,6 +300,81 @@ export function CormacPanel({
         </form>
       )}
     </aside>
+  );
+}
+
+function hasAttention(a?: Attention): boolean {
+  return !!a && (a.items.length > 0 || a.pendingCount > 0);
+}
+
+/**
+ * Cormac speaks first: what needs the user today, composed from the book's
+ * semantic tags. Deliberately templated and rule-based (no fake agent voice);
+ * upgrading it to the real agent is #115. Not persisted: it reflects the book
+ * right now, so it recomputes on every visit rather than piling up in history.
+ */
+function AttentionGreeting({
+  attention,
+  workspaceId,
+}: {
+  attention: Attention;
+  workspaceId: string;
+}) {
+  if (!hasAttention(attention)) return null;
+  const { followUps, stale, pendingCount } = attention;
+  const now = new Date();
+  const today = dayOf(now);
+  const salutation = now.getHours() < 12 ? 'Morning.' : now.getHours() < 18 ? 'Afternoon.' : 'Evening.';
+
+  const CAP = 4;
+  const names = (items: AttentionItem[], note: (i: AttentionItem) => string) => (
+    <>
+      {items.slice(0, CAP).map((i, idx) => (
+        <span key={i.recordId}>
+          {idx > 0 && ', '}
+          <Link
+            to={`/w/${workspaceId}/records/${i.recordId}`}
+            className="font-medium text-ink underline decoration-stone-300 underline-offset-2 hover:decoration-ink"
+          >
+            {i.title}
+          </Link>{' '}
+          ({note(i)})
+        </span>
+      ))}
+      {items.length > CAP && ` and ${items.length - CAP} more`}
+    </>
+  );
+
+  return (
+    <div className="animate-rise max-w-[95%]">
+      <div className="mb-1 text-2xs font-semibold tracking-[0.16em] text-ledger-700">CORMAC</div>
+      <div className="space-y-1.5 text-sm leading-relaxed text-stone-800">
+        <p>
+          {salutation}
+          {followUps.length > 0 && (
+            <>
+              {' '}
+              {followUps.length} follow-up{followUps.length === 1 ? '' : 's'} need
+              {followUps.length === 1 ? 's' : ''} you —{' '}
+              {names(followUps, (i) =>
+                i.kind === 'follow_up_overdue'
+                  ? `was due ${dayWord(i.date, today)}`
+                  : dayWord(i.date, today),
+              )}
+              .
+            </>
+          )}
+        </p>
+        {stale.length > 0 && (
+          <p>Gone quiet: {names(stale, (i) => `${-i.days} days`)}.</p>
+        )}
+        {pendingCount > 0 && (
+          <p>
+            {pendingCount} change{pendingCount === 1 ? ' is' : 's are'} waiting on your OK below.
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
 

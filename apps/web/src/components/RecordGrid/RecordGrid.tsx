@@ -14,6 +14,7 @@ import type { ContractField, ContractObject } from '@cormac/contract';
 import { Badge } from '@/components/ui/badge';
 import type { BusinessRecordRow } from '../../api/types';
 import { formatValue, formatWhen } from '@/lib/format';
+import type { GridSort } from '@/lib/recordSort';
 import { ValueDiff } from '../ValueDiff';
 import { FieldEditor } from './editors';
 import { orderedFields, gridColumnSize, gridColumnType } from './columns';
@@ -55,6 +56,8 @@ export function RecordGrid({
   titleById,
   editing,
   onRowEdited,
+  sort,
+  onSortChange,
 }: {
   workspaceId: string;
   object: ContractObject;
@@ -69,10 +72,34 @@ export function RecordGrid({
   editing?: boolean;
   /** Fires with the full updated row when a cell edit commits (client-side staging). */
   onRowEdited?: (row: BusinessRecordRow) => void;
+  /** The active header sort; rows arrive already ordered (lib/recordSort.ts). */
+  sort?: GridSort | null;
+  /** Header click: cycle this column's sort. Omit to render plain headers. */
+  onSortChange?: (field: string) => void;
 }) {
   const columns = useMemo<Grid.Column<Spec>[]>(() => {
     const fields = orderedFields(object);
     const identityApi = fields[0]?.apiName;
+
+    // Clickable header: label plus the sort arrow when this column drives order.
+    const sortableHeader = (id: string, name: string) =>
+      onSortChange
+        ? () => (
+            <button
+              type="button"
+              onClick={() => onSortChange(id)}
+              className="flex w-full min-w-0 cursor-pointer items-center gap-1 text-left"
+              title={`Sort by ${name}`}
+            >
+              <span className="truncate">{name}</span>
+              {sort?.field === id && (
+                <span aria-hidden className="shrink-0 text-ledger-700">
+                  {sort.dir === 'asc' ? '↑' : '↓'}
+                </span>
+              )}
+            </button>
+          )
+        : undefined;
 
     const isCellEditable = (f: ContractField, rec: BusinessRecordRow | undefined): boolean => {
       if (!rec) return false;
@@ -98,6 +125,7 @@ export function RecordGrid({
       type: gridColumnType(f.type),
       field: { kind: 'path', path: `data.${f.apiName}` },
       ...gridColumnSize(f, f.apiName === identityApi),
+      headerRenderer: sortableHeader(f.apiName, f.label),
       editable: editing
         ? (p: Grid.T.CellParamsWithIndex<Spec>) => isCellEditable(f, p.row.data as BusinessRecordRow)
         : undefined,
@@ -185,6 +213,7 @@ export function RecordGrid({
       width: 150,
       widthMin: 120,
       widthFlex: 0,
+      headerRenderer: sortableHeader('__updated', 'Updated'),
       cellRenderer: (params: CellParams) => {
         const rec = params.row.data as BusinessRecordRow | undefined;
         if (!rec || ghostIds?.has(rec.id))
@@ -194,7 +223,7 @@ export function RecordGrid({
     };
 
     return [...fieldColumns, updatedColumn];
-  }, [object, workspaceId, overlay, ghostIds, dirty, titleById, editing]);
+  }, [object, workspaceId, overlay, ghostIds, dirty, titleById, editing, sort, onSortChange]);
 
   const columnBase = useMemo(() => ({ resizable: true }), []);
 
