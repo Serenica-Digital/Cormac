@@ -1,0 +1,123 @@
+---
+title: Installation With Shadcn
+step: Install LyteNyte Grid using the shadcn CLI.
+description: Install LyteNyte Grid using the shadcn CLI. 1771 Technologies maintains a public registry
+  of preconfigured LyteNyte Grid components styled for shadcn.
+---
+
+## Before You Start
+
+Before adding LyteNyte Grid components, ensure your project is set up with shadcn.
+Follow the [shadcn/ui installation guide](https://ui.shadcn.com/docs/installation) for your framework
+to get started.
+
+## The LyteNyte Registry
+
+LyteNyte Grid components are available under the `@lytenyte` namespace.
+The shadcn CLI automatically locates the 1771 Technologies public registry. Run the following command to get started:
+
+<PackageDlx package="shadcn@latest add @lytenyte/lytenyte-core" />
+
+If you're using the PRO edition of LyteNyte Grid, run the following instead:
+
+<PackageDlx package="shadcn@latest add @lytenyte/lytenyte-pro" />
+
+After you run the command, shadcn adds a `lytenyte-core.tsx` or `lytenyte-pro.tsx` component file,
+along with a corresponding hook file (`use-lytenyte-core.tsx` or `use-lytenyte-pro.tsx`).
+
+Each component file includes the preconfigured, headless LyteNyte Grid
+parts for your project. Modify these as needed for your
+application. Depending on your import path configuration,
+importing the components is as simple as:
+
+<Tabs className="bg-fd-card">
+
+<Tab label="Core">
+
+```ts
+import { Grid } from "@/components/lytenyte-core";
+```
+
+</Tab>
+
+<Tab label="PRO">
+
+```ts
+import { Grid } from "@/components/lytenyte-pro";
+```
+
+</Tab>
+
+</Tabs>
+
+## Manual Installation
+
+Add `@1771technologies/lytenyte-core` or `@1771technologies/lytenyte-pro` to your project dependencies:
+
+<PackageInstall package="@1771technologies/lytenyte-core" />
+
+<PackageInstall package="@1771technologies/lytenyte-pro" />
+
+Next copy and paste the following code into your project:
+
+<Tabs>
+
+<Tab label="Core">
+
+```tsx
+import "@1771technologies/lytenyte-core/design.css";
+import "@1771technologies/lytenyte-core/shadcn.css";
+import "@1771technologies/lytenyte-core/grid.css";
+import { Grid } from "@1771technologies/lytenyte-core";
+
+export function LyteNyte<Spec extends Grid.GridSpec>(
+  props: Grid.Props<Spec> &
+    (undefined extends Spec["api"]
+      ? unknown
+      : {
+          apiExtension: ((incomplete: Grid.API<Spec>) => Spec["api"] | null) | Spec["api"];
+        }),
+) {
+  return (
+    <div className="ln-grid ln-shadcn h-full w-full">
+      <Grid {...props} />
+    </div>
+  );
+}
+```
+
+</Tab>
+
+<Tab label="PRO">
+
+```tsx
+import "@1771technologies/lytenyte-pro/design.css";
+import "@1771technologies/lytenyte-pro/shadcn.css";
+import "@1771technologies/lytenyte-pro/grid.css";
+import { Grid } from "@1771technologies/lytenyte-pro";
+
+export function LyteNyte<Spec extends Grid.GridSpec>(
+  props: Grid.Props<Spec> &
+    (undefined extends Spec["api"]
+      ? unknown
+      : {
+          apiExtension: ((incomplete: Grid.API<Spec>) => Spec["api"] | null) | Spec["api"];
+        }),
+) {
+  return (
+    <div className="ln-grid ln-shadcn h-full w-full">
+      <Grid {...props} />
+    </div>
+  );
+}
+```
+
+</Tab>
+
+</Tabs>
+
+## Next Steps
+
+::next[/docs/intro-getting-started]
+::next[/docs/grid-theming-tailwind]
+::next[/docs/grid-reactivity]
