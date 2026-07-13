@@ -9,7 +9,7 @@ import { cycleSort, sortRows, type GridSort } from '../lib/recordSort';
 import { useRecordTitles } from '../lib/titles';
 import { EmptyState, ErrorNote, SetupPending, Spinner } from '../components/kit';
 import { CormacPanel } from '../components/CormacPanel';
-import { openSearchPalette } from '../components/SearchPalette';
+import { openSearchPalette, searchShortcutLabel } from '../components/SearchPalette';
 import { WorkbookPane } from '../components/WorkbookPane';
 import { RecordGrid } from '../components/RecordGrid/RecordGrid';
 import { buildOverlay } from '../components/RecordGrid/overlay';
@@ -381,10 +381,10 @@ function LiveRoom({ workspaceId }: { workspaceId: string }) {
                   <button
                     type="button"
                     onClick={openSearchPalette}
-                    title="Search everything (⌘K)"
+                    title={`Search everything (${searchShortcutLabel})`}
                     className="absolute inset-y-0 right-1 my-auto hidden h-5 cursor-pointer rounded border border-border px-1 font-mono text-[10px] leading-none text-stone-400 hover:text-ink md:block"
                   >
-                    ⌘K
+                    {searchShortcutLabel}
                   </button>
                 </div>
               )}

@@ -19,6 +19,12 @@ export function openSearchPalette() {
   window.dispatchEvent(new Event(PALETTE_EVENT));
 }
 
+// The binding accepts both meta and ctrl everywhere; the label shows the
+// key this platform actually uses.
+const isApple =
+  typeof navigator !== 'undefined' && /Mac|iP(hone|od|ad)/.test(navigator.platform);
+export const searchShortcutLabel = isApple ? '⌘K' : 'Ctrl+K';
+
 /**
  * Mounts once per live workspace (WorkspaceLayout): owns the open state, the
  * Cmd/Ctrl+K binding, and the record data the palette searches.
