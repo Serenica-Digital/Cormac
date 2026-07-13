@@ -4,7 +4,12 @@ import { ProblemError } from '../shared.js';
 import type { AppContext } from '../app.js';
 import type { RequestContext } from '../types.js';
 import { compileWorkspaceContext } from './context.js';
-import { getActiveContract, getProposalBySourceMessage, insertSourceMessage } from '../repo.js';
+import {
+  getActiveContract,
+  getProposalBySourceMessage,
+  insertSourceMessage,
+  setSourceMessageAgentNote,
+} from '../repo.js';
 
 export interface CaptureResult {
   /** Null when the agent finished without submitting a proposal. */
@@ -69,13 +74,17 @@ export async function captureUpdate(
 
   const proposalRow = await getProposalBySourceMessage(db, workspaceId, sourceMessageId);
   if (!proposalRow) {
+    // The reply is conversational, not a proposal; keep it with the message it
+    // answered so the conversation view can replay it on any device.
+    const agentNote = outcome.output.slice(0, 2000);
+    await setSourceMessageAgentNote(db, { workspaceId, sourceMessageId, note: agentNote });
     return {
       proposalId: null,
       sourceMessageId,
       status: 'no_proposal',
       uncertain: false,
       changeCount: 0,
-      agentNote: outcome.output.slice(0, 2000),
+      agentNote,
     };
   }
 

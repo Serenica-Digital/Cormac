@@ -14,8 +14,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useAuthoringTurn, useCapture, useDecision, useProposals } from '../api/hooks';
+import { useAuthoringTurn, useCapture, useConversation, useDecision, useProposals } from '../api/hooks';
 import type { ProposalView } from '../api/types';
+import { useSession } from '../auth/useSession';
 import { fieldLabel, objectFor, recordTitle } from '../contract-helpers';
 import { dayOf, dayWord, type Attention, type AttentionItem } from '../lib/attention';
 import { useCan } from '../lib/authz';
@@ -36,16 +37,22 @@ interface ChatMessage {
   role: 'user' | 'cormac';
   text: string;
   at: string;
+  /** Author email and channel, when the server view knows them (live stage). */
+  author?: string | null;
+  channel?: string | null;
 }
 
 type FeedItem =
   | { kind: 'message'; at: string; message: ChatMessage }
-  | { kind: 'proposal'; at: string; proposal: ProposalView };
+  | { kind: 'proposal'; at: string; proposal: ProposalView }
+  | { kind: 'resolved'; at: string; proposal: ProposalView };
 
-// The setup key predates this component (the interview page); keep it so
-// existing transcripts survive the merge.
-const chatKey = (workspaceId: string, stage: 'setup' | 'live') =>
-  stage === 'setup' ? `cormac:interview:${workspaceId}` : `cormac:book:${workspaceId}`;
+// The live conversation is a server-side view over the pipeline's own tables
+// (source messages, stored agent replies, proposals), so every device and
+// teammate sees the same one. Only the setup interview still keeps a local
+// transcript: it is one owner in one sitting, and the authoring runtime holds
+// the authoritative conversation.
+const chatKey = (workspaceId: string) => `cormac:interview:${workspaceId}`;
 
 function loadChat(key: string): ChatMessage[] {
   try {
@@ -82,12 +89,20 @@ export function CormacPanel({
   /** Fires with Cormac's latest words (drives the workbook column highlights). */
   onCormacSaid?: (text: string) => void;
 }) {
-  const key = chatKey(workspaceId, stage);
-  const [messages, setMessages] = useState<ChatMessage[]>(() => loadChat(key));
+  const key = chatKey(workspaceId);
+  const [messages, setMessages] = useState<ChatMessage[]>(() =>
+    stage === 'setup' ? loadChat(key) : [],
+  );
   const [draft, setDraft] = useState('');
   const [lastFailed, setLastFailed] = useState<string | null>(null);
+  // Live-stage ephemera: the just-sent message while the run is in flight, and
+  // session-only guidance from actions (e.g. the adjust handoff). Server truth
+  // replaces the former; the latter is deliberately not history.
+  const [inflight, setInflight] = useState<ChatMessage | null>(null);
+  const [notices, setNotices] = useState<ChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const { session } = useSession();
   const canDo = useCan(workspaceId);
   const canTalk = stage === 'setup' ? canDo('publish_contract') : canDo('capture_update');
   const canApprove = canDo('approve_proposal');
@@ -95,50 +110,62 @@ export function CormacPanel({
   const authoring = useAuthoringTurn(workspaceId);
   const capture = useCapture(workspaceId);
   const decision = useDecision(workspaceId);
-  const pending = useProposals(workspaceId, stage === 'live' ? 'pending' : undefined);
+  const conversation = useConversation(workspaceId, stage === 'live');
+  const proposals = useProposals(workspaceId, stage === 'live' ? undefined : 'pending');
   const titleById = useRecordTitles(workspaceId, contract);
   const busy = authoring.isPending || capture.isPending;
   const sendError = authoring.error ?? capture.error;
 
   useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(messages));
-  }, [messages, key]);
+    if (stage === 'setup') localStorage.setItem(key, JSON.stringify(messages));
+  }, [messages, key, stage]);
 
   const feed = useMemo<FeedItem[]>(() => {
-    const items: FeedItem[] = messages.map((m) => ({ kind: 'message', at: m.at, message: m }));
-    if (stage === 'live') {
-      for (const p of pending.data ?? []) {
-        items.push({ kind: 'proposal', at: p.createdAt, proposal: p });
-      }
+    if (stage === 'setup') {
+      return messages.map((m) => ({ kind: 'message', at: m.at, message: m }) as FeedItem);
     }
+    const items: FeedItem[] = (conversation.data ?? []).map((e) => ({
+      kind: 'message',
+      at: e.at,
+      message: { role: e.role, text: e.text, at: e.at, author: e.author, channel: e.channel },
+    }));
+    for (const p of proposals.data ?? []) {
+      if (p.status === 'pending') items.push({ kind: 'proposal', at: p.createdAt, proposal: p });
+      else items.push({ kind: 'resolved', at: p.decidedAt ?? p.createdAt, proposal: p });
+    }
+    for (const n of notices) items.push({ kind: 'message', at: n.at, message: n });
+    if (inflight) items.push({ kind: 'message', at: inflight.at, message: inflight });
     return items.sort((a, b) => a.at.localeCompare(b.at));
-  }, [messages, pending.data, stage]);
+  }, [messages, conversation.data, proposals.data, notices, inflight, stage]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [feed.length, busy]);
 
+  // Setup only: the local transcript is the record of the interview.
   const say = (text: string) => {
     setMessages((prev) => [...prev, { role: 'cormac', text, at: new Date().toISOString() }]);
     onCormacSaid?.(text);
   };
 
+  // Live only: session guidance that is deliberately not history.
+  const notice = (text: string) =>
+    setNotices((prev) => [...prev, { role: 'cormac', text, at: new Date().toISOString() }]);
+
   function send(text: string) {
     setLastFailed(null);
-    setMessages((prev) => [...prev, { role: 'user', text, at: new Date().toISOString() }]);
     if (stage === 'setup') {
+      setMessages((prev) => [...prev, { role: 'user', text, at: new Date().toISOString() }]);
       authoring.mutate(text, {
         onSuccess: (outcome) => say(outcome.output),
         onError: () => setLastFailed(text),
       });
     } else {
+      // Echo locally while the run is in flight; the conversation query
+      // replaces it with the stored row when the capture settles.
+      setInflight({ role: 'user', text, at: new Date().toISOString() });
       capture.mutate(text, {
-        onSuccess: (result) => {
-          if (result.status === 'no_proposal') {
-            say(result.agentNote ?? 'Nothing in your book needs to change for that.');
-          }
-          // A proposal arrives in the feed itself (pending query invalidates).
-        },
+        onSettled: () => setInflight(null),
         onError: () => setLastFailed(text),
       });
     }
@@ -152,12 +179,19 @@ export function CormacPanel({
     send(text);
   }
 
-  function decide(p: ProposalView, verdict: 'approve' | 'reject') {
+  // The outcome itself renders as derived state (the resolved line); only the
+  // partial-approve nuance and the adjust handoff need a word of guidance.
+  function decide(p: ProposalView, verdict: 'approve' | 'reject', keep?: number[]) {
     decision.mutate(
-      { proposalId: p.id, decision: verdict },
+      { proposalId: p.id, decision: verdict, keep },
       {
-        onSuccess: () =>
-          say(verdict === 'approve' ? 'Done — it’s in your book.' : 'Okay, I’ve dropped that.'),
+        onSuccess: (result) => {
+          if (result.droppedCount > 0) {
+            notice(
+              `I kept ${result.applied.length} of ${result.applied.length + result.droppedCount} and dropped the rest.`,
+            );
+          }
+        },
       },
     );
   }
@@ -168,7 +202,7 @@ export function CormacPanel({
       { proposalId: p.id, decision: 'reject' },
       {
         onSuccess: () =>
-          say('I’ve put those values into your grid — fix what’s off and hit Save.'),
+          notice('I’ve put those values into your grid — fix what’s off and hit Save.'),
       },
     );
   }
@@ -184,7 +218,7 @@ export function CormacPanel({
               : 'Keeps your book. Nothing changes without your say-so.'}
           </p>
         </div>
-        {messages.length > 0 && (
+        {stage === 'setup' && messages.length > 0 && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="sm" className="shrink-0 text-muted-foreground">
@@ -228,7 +262,9 @@ export function CormacPanel({
 
         {feed.map((item, i) =>
           item.kind === 'message' ? (
-            <ChatBubble key={`m${i}`} message={item.message} />
+            <ChatBubble key={`m${i}`} message={item.message} myEmail={session?.user.email} />
+          ) : item.kind === 'resolved' ? (
+            <ResolvedLine key={`r${item.proposal.id}`} proposal={item.proposal} />
           ) : (
             <ProposalMessage
               key={item.proposal.id}
@@ -236,7 +272,7 @@ export function CormacPanel({
               contract={contract}
               titleFor={(id) => titleById.get(id)}
               deciding={decision.isPending && decision.variables?.proposalId === item.proposal.id}
-              onDecide={canApprove ? (v) => decide(item.proposal, v) : undefined}
+              onDecide={canApprove ? (v, keep) => decide(item.proposal, v, keep) : undefined}
               onAdjust={
                 canApprove && onAdjust && canAdjust?.(item.proposal)
                   ? () => adjust(item.proposal)
@@ -378,10 +414,18 @@ function AttentionGreeting({
   );
 }
 
-function ChatBubble({ message }: { message: ChatMessage }) {
+function ChatBubble({ message, myEmail }: { message: ChatMessage; myEmail?: string | null }) {
   if (message.role === 'user') {
+    // Who spoke and through which door, when it wasn't me typing here.
+    const eyebrow = [
+      message.author && message.author !== myEmail ? message.author : null,
+      message.channel && message.channel !== 'web' ? `via ${message.channel}` : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
     return (
-      <div className="animate-rise flex justify-end">
+      <div className="animate-rise flex flex-col items-end">
+        {eyebrow && <div className="mb-0.5 text-2xs text-stone-400">{eyebrow}</div>}
         <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-ink px-3.5 py-2 text-sm whitespace-pre-wrap text-paper">
           {message.text}
         </div>
@@ -398,10 +442,26 @@ function ChatBubble({ message }: { message: ChatMessage }) {
   );
 }
 
+/** A decided proposal, rendered as derived state rather than a stored message. */
+function ResolvedLine({ proposal }: { proposal: ProposalView }) {
+  const applied = proposal.status === 'applied';
+  return (
+    <div className="flex items-baseline gap-2 text-sm text-stone-400">
+      <span aria-hidden className={applied ? 'text-ledger-700' : ''}>
+        {applied ? '✓' : '✕'}
+      </span>
+      <span>{applied ? 'Done — it’s in your book.' : 'Okay, I’ve dropped that.'}</span>
+    </div>
+  );
+}
+
 /**
  * A change Cormac wants to make, said in the conversation: the diff plus the
  * decision. Approve applies it; Adjust hands the values to your grid to fix
- * yourself; Reject drops it. A correction in words is just the next message.
+ * yourself; Reject drops it. When Cormac proposes several changes at once,
+ * each can be skipped individually — Approve applies the kept ones and the
+ * skipped ones are dropped on the audit trail (#114). A correction in words
+ * is just the next message.
  */
 function ProposalMessage({
   proposal,
@@ -415,9 +475,30 @@ function ProposalMessage({
   contract?: Contract;
   titleFor: (id: string) => string | undefined;
   deciding: boolean;
-  onDecide?: (verdict: 'approve' | 'reject') => void;
+  onDecide?: (verdict: 'approve' | 'reject', keep?: number[]) => void;
   onAdjust?: () => void;
 }) {
+  const [skipped, setSkipped] = useState<ReadonlySet<number>>(new Set());
+  const total = proposal.changes.length;
+  const keptCount = total - skipped.size;
+  const skippable = onDecide !== undefined && total > 1;
+
+  const toggleSkip = (i: number) =>
+    setSkipped((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+
+  const approve = () =>
+    onDecide?.(
+      'approve',
+      skipped.size > 0
+        ? proposal.changes.map((_, i) => i).filter((i) => !skipped.has(i))
+        : undefined,
+    );
+
   return (
     <div className="animate-rise max-w-[95%]">
       <div className="mb-1 flex items-center gap-2">
@@ -435,19 +516,34 @@ function ProposalMessage({
             if (field?.type === 'relationship' && typeof v === 'string') return titleFor(v) ?? v;
             return v;
           };
+          const isSkipped = skipped.has(i);
           return (
             <div key={i}>
-              <div className="text-xs font-medium text-ink">
-                {change.op === 'create' ? 'New' : 'Update'}{' '}
-                {object?.label ?? change.objectApiName}
-                {change.op === 'update' && change.recordId && (
-                  <span className="text-stone-500">
-                    {' '}
-                    · {titleFor(change.recordId) ?? (change.current ? recordTitle(object, change.current) : '')}
-                  </span>
+              <div className="flex items-baseline gap-2">
+                <div
+                  className={`text-xs font-medium ${isSkipped ? 'text-stone-400 line-through' : 'text-ink'}`}
+                >
+                  {change.op === 'create' ? 'New' : 'Update'}{' '}
+                  {object?.label ?? change.objectApiName}
+                  {change.op === 'update' && change.recordId && (
+                    <span className="text-stone-500">
+                      {' '}
+                      · {titleFor(change.recordId) ?? (change.current ? recordTitle(object, change.current) : '')}
+                    </span>
+                  )}
+                </div>
+                {skippable && (
+                  <button
+                    type="button"
+                    onClick={() => toggleSkip(i)}
+                    disabled={deciding}
+                    className="ml-auto shrink-0 cursor-pointer text-xs text-stone-400 underline decoration-stone-300 underline-offset-2 hover:text-ink"
+                  >
+                    {isSkipped ? 'Keep this one' : 'Skip this one'}
+                  </button>
                 )}
               </div>
-              <dl className="mt-1.5 space-y-1">
+              <dl className={`mt-1.5 space-y-1 ${isSkipped ? 'opacity-40' : ''}`}>
                 {Object.keys(change.values).map((name) => (
                   <div key={name} className="flex flex-col gap-0.5">
                     <dt className="text-xs text-stone-500">{fieldLabel(object, name)}</dt>
@@ -469,8 +565,8 @@ function ProposalMessage({
         })}
         {onDecide ? (
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            <Button size="sm" onClick={() => onDecide('approve')} busy={deciding}>
-              Approve
+            <Button size="sm" onClick={approve} busy={deciding} disabled={keptCount === 0}>
+              {skipped.size > 0 ? `Approve ${keptCount} of ${total}` : 'Approve'}
             </Button>
             {onAdjust && (
               <Button size="sm" variant="outline" onClick={onAdjust} disabled={deciding}>
@@ -480,6 +576,9 @@ function ProposalMessage({
             <Button size="sm" variant="danger" onClick={() => onDecide('reject')} disabled={deciding}>
               Reject
             </Button>
+            {keptCount === 0 && (
+              <span className="text-xs text-stone-400">Everything is skipped — that's a Reject.</span>
+            )}
           </div>
         ) : (
           <p className="pt-1 text-xs text-stone-400">Waiting for a manager's OK.</p>

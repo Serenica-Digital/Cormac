@@ -6,10 +6,12 @@ import { loadConfig } from '../src/config.js';
 import { mintToken, requireSupabaseEnv, seedWorkspace, TestResources } from './helpers.js';
 
 /**
- * The two web-surface read routes (#77): GET /api/workspaces (the sign-in
- * picker) and GET .../records/:recordId/timeline (audit events joined with the
- * utterance and proposal behind each change). Read-only; the writes here are
- * test seeding through the service role. Skips without local Supabase.
+ * The web-surface read routes: GET /api/workspaces (the sign-in picker),
+ * GET .../records/:recordId/timeline (audit events joined with the utterance
+ * and proposal behind each change), and GET .../conversation (the Cormac
+ * conversation as a view over source messages and stored agent replies).
+ * Read-only; the writes here are test seeding through the service role.
+ * Skips without local Supabase.
  */
 const env = requireSupabaseEnv();
 
@@ -187,5 +189,53 @@ describe.skipIf(!env.ready)('web read routes', () => {
       headers: bearer(await mintToken(userId)),
     });
     expect(res.statusCode).toBe(404);
+  });
+
+  it('conversation returns spoken turns with stored replies, never direct-edit provenance', async () => {
+    // A capture that ended in conversation (stored agent_note, no proposal).
+    const q = await service
+      .from('source_messages')
+      .insert({
+        workspace_id: workspaceId,
+        channel: 'web',
+        user_id: userId,
+        content: 'who have I not talked to lately?',
+        agent_note: 'Quietest right now: Summit Ridge Partners.',
+      })
+      .select('id')
+      .single();
+    if (q.error) throw new Error(`conversation seed: ${q.error.message}`);
+
+    const res = await server.inject({
+      method: 'GET',
+      url: `/api/workspaces/${workspaceId}/conversation`,
+      headers: bearer(await mintToken(userId)),
+    });
+    expect(res.statusCode).toBe(200);
+    const { messages } = res.json() as {
+      messages: Array<{ role: string; text: string; author: string | null }>;
+    };
+    const texts = messages.map((m) => m.text);
+    expect(texts).toContain('who have I not talked to lately?');
+    expect(texts).toContain('Quietest right now: Summit Ridge Partners.');
+    // The seeded applied proposal has a human created_by: its source content is
+    // provenance for a direct edit, not something anyone said.
+    expect(texts).not.toContain('Just closed the deal with Carter');
+
+    const turn = messages.find((m) => m.text === 'who have I not talked to lately?');
+    expect(turn?.role).toBe('user');
+    expect(turn?.author).toContain('@'); // resolved to the author's email
+    const reply = messages.find((m) => m.text.startsWith('Quietest'));
+    expect(reply?.role).toBe('cormac');
+    expect(reply?.author).toBeNull();
+  });
+
+  it('conversation is workspace-scoped: a non-member is refused', async () => {
+    const res = await server.inject({
+      method: 'GET',
+      url: `/api/workspaces/${workspaceId}/conversation`,
+      headers: bearer(await mintToken(otherUserId)),
+    });
+    expect(res.statusCode).toBe(403);
   });
 });
