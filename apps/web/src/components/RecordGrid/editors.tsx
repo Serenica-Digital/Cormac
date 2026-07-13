@@ -18,7 +18,9 @@ export function FieldEditor({
   changeValue: (v: unknown) => void;
   commit: () => void;
 }) {
-  const cls = 'h-full w-full bg-transparent px-2 text-sm outline-none focus:bg-ledger-50/60';
+  // px-2.5 mirrors the grid's 10px cell padding (--ln-padding-horizontal-cell)
+  // and text-sm its 15px type, so entering edit does not shift the text.
+  const cls = 'h-full w-full bg-transparent px-2.5 text-sm outline-none focus:bg-ledger-50/60';
 
   switch (field.type) {
     case 'enum':

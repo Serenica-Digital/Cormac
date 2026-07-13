@@ -37,6 +37,8 @@ export function buildOverlay(
           put(ch.recordId, field, { current: ch.current?.[field], proposed, op: 'update' });
         }
       } else if (ch.op === 'create') {
+        // A proposed create is a ghost ROW; its cells render as plain values
+        // over a row-level "new" treatment, not as per-cell diffs.
         const ghostId = `ghost:${p.id}:${idx}`;
         ghostIds.add(ghostId);
         ghostRows.push({
@@ -49,9 +51,6 @@ export function buildOverlay(
           updated_at: p.createdAt,
           archived_at: null,
         });
-        for (const [field, proposed] of Object.entries(ch.values)) {
-          put(ghostId, field, { current: undefined, proposed, op: 'create' });
-        }
       }
     });
   }

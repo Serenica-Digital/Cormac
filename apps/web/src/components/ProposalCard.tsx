@@ -16,6 +16,7 @@ export function ProposalCard({
   onDecide,
   deciding,
   compact,
+  titleFor,
 }: {
   proposal: ProposalView;
   contract?: Contract;
@@ -24,6 +25,8 @@ export function ProposalCard({
   deciding?: boolean;
   /** Narrow-column rendering (side panel): stacked field rows, tighter padding. */
   compact?: boolean;
+  /** Resolve a record id to its human handle (for relationship values). */
+  titleFor?: (recordId: string) => string | undefined;
 }) {
   return (
     <Card className={`animate-rise gap-0 ${compact ? 'p-3' : 'p-4'}`}>
@@ -43,6 +46,14 @@ export function ProposalCard({
         {proposal.changes.map((change, i) => {
           const object = objectFor(contract, change.objectApiName);
           const fieldNames = Object.keys(change.values);
+          // Relationship values are record ids; show the record's name.
+          const resolve = (name: string, v: unknown): unknown => {
+            const field = object?.fields.find((x) => x.apiName === name);
+            if (field?.type === 'relationship' && typeof v === 'string') {
+              return titleFor?.(v) ?? v;
+            }
+            return v;
+          };
           return (
             <div key={i} className="rounded-md border border-stone-200/70 bg-stone-50/50 p-3">
               <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -74,8 +85,12 @@ export function ProposalCard({
                     </dt>
                     <dd>
                       <ValueDiff
-                        current={change.op === 'update' ? change.current?.[name] : undefined}
-                        proposed={change.values[name]}
+                        current={
+                          change.op === 'update'
+                            ? resolve(name, change.current?.[name])
+                            : undefined
+                        }
+                        proposed={resolve(name, change.values[name])}
                       />
                     </dd>
                   </div>

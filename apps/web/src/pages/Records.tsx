@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { useCommitRecords, useContract, useProposals, useRecords } from '../api/hooks';
 import { useCan } from '../lib/authz';
+import { useRecordTitles } from '../lib/titles';
 import { EmptyState, ErrorNote, Spinner } from '../components/kit';
 import { CormacPanel } from '../components/CormacPanel';
 import { RecordGrid } from '../components/RecordGrid/RecordGrid';
@@ -26,6 +27,7 @@ export function Records() {
   const commit = useCommitRecords(workspaceId);
   const can = useCan(workspaceId);
   const canEdit = can('edit_records');
+  const titleById = useRecordTitles(workspaceId, contract.data?.contract);
 
   const object = objects.find((o) => o.apiName === objectApiName);
 
@@ -53,6 +55,12 @@ export function Records() {
     });
     return [...base, ...ghostRows];
   }, [serverRows, edits, ghostRows]);
+
+  // Which cells carry a staged edit, for the grid's dirty treatment.
+  const dirty = useMemo(
+    () => new Map([...edits].map(([id, values]) => [id, new Set(Object.keys(values))] as const)),
+    [edits],
+  );
 
   const onRowEdited = (row: BusinessRecordRow) => {
     const server = serverById.get(row.id);
@@ -188,6 +196,8 @@ export function Records() {
               rows={displayRows}
               overlay={overlay}
               ghostIds={ghostIds}
+              dirty={dirty}
+              titleById={titleById}
               editing={canEdit}
               onRowEdited={canEdit ? onRowEdited : undefined}
             />

@@ -3,6 +3,7 @@ import type { Contract } from '@cormac/contract';
 import { Button } from '@/components/ui/button';
 import { useCapture, useDecision, useProposals } from '../api/hooks';
 import { useCan } from '../lib/authz';
+import { useRecordTitles } from '../lib/titles';
 import { ErrorNote, SectionLabel, Spinner } from './kit';
 import { ProposalCard } from './ProposalCard';
 
@@ -28,6 +29,7 @@ export function CormacPanel({
   const canDo = useCan(workspaceId);
   const canCapture = canDo('capture_update');
   const canApprove = canDo('approve_proposal');
+  const titleById = useRecordTitles(workspaceId, contract);
 
   function submit(e: FormEvent) {
     e.preventDefault();
@@ -115,6 +117,7 @@ export function CormacPanel({
             compact
             proposal={p}
             contract={contract}
+            titleFor={(id) => titleById.get(id)}
             workspaceId={workspaceId}
             deciding={decision.isPending && decision.variables?.proposalId === p.id}
             onDecide={

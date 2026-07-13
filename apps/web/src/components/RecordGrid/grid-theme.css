@@ -1,0 +1,60 @@
+/*
+ * Cormac's skin over LyteNyte's shadcn theme. The .ln-shadcn theme maps its
+ * colors from the app's shadcn tokens, so paper/ink/ledger already flow; what
+ * it cannot inherit is type (the vendored default hardcodes Inter, which this
+ * app never loads, so the grid silently fell back to system-ui at 14px) and a
+ * few structural choices. Loaded after the vendored css by RecordGrid.tsx.
+ *
+ * Cell-state markers (.cormac-editable / .cormac-dirty / .cormac-ghost) are
+ * emitted by RecordGrid's cell renderers; the vendored cells are targeted via
+ * their stable data-ln-* attributes.
+ */
+.ln-grid.ln-shadcn {
+  --ln-typeface: var(--font-sans);
+  --ln-font-md: 0.9375rem; /* --text-sm: grid text matches the app */
+  --ln-font-sm: 0.8125rem; /* --text-xs */
+
+  /* Ledger lines, not zebra: hairline row borders carry the rhythm. */
+  --ln-bg-row-alternate: transparent;
+}
+
+/* The Book is the page; the surrounding chrome draws the edges. */
+.ln-grid [data-ln-viewport='true'] {
+  border: none;
+}
+
+/* Header: quiet, label-like, clearly not a row of data. */
+.ln-grid [data-ln-header-cell] {
+  font-size: var(--ln-font-sm);
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+/* Editable cells read as editable before anyone commits to a double-click. */
+.ln-grid [data-ln-cell]:has(.cormac-editable) {
+  cursor: text;
+}
+.ln-grid [data-ln-cell]:has(.cormac-editable):hover {
+  box-shadow: inset 0 0 0 1px var(--color-ledger-300);
+}
+
+/* A staged, unsaved edit: amber tint + corner wedge until Save or Discard.
+ * Amber literals: the palette's amber-400/500; stone/amber are Tailwind
+ * defaults, not @theme tokens, so plain CSS spells them out. */
+.ln-grid [data-ln-cell]:has(.cormac-dirty) {
+  background: color-mix(in srgb, #fbbf24 14%, transparent);
+}
+.ln-grid [data-ln-cell]:has(.cormac-dirty)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  border-style: solid;
+  border-width: 0 7px 7px 0;
+  border-color: transparent #f59e0b transparent transparent;
+}
+
+/* A proposed create: the whole row reads as new, one badge carries the label. */
+.ln-grid [data-ln-cell]:has(.cormac-ghost) {
+  background: var(--color-ledger-50);
+}
