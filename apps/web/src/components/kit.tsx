@@ -60,10 +60,10 @@ export function SetupPending({ workspaceId, live }: { workspaceId: string; live:
       {live ? (
         <EmptyState
           title="This area is for workspace admins"
-          hint="Your book is live. Everyday work happens in the Inbox."
+          hint="Your book is live. Everyday work happens in the Book."
           action={
             <Button asChild>
-              <Link to={`/w/${workspaceId}/inbox`}>Open your Inbox</Link>
+              <Link to={`/w/${workspaceId}/records`}>Open your book</Link>
             </Button>
           }
         />

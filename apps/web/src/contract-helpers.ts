@@ -28,6 +28,15 @@ export function tableColumns(object: ContractObject, cap = 6): ContractField[] {
   return ordered.slice(0, cap);
 }
 
+/** The client-facing word for a field type; raw type names never reach the UI. */
+export function fieldKindWord(type: ContractField['type']): string {
+  if (type === 'string' || type === 'text') return 'text';
+  if (type === 'boolean') return 'yes/no';
+  if (type === 'enum') return 'choice';
+  if (type === 'relationship') return 'linked record';
+  return type;
+}
+
 /** A record's human handle: its identity display field values joined. */
 export function recordTitle(
   object: ContractObject | undefined,

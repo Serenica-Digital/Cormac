@@ -1,12 +1,13 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { parseContract, type Contract } from '@cormac/contract';
+import { parseContract, proposedChangeSchema, type Contract } from '@cormac/contract';
 import { ProblemError } from '../shared.js';
 import { authenticate, requireCapability, requireCtx } from '../auth.js';
 import { captureUpdate } from '../pipeline/capture.js';
 import { decideProposal } from '../pipeline/apply.js';
+import { commitHumanChanges } from '../pipeline/commit.js';
 import { publishContract } from '../pipeline/contract.js';
-import { proposalsView, recordTimeline } from '../pipeline/queries.js';
+import { conversationView, proposalsView, recordTimeline } from '../pipeline/queries.js';
 import type { ProposalStatus } from '../rows.js';
 import {
   getActiveContract,
@@ -20,7 +21,20 @@ import {
 } from '../repo.js';
 
 const captureBody = z.object({ text: z.string().min(1).max(4000) });
-const decisionBody = z.object({ decision: z.enum(['approve', 'reject']) });
+const decisionBody = z
+  .object({
+    decision: z.enum(['approve', 'reject']),
+    /** Change indexes to apply; the rest are dropped. Omit to approve all. */
+    keep: z.array(z.number().int().min(0)).min(1).max(500).optional(),
+  })
+  .refine((b) => !(b.decision === 'reject' && b.keep), {
+    message: 'keep only applies to approve; a reject drops every change',
+  });
+const commitBody = z.object({
+  changes: z.array(proposedChangeSchema).min(1).max(500),
+  channel: z.enum(['web', 'excel']).default('web'),
+  note: z.string().max(2000).optional(),
+});
 const publishBody = z.object({ contract: z.unknown() });
 const authoringTurnBody = z.object({ text: z.string().min(1).max(8000) });
 const workbookBody = z.object({
@@ -54,6 +68,18 @@ export function registerHumanRoutes(app: FastifyInstance): void {
     },
   );
 
+  // The conversation: a read view over source messages, stored agent replies,
+  // and (via the proposals query) what Cormac proposed. Nothing here writes.
+  app.get(
+    '/api/workspaces/:workspaceId/conversation',
+    { preHandler: [authenticate, requireCapability('read_records')] },
+    async (request) => {
+      const ctx = requireCtx(request);
+      const messages = await conversationView(request.server.app, ctx.workspaceId);
+      return { messages };
+    },
+  );
+
   // The review queue.
   app.get(
     '/api/workspaces/:workspaceId/proposals',
@@ -70,15 +96,30 @@ export function registerHumanRoutes(app: FastifyInstance): void {
     },
   );
 
-  // Approve or reject: the only path that writes a business record.
+  // Approve or reject: applies (or discards) an agent-held proposal.
   app.post(
     '/api/workspaces/:workspaceId/proposals/:proposalId/decision',
     { preHandler: [authenticate, requireCapability('approve_proposal')] },
     async (request) => {
       const ctx = requireCtx(request);
       const { proposalId } = request.params as { proposalId: string };
-      const { decision } = decisionBody.parse(request.body);
-      return decideProposal(request.server.app, ctx, proposalId, decision);
+      const { decision, keep } = decisionBody.parse(request.body);
+      return decideProposal(request.server.app, ctx, proposalId, decision, keep);
+    },
+  );
+
+  // Direct human edits and workbook import (ADR-0014). A batch of structured
+  // changes the user authored is validated for human-editability and applied in
+  // one request; the user's Save/import IS the confirmation, so this auto-applies
+  // rather than queueing for the Inbox. Gated on `edit_records`, which rides the
+  // approve set — a member who cannot approve cannot self-apply here either.
+  app.post(
+    '/api/workspaces/:workspaceId/records/commit',
+    { preHandler: [authenticate, requireCapability('edit_records')] },
+    async (request) => {
+      const ctx = requireCtx(request);
+      const { changes, channel, note } = commitBody.parse(request.body);
+      return commitHumanChanges(request.server.app, ctx, { changes, channel, note });
     },
   );
 

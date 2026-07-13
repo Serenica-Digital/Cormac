@@ -1,9 +1,9 @@
 # Architecture
 
-How Cormac v2 is structured. This is the current shape as of 2026-07-09: the authoring
+How Cormac v2 is structured. This is the current shape as of 2026-07-13: the authoring
 and operations agents (ADR-0004/ADR-0008), the control plane, the v2 schema, the runtime
-module, and the first client surface (`apps/web`, ADR-0010) exist; deployment does not
-(kind rehearsal deferred to the pilot track, #68). Diagrams
+module, and the first client surface (`apps/web`, ADR-0010/0014) exist; deployment does
+not (kind rehearsal deferred to the pilot track, #68). Diagrams
 originated in the June 2026 post-archive sessions (formerly `v2-architecture/diagrams1.md`).
 
 ## The product
@@ -58,7 +58,11 @@ flowchart TB
   sibling Jarvis project (see `.jarvis/research/jarvis-project-digest.md`).
 - **Contract + knowledge layer**: published versioned contract per workspace; typed
   governed learning (record-bound aliases, enum synonyms) behind a review gate; compiled
-  into the cached prefix. Prose memory rejected by design.
+  into the cached prefix. Prose memory rejected by design. Date/datetime fields may carry
+  an optional `semantic` tag (`last_touch` | `follow_up`), so surfaces and agents act on
+  attention meaning without hardcoded column names (drives the Book's "what needs you
+  today" greeting, chips, and default ordering; the authoring interview elicits it, and
+  the ops agent may keep a `last_touch`-tagged field current).
 - **System of record**: managed Supabase/Postgres, JSONB-hybrid with generated hot
   columns, RLS, ES256/JWKS.
 - **Web surface** (`apps/web`): Vite + React 19 + Tailwind v4 on shadcn/ui primitives;
@@ -66,8 +70,17 @@ flowchart TB
   the sole sign-in broker (password today; magic link and Microsoft/Google OAuth via
   PKCE ride the open #79→#91 train, so the control plane needs zero auth changes per
   provider). Workbook parsing happens in the browser; only the detection profile
-  (structure plus limited sample values) is uploaded. Boundary per ADR-0010: renders
-  tables, never rebuilds a spreadsheet grid.
+  (structure plus limited sample values) is uploaded. Governed spreadsheet view (ADR-0014,
+  amending ADR-0010 point 3): an editable grid over the record store, beside the agent, whose
+  cell edits stage and commit through the pipeline (never direct-to-DB) and which is a view, not
+  a copy or two-way mirror of the client's Excel. The governed grid is realized as **the
+  Book**: one fused workspace, the grid beside a single Cormac conversation panel, presented
+  at every stage of a workspace's life (pre-live it is the workbook upload plus the authoring
+  interview; at publish the workbook becomes the live grid). Navigation is flat (Book,
+  History, Structure, People); setup is a phase of the Book, not a separate page. Agent
+  proposals arrive as messages in the Cormac panel with in-grid diffs and per-change
+  approve / adjust-in-grid / reject (#114). The panel's live conversation is a read view over
+  the pipeline's own tables (server truth), not browser-local state.
 
 ## Data-access seam (settled for both agents)
 

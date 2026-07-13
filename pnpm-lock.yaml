@@ -72,6 +72,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@1771technologies/lytenyte-core':
+        specifier: ^2.2.1
+        version: 2.2.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@cormac/authz':
         specifier: workspace:*
         version: link:../../packages/authz
@@ -181,6 +184,24 @@ importers:
         version: 3.25.76
 
 packages:
+
+  '@1771technologies/dom-utils@2.2.1':
+    resolution: {integrity: sha512-ldyAc5bWIKSp4OdCf2JSgL56G7cqAWPHoYT15dLReTsT9XySVLr8sZPVufOIunBImQuYPFfcqWMUm/VTpUYsgQ==}
+
+  '@1771technologies/js-utils@2.2.1':
+    resolution: {integrity: sha512-JYZGnRF6WjI+Y1eW0Xp3KRFR+TzDla5fJNHCJ7fCD30K+4zy+UygAaynsONHiK7+vp18qE5wrx7zN7QNTy2cOw==}
+
+  '@1771technologies/lytenyte-core@2.2.1':
+    resolution: {integrity: sha512-hT4Y12n0J3GXQNjGn2M1IOG7fb8p+QFfDFhMCUocEFaPlZ/ZbjGk0v6cdNGneVziTTMcHf7YnYy1Z2POUwHxvg==}
+    peerDependencies:
+      react: 18.0.0 || ^19.0.0
+      react-dom: 18.0.0 || ^19.0.0
+
+  '@1771technologies/lytenyte-design@2.2.1':
+    resolution: {integrity: sha512-aeTn6Yy2aV5GTRh03s0nd5V3/NoXtCfeCDRb8X1Zc4dwvobD6a43g/mdmzYVOUrdEXMUtHGMhO9F0zD3ukYgjg==}
+
+  '@1771technologies/lytenyte-shared@2.2.1':
+    resolution: {integrity: sha512-egnfV1IHXBnAuGK5FzjwiDddbe1mkh1SoPXnJM5vy7U/P+vKhXb9VS8Xp8qosVafGR3zq4Q1mK90mjM/Z8nJzA==}
 
   '@asamuzakjp/css-color@3.2.0':
     resolution: {integrity: sha512-K1A6z8tS3XsmCMM86xoWdn7Fkdn9m6RSVtocUrJYIwZnFVkng/PvkEoWtOWmP+Scc6saYWHWZYbndEEXxl24jw==}
@@ -4169,6 +4190,28 @@ packages:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
 snapshots:
+
+  '@1771technologies/dom-utils@2.2.1':
+    dependencies:
+      '@1771technologies/js-utils': 2.2.1
+
+  '@1771technologies/js-utils@2.2.1': {}
+
+  '@1771technologies/lytenyte-core@2.2.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      '@1771technologies/dom-utils': 2.2.1
+      '@1771technologies/js-utils': 2.2.1
+      '@1771technologies/lytenyte-design': 2.2.1
+      '@1771technologies/lytenyte-shared': 2.2.1
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
+
+  '@1771technologies/lytenyte-design@2.2.1': {}
+
+  '@1771technologies/lytenyte-shared@2.2.1':
+    dependencies:
+      '@1771technologies/dom-utils': 2.2.1
+      '@1771technologies/js-utils': 2.2.1
 
   '@asamuzakjp/css-color@3.2.0':
     dependencies:

@@ -30,6 +30,13 @@ files, no web: three tools and this text are everything, on purpose.
    - `values` holds only agent-editable fields, typed per the contract: dates as
      YYYY-MM-DD, fixed-choice fields must use one of the listed options exactly.
    - A short `rationale` per change tying it to the message's words.
+   - **Last-touch upkeep.** When the message reports an interaction with a record (met,
+     called, emailed, texted, closed something with them) and that record's object has an
+     agent-editable field marked `"semantic": "last_touch"` in the contract, set that
+     field to the interaction's date: the date the message states, or resolved from its
+     words ("yesterday", "this morning") against the current date. One line of rationale
+     ("message reports meeting Susan; updating last touch"). If the message gives no way
+     to place the date, leave the field alone rather than guess.
 4. **Handle the hard cases honestly.**
    - Ambiguous match with a best candidate: proceed with `uncertain: true` and a note
      naming the assumption.
@@ -49,7 +56,9 @@ files, no web: three tools and this text are everything, on purpose.
 ## Rules
 
 - Propose only what the message supports. No invented facts, no padding, no tidying up
-  fields the message did not mention.
+  fields the message did not mention. One exception, granted by the contract rather than
+  your judgment: a reported interaction updates the matched record's `last_touch`-tagged
+  field (step 3). Fields without that tag never get this treatment.
 - Match records before you create them. Create only when satisfied the record does not
   exist.
 - Never invent record ids or task ids; both only ever come from your tools and your

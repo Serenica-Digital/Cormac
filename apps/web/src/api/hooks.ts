@@ -7,6 +7,8 @@ import type {
   AuthoringTurnOutcome,
   BusinessRecordRow,
   CaptureResult,
+  CommitResult,
+  ConversationEntry,
   CreateWorkspaceResult,
   DecisionResult,
   Me,
@@ -177,21 +179,53 @@ export function useCapture(workspaceId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (text: string) => api.post<CaptureResult>(`${ws(workspaceId)}/capture`, { text }),
-    onSuccess: () => {
+    // Settled, not success: the source message is stored before the runtime
+    // runs, so the conversation gains a row even when the run errors.
+    onSettled: () => {
       void qc.invalidateQueries({ queryKey: ['proposals', workspaceId] });
+      void qc.invalidateQueries({ queryKey: ['conversation', workspaceId] });
     },
+  });
+}
+
+/** The Cormac conversation: a server-side view over the pipeline's tables. */
+export function useConversation(workspaceId: string, enabled = true) {
+  return useQuery({
+    queryKey: ['conversation', workspaceId],
+    queryFn: () => api.get<{ messages: ConversationEntry[] }>(`${ws(workspaceId)}/conversation`),
+    select: (d) => d.messages,
+    enabled,
   });
 }
 
 export function useDecision(workspaceId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { proposalId: string; decision: 'approve' | 'reject' }) =>
+    mutationFn: (input: { proposalId: string; decision: 'approve' | 'reject'; keep?: number[] }) =>
       api.post<DecisionResult>(`${ws(workspaceId)}/proposals/${input.proposalId}/decision`, {
         decision: input.decision,
+        ...(input.keep ? { keep: input.keep } : {}),
       }),
     onSuccess: () => {
       for (const key of ['proposals', 'records', 'audit'] as const) {
+        void qc.invalidateQueries({ queryKey: [key, workspaceId] });
+      }
+    },
+  });
+}
+
+/**
+ * Direct human edits and workbook import (ADR-0014): a batch of structured
+ * changes applied through the control plane's governed commit gate. Invalidates
+ * the same queries a decision does, since it rewrites records.
+ */
+export function useCommitRecords(workspaceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { changes: unknown[]; channel?: 'web' | 'excel'; note?: string }) =>
+      api.post<CommitResult>(`${ws(workspaceId)}/records/commit`, input),
+    onSuccess: () => {
+      for (const key of ['records', 'proposals', 'audit'] as const) {
         void qc.invalidateQueries({ queryKey: [key, workspaceId] });
       }
     },

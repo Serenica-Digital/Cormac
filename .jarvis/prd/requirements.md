@@ -28,13 +28,23 @@ Durable outcomes and constraints the rebuild must preserve. Each carries its ori
   cost, so per-run cost and caching are first-class design inputs (v0 measured: the
   compiled cached prefix cut runs from ~21s / $0.045 to ~8-15s / $0.03).
 - The web app is the first client surface built (ADR-0010): interview, capture, review
-  queue, records, per-record timeline. It renders tables but never rebuilds a
-  spreadsheet grid. The Excel task pane is the flagship enhancement for tenants that can
+  queue, records, per-record timeline. It presents a governed spreadsheet view (ADR-0014):
+  an editable grid over the record store, beside the agent, whose edits commit through the
+  pipeline; it is not a copy or two-way mirror of the client's Excel. The Excel task pane is
+  the flagship enhancement for tenants that can
   install add-ins; an unsized share of the segment cannot (verified: GoDaddy-resold
   tenants block every add-in path), so tenant qualification (reseller, SKU, desktop vs
   web) is routine at sales time. SMS is field capture. When the pane ships, its manifest
   pins its domain near-permanently, so a stable custom domain plus TLS is a pane-track
   prerequisite (ADR-0009/#67, deferred).
+- Onboarding must populate the CRM from the client's existing workbook, not only publish a
+  contract. Schema-only onboarding leaves an empty CRM and fails the core promise (keep the
+  spreadsheet you already trust). Verified 2026-07-12: no import path exists in v2; the data
+  model is import-ready (stable record IDs, contract-versioned records). Tracked #98 (Beta 1).
+- SMS is a core beta surface per the 2026-07-12 roadmap (owner decision, ADR-0013), not a
+  deferred later door; web remains the first surface (ADR-0010). The pipeline is already
+  door-agnostic, so SMS is an inbound adapter plus a confirm-by-text trust UX. Tracked
+  #101/#102 (Beta 5).
 - The authoring interview is consultative and free-form with checkpoints (structure
   agreed, fill, review), not batched question rounds. One-shot contract authoring is
   proven insufficient on real workbooks (v0 spike: invalid and unstable across runs).
@@ -61,4 +71,6 @@ Durable outcomes and constraints the rebuild must preserve. Each carries its ori
   binding is follow-up work under the same ADR.
 - (settled) The ops/authoring privilege split is per-agent-kind capability sets on
   `/agent/*`, one profile instance per (workspace, agent kind) — ADR-0005.
-- A2P 10DLC registration timing for the SMS door.
+- (active) A2P 10DLC registration for the SMS door: SMS is now a core beta surface (2026-07-12
+  roadmap, ADR-0013); registration is filed as #102 and should start now given the long carrier
+  lead time.

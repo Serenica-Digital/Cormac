@@ -78,10 +78,23 @@ export interface ProposalView {
   id: string;
   status: 'pending' | 'applied' | 'rejected' | string;
   createdAt: string;
+  /** When a decision landed (applied/rejected); null while pending. */
+  decidedAt: string | null;
   sourceMessageId: string;
   uncertain: boolean;
   notes?: string;
   changes: ProposalChangeView[];
+}
+
+export interface ConversationEntry {
+  /** Source message id, or `<id>:note` for the agent's reply to it. */
+  id: string;
+  at: string;
+  role: 'user' | 'cormac';
+  text: string;
+  channel: string | null;
+  /** The author's email for user turns, so teammates can tell who spoke. */
+  author: string | null;
 }
 
 export interface CaptureResult {
@@ -95,6 +108,13 @@ export interface CaptureResult {
 
 export interface DecisionResult {
   status: 'applied' | 'rejected';
+  applied: Array<{ op: 'create' | 'update'; objectApiName: string; recordId: string }>;
+  /** Changes the approver chose to drop from a partial approve. */
+  droppedCount: number;
+}
+
+export interface CommitResult {
+  proposalId: string;
   applied: Array<{ op: 'create' | 'update'; objectApiName: string; recordId: string }>;
 }
 
@@ -118,6 +138,8 @@ export interface TimelineEntry {
   channel: string | null;
   proposalId: string | null;
   proposalStatus: string | null;
+  /** Human-authored change (grid edit, import): the source is provenance, not speech. */
+  direct?: boolean;
   before: Record<string, unknown> | null;
   after: Record<string, unknown> | null;
 }

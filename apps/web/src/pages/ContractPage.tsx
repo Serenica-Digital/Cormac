@@ -2,6 +2,7 @@ import { useParams } from 'react-router';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { useContract } from '../api/hooks';
+import { fieldKindWord } from '../contract-helpers';
 import { EmptyState, PageHeader, SectionLabel, Spinner } from '../components/kit';
 
 export function ContractPage() {
@@ -32,8 +33,8 @@ export function ContractPage() {
   return (
     <div className="mx-auto w-full max-w-4xl">
       <PageHeader
-        title={doc.name}
-        sub={`Structure, version ${version} — how Cormac understands your book. Every change it proposes is checked against this.`}
+        title="Structure"
+        sub={`How Cormac understands your book (version ${version}). Every change it proposes is checked against this.`}
       />
 
       <div className="space-y-6">
@@ -59,17 +60,7 @@ export function ContractPage() {
                     <tr key={f.apiName} className="border-b border-stone-100 last:border-0">
                       <td className="py-2.5 pr-4 font-medium text-ink">{f.label}</td>
                       <td className="py-2.5 pr-4">
-                        <Badge variant="neutral">
-                          {f.type === 'string'
-                            ? 'text'
-                            : f.type === 'boolean'
-                              ? 'yes/no'
-                              : f.type === 'enum'
-                                ? 'choice'
-                                : f.type === 'relationship'
-                                  ? 'linked record'
-                                  : f.type}
-                        </Badge>
+                        <Badge variant="neutral">{fieldKindWord(f.type)}</Badge>
                         {f.type === 'enum' && f.enumOptions && (
                           <span className="ml-2 text-sm text-stone-400">
                             {f.enumOptions.join(' · ')}
