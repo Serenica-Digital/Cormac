@@ -17,6 +17,7 @@ export function isRole(value: unknown): value is Role {
 export type Capability =
   | 'capture_update' // submit natural language that becomes a proposal
   | 'approve_proposal' // approve/reject a held proposal, applying a write
+  | 'edit_records' // directly edit/import records (grid edits + workbook import); auto-applies, so it rides the approve set
   | 'publish_contract' // publish a new contract version
   | 'manage_members' // add or remove members, change their roles
   | 'read_records'; // read business records and the proposal queue
@@ -25,6 +26,7 @@ export const CAPABILITIES_BY_ROLE: Record<Role, ReadonlySet<Capability>> = {
   owner: new Set<Capability>([
     'capture_update',
     'approve_proposal',
+    'edit_records',
     'publish_contract',
     'manage_members',
     'read_records',
@@ -32,11 +34,12 @@ export const CAPABILITIES_BY_ROLE: Record<Role, ReadonlySet<Capability>> = {
   agent_admin: new Set<Capability>([
     'capture_update',
     'approve_proposal',
+    'edit_records',
     'publish_contract',
     'manage_members',
     'read_records',
   ]),
-  manager: new Set<Capability>(['capture_update', 'approve_proposal', 'read_records']),
+  manager: new Set<Capability>(['capture_update', 'approve_proposal', 'edit_records', 'read_records']),
   member: new Set<Capability>(['capture_update', 'read_records']),
   read_only: new Set<Capability>(['read_records']),
 };

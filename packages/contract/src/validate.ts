@@ -59,7 +59,8 @@ export interface ProposalValidationResult {
  * already-shape-parsed proposal, confirm every change is legal:
  *   - the object exists in the contract,
  *   - every field being written exists on that object,
- *   - every field being written is agent-editable,
+ *   - every field being written is editable by the acting party (agent by
+ *     default; pass `editableBy: 'user'` for a human edit/import path),
  *   - every value matches the field's type / enum / format,
  *   - create vs update is consistent with recordId.
  * Returns a flat list of human-readable errors. Empty list means safe to hold
@@ -68,7 +69,9 @@ export interface ProposalValidationResult {
 export function validateProposalAgainstContract(
   contract: Contract,
   proposal: Proposal,
+  opts: { editableBy?: 'agent' | 'user' } = {},
 ): ProposalValidationResult {
+  const editableBy = opts.editableBy ?? 'agent';
   const errors: string[] = [];
 
   proposal.changes.forEach((change, i) => {
@@ -93,9 +96,10 @@ export function validateProposalAgainstContract(
         errors.push(`${where}: unknown field "${key}" on object "${object.apiName}"`);
         continue;
       }
-      if (!field.editableByAgent) {
+      const editable = editableBy === 'user' ? field.editableByUser : field.editableByAgent;
+      if (!editable) {
         errors.push(
-          `${where}: field "${key}" on "${object.apiName}" is not agent-editable (human-only)`,
+          `${where}: field "${key}" on "${object.apiName}" is not ${editableBy}-editable`,
         );
       }
     }
