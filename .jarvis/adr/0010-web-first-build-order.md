@@ -1,6 +1,10 @@
 # 0010 — Build order: the web app is the first client surface; the pane repositions to a flagship enhancement
 
 - **Status:** Accepted (2026-07-08, owner decision)
+- **Amended by:** ADR-0014 (2026-07-12) revises point 3 below: the web app MAY present an
+  editable spreadsheet-style grid, provided every write flows through the pipeline and the grid
+  is a view over the record store, not a copy of the client's workbook. Points 1, 2, and 4-6
+  stand.
 - **Amends:** the v0 ADR-028 direction as carried into `.jarvis/prd/requirements.md`
   ("Excel task pane is the primary client surface"). This resequences the pane
   investment; it does not reverse it.
@@ -41,6 +45,10 @@ Three facts landed together on 2026-07-08 (`.jarvis/research/microsoft-excel-int
    no formulas, no Excel-mimicking filter UX. Bulk edits happen in the client's Excel
    and come back through upload (later sync) or through the agent. Render tables; never
    build a grid editor.
+   **[Amended by ADR-0014, 2026-07-12]** An editable spreadsheet-style grid IS now permitted,
+   as a governed view over the record store: cell edits stage and commit through the pipeline
+   (never direct-to-DB), and the grid is not a copy or two-way mirror of the client's Excel. The
+   no-formula-engine / no-macros / no-two-way-sync limits still hold.
 4. **The pane repositions from primary surface to flagship enhancement** for tenants
    that can install it. The pane probes (ADR-0009, #67) stay valid and deferred; they
    run when the pane's turn comes. The publisher/DUNS clock starts when the pane

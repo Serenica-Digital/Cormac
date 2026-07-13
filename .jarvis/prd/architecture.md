@@ -66,8 +66,10 @@ flowchart TB
   the sole sign-in broker (password today; magic link and Microsoft/Google OAuth via
   PKCE ride the open #79→#91 train, so the control plane needs zero auth changes per
   provider). Workbook parsing happens in the browser; only the detection profile
-  (structure plus limited sample values) is uploaded. Boundary per ADR-0010: renders
-  tables, never rebuilds a spreadsheet grid.
+  (structure plus limited sample values) is uploaded. Governed spreadsheet view (ADR-0014,
+  amending ADR-0010 point 3): an editable grid over the record store, beside the agent, whose
+  cell edits stage and commit through the pipeline (never direct-to-DB) and which is a view, not
+  a copy or two-way mirror of the client's Excel.
 
 ## Data-access seam (settled for both agents)
 

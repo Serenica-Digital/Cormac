@@ -37,8 +37,9 @@ none of these three product gaps. Naming them as tracked P0 work (below) is the 
 
 ## Workstreams (tracker milestones Beta 1-5)
 
-- **Beta 1 Product-complete:** workbook data import (#98, the #1 gap); interview cadence and
-  modeling pass (#76, in flight on `feat/interview-cadence`).
+- **Beta 1 Product-complete:** workbook data import (#98, the #1 gap); governed spreadsheet view
+  (#111, ADR-0014: an editable grid over the record store fused with the agent, seeded by import);
+  interview cadence and modeling pass (#76, in flight on `feat/interview-cadence`).
 - **Beta 2 Self-serve onboarding:** signup + self-serve workspace creation + onboarding wizard
   (#99); auth delivery, custom SMTP + Google/Microsoft OAuth registrations (#103).
 - **Beta 3 EKS infrastructure:** EKS cluster (#68); deploy the Hermes runtime to kill the 503s

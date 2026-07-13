@@ -28,8 +28,10 @@ Durable outcomes and constraints the rebuild must preserve. Each carries its ori
   cost, so per-run cost and caching are first-class design inputs (v0 measured: the
   compiled cached prefix cut runs from ~21s / $0.045 to ~8-15s / $0.03).
 - The web app is the first client surface built (ADR-0010): interview, capture, review
-  queue, records, per-record timeline. It renders tables but never rebuilds a
-  spreadsheet grid. The Excel task pane is the flagship enhancement for tenants that can
+  queue, records, per-record timeline. It presents a governed spreadsheet view (ADR-0014):
+  an editable grid over the record store, beside the agent, whose edits commit through the
+  pipeline; it is not a copy or two-way mirror of the client's Excel. The Excel task pane is
+  the flagship enhancement for tenants that can
   install add-ins; an unsized share of the segment cannot (verified: GoDaddy-resold
   tenants block every add-in path), so tenant qualification (reseller, SKU, desktop vs
   web) is routine at sales time. SMS is field capture. When the pane ships, its manifest
