@@ -96,6 +96,8 @@ export interface CaptureResult {
 export interface DecisionResult {
   status: 'applied' | 'rejected';
   applied: Array<{ op: 'create' | 'update'; objectApiName: string; recordId: string }>;
+  /** Changes the approver chose to drop from a partial approve. */
+  droppedCount: number;
 }
 
 export interface CommitResult {

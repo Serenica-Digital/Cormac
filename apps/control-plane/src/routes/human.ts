@@ -21,7 +21,15 @@ import {
 } from '../repo.js';
 
 const captureBody = z.object({ text: z.string().min(1).max(4000) });
-const decisionBody = z.object({ decision: z.enum(['approve', 'reject']) });
+const decisionBody = z
+  .object({
+    decision: z.enum(['approve', 'reject']),
+    /** Change indexes to apply; the rest are dropped. Omit to approve all. */
+    keep: z.array(z.number().int().min(0)).min(1).max(500).optional(),
+  })
+  .refine((b) => !(b.decision === 'reject' && b.keep), {
+    message: 'keep only applies to approve; a reject drops every change',
+  });
 const commitBody = z.object({
   changes: z.array(proposedChangeSchema).min(1).max(500),
   channel: z.enum(['web', 'excel']).default('web'),
@@ -83,8 +91,8 @@ export function registerHumanRoutes(app: FastifyInstance): void {
     async (request) => {
       const ctx = requireCtx(request);
       const { proposalId } = request.params as { proposalId: string };
-      const { decision } = decisionBody.parse(request.body);
-      return decideProposal(request.server.app, ctx, proposalId, decision);
+      const { decision, keep } = decisionBody.parse(request.body);
+      return decideProposal(request.server.app, ctx, proposalId, decision, keep);
     },
   );
 

@@ -152,12 +152,18 @@ export function CormacPanel({
     send(text);
   }
 
-  function decide(p: ProposalView, verdict: 'approve' | 'reject') {
+  function decide(p: ProposalView, verdict: 'approve' | 'reject', keep?: number[]) {
     decision.mutate(
-      { proposalId: p.id, decision: verdict },
+      { proposalId: p.id, decision: verdict, keep },
       {
-        onSuccess: () =>
-          say(verdict === 'approve' ? 'Done — it’s in your book.' : 'Okay, I’ve dropped that.'),
+        onSuccess: (result) =>
+          say(
+            verdict === 'reject'
+              ? 'Okay, I’ve dropped that.'
+              : result.droppedCount > 0
+                ? `Done — ${result.applied.length} of ${result.applied.length + result.droppedCount} are in your book; I dropped the rest.`
+                : 'Done — it’s in your book.',
+          ),
       },
     );
   }
@@ -236,7 +242,7 @@ export function CormacPanel({
               contract={contract}
               titleFor={(id) => titleById.get(id)}
               deciding={decision.isPending && decision.variables?.proposalId === item.proposal.id}
-              onDecide={canApprove ? (v) => decide(item.proposal, v) : undefined}
+              onDecide={canApprove ? (v, keep) => decide(item.proposal, v, keep) : undefined}
               onAdjust={
                 canApprove && onAdjust && canAdjust?.(item.proposal)
                   ? () => adjust(item.proposal)
@@ -401,7 +407,10 @@ function ChatBubble({ message }: { message: ChatMessage }) {
 /**
  * A change Cormac wants to make, said in the conversation: the diff plus the
  * decision. Approve applies it; Adjust hands the values to your grid to fix
- * yourself; Reject drops it. A correction in words is just the next message.
+ * yourself; Reject drops it. When Cormac proposes several changes at once,
+ * each can be skipped individually — Approve applies the kept ones and the
+ * skipped ones are dropped on the audit trail (#114). A correction in words
+ * is just the next message.
  */
 function ProposalMessage({
   proposal,
@@ -415,9 +424,30 @@ function ProposalMessage({
   contract?: Contract;
   titleFor: (id: string) => string | undefined;
   deciding: boolean;
-  onDecide?: (verdict: 'approve' | 'reject') => void;
+  onDecide?: (verdict: 'approve' | 'reject', keep?: number[]) => void;
   onAdjust?: () => void;
 }) {
+  const [skipped, setSkipped] = useState<ReadonlySet<number>>(new Set());
+  const total = proposal.changes.length;
+  const keptCount = total - skipped.size;
+  const skippable = onDecide !== undefined && total > 1;
+
+  const toggleSkip = (i: number) =>
+    setSkipped((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+
+  const approve = () =>
+    onDecide?.(
+      'approve',
+      skipped.size > 0
+        ? proposal.changes.map((_, i) => i).filter((i) => !skipped.has(i))
+        : undefined,
+    );
+
   return (
     <div className="animate-rise max-w-[95%]">
       <div className="mb-1 flex items-center gap-2">
@@ -435,19 +465,34 @@ function ProposalMessage({
             if (field?.type === 'relationship' && typeof v === 'string') return titleFor(v) ?? v;
             return v;
           };
+          const isSkipped = skipped.has(i);
           return (
             <div key={i}>
-              <div className="text-xs font-medium text-ink">
-                {change.op === 'create' ? 'New' : 'Update'}{' '}
-                {object?.label ?? change.objectApiName}
-                {change.op === 'update' && change.recordId && (
-                  <span className="text-stone-500">
-                    {' '}
-                    · {titleFor(change.recordId) ?? (change.current ? recordTitle(object, change.current) : '')}
-                  </span>
+              <div className="flex items-baseline gap-2">
+                <div
+                  className={`text-xs font-medium ${isSkipped ? 'text-stone-400 line-through' : 'text-ink'}`}
+                >
+                  {change.op === 'create' ? 'New' : 'Update'}{' '}
+                  {object?.label ?? change.objectApiName}
+                  {change.op === 'update' && change.recordId && (
+                    <span className="text-stone-500">
+                      {' '}
+                      · {titleFor(change.recordId) ?? (change.current ? recordTitle(object, change.current) : '')}
+                    </span>
+                  )}
+                </div>
+                {skippable && (
+                  <button
+                    type="button"
+                    onClick={() => toggleSkip(i)}
+                    disabled={deciding}
+                    className="ml-auto shrink-0 cursor-pointer text-xs text-stone-400 underline decoration-stone-300 underline-offset-2 hover:text-ink"
+                  >
+                    {isSkipped ? 'Keep this one' : 'Skip this one'}
+                  </button>
                 )}
               </div>
-              <dl className="mt-1.5 space-y-1">
+              <dl className={`mt-1.5 space-y-1 ${isSkipped ? 'opacity-40' : ''}`}>
                 {Object.keys(change.values).map((name) => (
                   <div key={name} className="flex flex-col gap-0.5">
                     <dt className="text-xs text-stone-500">{fieldLabel(object, name)}</dt>
@@ -469,8 +514,8 @@ function ProposalMessage({
         })}
         {onDecide ? (
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            <Button size="sm" onClick={() => onDecide('approve')} busy={deciding}>
-              Approve
+            <Button size="sm" onClick={approve} busy={deciding} disabled={keptCount === 0}>
+              {skipped.size > 0 ? `Approve ${keptCount} of ${total}` : 'Approve'}
             </Button>
             {onAdjust && (
               <Button size="sm" variant="outline" onClick={onAdjust} disabled={deciding}>
@@ -480,6 +525,9 @@ function ProposalMessage({
             <Button size="sm" variant="danger" onClick={() => onDecide('reject')} disabled={deciding}>
               Reject
             </Button>
+            {keptCount === 0 && (
+              <span className="text-xs text-stone-400">Everything is skipped — that's a Reject.</span>
+            )}
           </div>
         ) : (
           <p className="pt-1 text-xs text-stone-400">Waiting for a manager's OK.</p>

@@ -187,9 +187,10 @@ export function useCapture(workspaceId: string) {
 export function useDecision(workspaceId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { proposalId: string; decision: 'approve' | 'reject' }) =>
+    mutationFn: (input: { proposalId: string; decision: 'approve' | 'reject'; keep?: number[] }) =>
       api.post<DecisionResult>(`${ws(workspaceId)}/proposals/${input.proposalId}/decision`, {
         decision: input.decision,
+        ...(input.keep ? { keep: input.keep } : {}),
       }),
     onSuccess: () => {
       for (const key of ['proposals', 'records', 'audit'] as const) {
