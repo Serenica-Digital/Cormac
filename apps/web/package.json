@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "The Cormac web app: the first client surface (ADR-0010). A thin adapter over the control-plane pipeline; renders tables, never a spreadsheet grid.",
+  "description": "The Cormac web app: the first client surface (ADR-0010). A thin adapter over the control-plane pipeline; presents a governed spreadsheet view over the record store (ADR-0014), with every write flowing through the pipeline.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@1771technologies/lytenyte-core": "^2.2.1",
     "@cormac/authz": "workspace:*",
     "@cormac/contract": "workspace:*",
     "@supabase/supabase-js": "^2.47.10",

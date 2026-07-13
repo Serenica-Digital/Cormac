@@ -1,18 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { useContract, useRecords } from '../api/hooks';
-import { tableColumns } from '../contract-helpers';
 import { EmptyState, ErrorNote, PageHeader, Spinner } from '../components/kit';
-import { formatValue, formatWhen } from '@/lib/format';
+import { RecordGrid } from '../components/RecordGrid/RecordGrid';
 
 export function Records() {
   const { workspaceId = '' } = useParams();
@@ -23,7 +14,6 @@ export function Records() {
   const records = useRecords(workspaceId, objectApiName);
 
   const object = objects.find((o) => o.apiName === objectApiName);
-  const columns = useMemo(() => (object ? tableColumns(object) : []), [object]);
 
   if (contract.isPending) {
     return (
@@ -54,7 +44,7 @@ export function Records() {
     <div>
       <PageHeader
         title="Records"
-        sub="The current state of the book. History lives on each record's timeline; bulk edits belong in your spreadsheet, not here."
+        sub="The current state of your book, beside Cormac. History lives on each record's timeline."
       />
 
       <div className="mb-4 flex flex-wrap gap-1">
@@ -80,50 +70,12 @@ export function Records() {
       )}
       {records.error && <ErrorNote error={records.error} />}
       {records.data && records.data.length === 0 && (
-        <EmptyState title="No records yet" hint="Changes you approve land here." />
+        <EmptyState title="No records yet" hint="Import your workbook or capture a change to fill it." />
       )}
 
       {records.data && records.data.length > 0 && object && (
-        <div className="animate-rise min-w-0 overflow-hidden rounded-lg bg-card ring-1 ring-foreground/10">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-stone-50/70 hover:bg-stone-50/70">
-                {columns.map((c) => (
-                  <TableHead key={c.apiName} className="px-4 text-xs font-semibold text-stone-500">
-                    {c.label}
-                  </TableHead>
-                ))}
-                <TableHead className="px-4 text-right text-xs font-semibold text-stone-500">
-                  Updated
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {records.data.map((r) => (
-                <TableRow key={r.id} className="border-stone-100 hover:bg-ledger-50/40">
-                  {columns.map((c, i) => (
-                    <TableCell key={c.apiName} className="px-4 py-3">
-                      {i === 0 ? (
-                        <Link
-                          to={`/w/${workspaceId}/records/${r.id}`}
-                          className="font-medium text-ledger-700 underline decoration-ledger-200 underline-offset-2 hover:decoration-ledger-600"
-                        >
-                          {formatValue(r.data[c.apiName])}
-                        </Link>
-                      ) : (
-                        <span className="block max-w-[16rem] truncate text-stone-600">
-                          {formatValue(r.data[c.apiName])}
-                        </span>
-                      )}
-                    </TableCell>
-                  ))}
-                  <TableCell className="px-4 py-3 text-right text-sm text-stone-400">
-                    {formatWhen(r.updated_at)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="animate-rise h-[70vh] min-h-[24rem] min-w-0 overflow-hidden rounded-lg ring-1 ring-foreground/10">
+          <RecordGrid workspaceId={workspaceId} object={object} rows={records.data} />
         </div>
       )}
     </div>
