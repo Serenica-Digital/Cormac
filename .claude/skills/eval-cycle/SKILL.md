@@ -33,49 +33,66 @@ never billable evidence.
 6. **Local dev stack only.** You may start/restart local Supabase, the dev control
    plane, and the two dev-lane gateways. Nothing else.
 
+## Division of labor (the execution model)
+
+You are the ORCHESTRATOR. Scripts do the deterministic work; subagents do the
+model-judgment work; your context holds conclusions, never transcripts.
+
+- **Script** (`pnpm evals`): seeding, driving, evidence collection, machine
+  assertions, budgets. Never re-derive what it graded.
+- **Subagents** (the Agent tool; run independent ones in parallel, in one
+  message): interview player-judges, soft-criteria judges, scoped fixers.
+  Capture scenarios stay serial through the script — the ops gateway binds one
+  workspace token at a time (ADR-0005); parallel capture arrives with
+  per-workspace gateway pairs (ADR-0016), not by agent fan-out here.
+- Playing an interview or reading full evidence bundles in YOUR context is a
+  bug in the cycle (it burns the orchestrator's context on disposable work).
+
 ## The cycle
 
-1. **Preflight.** Stack up: `pnpm db:start` if needed; control plane
-   (`pnpm cp:dev` with `HERMES_AUTHORING_URL=http://127.0.0.1:8644` and
-   `HERMES_OPS_URL=http://127.0.0.1:8645` in the environment, or `cp:dev:ops` for
-   ops-only work); gateways `pnpm agent:hub run` (8644) and `pnpm ops:hub run`
-   (8645); `evals/*/profile/sync.sh` after any profile edit; seed manifests exist
-   (`pnpm seed:ops-e2e` / `pnpm seed:authoring-e2e` only when missing or stale —
-   the runner seeds per-scenario workspaces itself).
-2. **Run.** `pnpm evals` (add `--only`/`--kind` when iterating). Exit 2 = infra:
-   fix the stack, not the scenarios. Read the report JSON it prints.
-3. **Judge.** For every graded scenario with `judge` criteria, read its
-   `.evidence.json` in the run directory and grade each criterion PASS/FAIL with
-   one sentence of reasoning. Judge grades never override machine grades; record
-   them in the cycle report.
-4. **Play the interviews.** For each `interview` scenario (reported MANUAL):
-   read its persona file and BE that client. Seed with `pnpm seed:authoring-e2e`,
-   then drive turns with `evals/workbook-authoring/scripts/send-turn.sh
-   <conversation> "<your message>"` — answer only from the persona's ground
-   truth, stay in character, respect its scripted beats. Stop at publish or the
-   scenario's `maxTurns`. Then run the gates:
-   `npm run validate <produced contract>` and `npm run diff <produced> <golden>`
-   (from `evals/workbook-authoring/`), and judge the scenario's criteria from the
-   transcript. **Count the client turns to publish and grade them against
-   `budget.maxInterviewTurns` — a turn-budget breach FAILS the scenario even
-   when the contract is valid.** The owner's standard: a client should never
-   sit through question ping-pong; the skill must draft from the workbook and
-   confirm in batches. Cadence fixes belong in the interview skill
-   (`evals/workbook-authoring/profile/skills/interview/SKILL.md`) — and check
+1. **Preflight (you, inline).** Stack up: `pnpm db:start` if needed; control
+   plane (`pnpm cp:dev` with `HERMES_AUTHORING_URL=http://127.0.0.1:8644` and
+   `HERMES_OPS_URL=http://127.0.0.1:8645` in the environment, or `cp:dev:ops`
+   for ops-only work); gateways `pnpm agent:hub run` (8644) and
+   `pnpm ops:hub run` (8645); `evals/*/profile/sync.sh` after any profile edit.
+2. **Run (script).** `pnpm evals` (add `--only`/`--kind` when iterating).
+   Exit 2 = infra: fix the stack, not the scenarios. Read only the report JSON.
+3. **Fan out the judgment work (subagents, one parallel batch).**
+   - **Per interview scenario, one player-judge agent.** Its prompt carries:
+     the persona file path (it must answer ONLY from that ground truth, stay in
+     character, respect scripted beats), the seed command
+     (`pnpm seed:authoring-e2e`), the turn driver
+     (`infisical run --env=dev -- evals/workbook-authoring/scripts/send-turn.sh
+     <unique-conversation> "<msg>"`), the scenario's `maxTurns` cap and
+     `budget.maxInterviewTurns`, the gates to run after publish
+     (`npm run validate <contract>`, `npm run diff <contract> <golden>` from
+     `evals/workbook-authoring/`), and the scenario's judge criteria. It
+     returns a compact verdict: turns used, gate results, per-criterion
+     PASS/FAIL with one sentence each, and the three most instructive
+     transcript moments. **A turn-budget breach FAILS the scenario even when
+     the contract is valid** — the owner's standard: no question ping-pong;
+     draft from the workbook, confirm in batches.
+   - **One judge agent per 4-6 capture scenarios with `judge` criteria**,
+     reading their `.evidence.json` files and returning per-criterion verdicts
+     with one-line reasoning. Judge grades never override machine grades.
+4. **Improve.** Diagnose each FAIL/regression from the returned verdicts (pull
+   evidence details only as needed). Fix at the right layer: agent profile
+   text (`evals/*/profile/`, then re-`sync.sh`), scenario bug, or harness bug.
+   Scoped fixes may go to a fixer subagent with an exact brief; you review its
+   diff before committing. Cadence fixes belong in the interview skill
+   (`evals/workbook-authoring/profile/skills/interview/SKILL.md`) — check
    PR #110 (cadence retune) first so the loop never forks a competing fix of
-   the same file. Record everything in the cycle report.
-5. **Improve.** For each FAIL/regression, diagnose from evidence, then fix at the
-   right layer: agent profile text (`evals/*/profile/`, then re-`sync.sh`),
-   scenario bug (wrong expectation), or harness bug. Branch
-   `eval-loop/<yyyy-mm-dd>` off dev (reuse if it exists), one commit per verified
-   fix, message carries before/after grades. Re-run only the affected scenarios
-   (`--only`), then a full `pnpm evals` before closing the cycle.
-6. **Close.** Write the cycle report to
-   `.jarvis/tmp/notes/eval-runs/cycle-<stamp>.md` (machine summary, judge grades,
-   interview verdicts, fixes made, diagnoses parked, baseline changes). Push the
-   branch; open or update the PR (title "Eval loop: <date>") with the report
-   inline. If invoked under `/loop`, schedule the next wake-up (30-60 min while
-   actively fixing, several hours when green); otherwise end with the summary.
+   the same file. Branch `eval-loop/<yyyy-mm-dd>` off dev (reuse if it
+   exists), one commit per verified fix, message carries before/after grades.
+   Re-run only the affected scenarios (`--only`; interviews re-play via a
+   fresh player agent), then a full `pnpm evals` before closing.
+5. **Close.** Write the cycle report to
+   `.jarvis/tmp/notes/eval-runs/cycle-<stamp>.md` (machine summary, judge
+   verdicts, interview verdicts, fixes made, diagnoses parked, baseline
+   changes). Push the branch; open or update the PR (title "Eval loop:
+   <date>") with the report inline. If invoked under `/loop`, schedule the
+   next wake-up (30-60 min while actively fixing, several hours when green);
+   otherwise end with the summary.
 
 ## Success shape
 
