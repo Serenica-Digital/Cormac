@@ -196,10 +196,101 @@ def _handle_submit_proposal(args: dict, **_kw) -> str:
     return tool_result(payload)
 
 
+PROPOSE_LEARNING_SCHEMA = {
+    "name": "propose_learning",
+    "description": (
+        "Stage a fact you inferred about how this workspace talks, for HUMAN "
+        "review. Two kinds only: an alias (a short name the user used for one "
+        "specific record you resolved, e.g. 'Mo' for Morgan Ellis) or an enum "
+        "synonym (a word the user uses for one of a field's fixed options, "
+        "e.g. 'gone quiet' means status dormant). Nothing you stage here "
+        "changes what you know until a human approves it. Only propose what "
+        "the message clearly supports; never propose from speculation."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "kind": {"type": "string", "enum": ["alias", "enum_synonym"]},
+            "taskId": {
+                "type": "string",
+                "description": "The task id from your instructions; you cannot invent one",
+            },
+            "objectApiName": {"type": "string"},
+            "recordId": {
+                "type": "string",
+                "description": "alias only: the record the short name refers to (from search_records)",
+            },
+            "variant": {
+                "type": "string",
+                "description": "alias only: the short name as the user said it",
+            },
+            "fieldApiName": {"type": "string", "description": "enum_synonym only: the enum field"},
+            "synonym": {
+                "type": "string",
+                "description": "enum_synonym only: the user's word",
+            },
+            "canonicalOption": {
+                "type": "string",
+                "description": "enum_synonym only: the exact option it maps to",
+            },
+            "rationale": {
+                "type": "string",
+                "description": "One line tying this to the message's words",
+            },
+        },
+        "required": ["kind", "taskId", "objectApiName"],
+    },
+}
+
+
+def _handle_propose_learning(args: dict, **_kw) -> str:
+    kind = str(args.get("kind") or "").strip()
+    if kind not in ("alias", "enum_synonym"):
+        return tool_error("kind must be alias or enum_synonym")
+    body = {k: v for k, v in args.items() if v not in (None, "")}
+    status, payload = _call("POST", "/agent/learning", body)
+    if status != 200:
+        return _problem(status, payload)
+    return tool_result(payload)
+
+
+SEARCH_HISTORY_SCHEMA = {
+    "name": "search_history",
+    "description": (
+        "Search past messages in this workspace (what people told Cormac and "
+        "what Cormac answered), most recent first, up to 10 matches. Use it "
+        "when the user refers to something said before ('like I mentioned', "
+        "'the thing from last week') or asks what was said about someone."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "Name or phrase to look for (min 2 characters)",
+            },
+        },
+        "required": ["query"],
+    },
+}
+
+
+def _handle_search_history(args: dict, **_kw) -> str:
+    query = str(args.get("query") or "").strip()
+    if len(query) < 2:
+        return tool_error("query must be at least 2 characters")
+    status, payload = _call("GET", "/agent/history?query=" + urllib.parse.quote(query))
+    if status != 200:
+        return _problem(status, payload)
+    return tool_result(payload)
+
+
 _TOOLS = (
     ("search_records", SEARCH_RECORDS_SCHEMA, _handle_search_records, "🔎"),
     ("get_record", GET_RECORD_SCHEMA, _handle_get_record, "📇"),
     ("submit_proposal", SUBMIT_PROPOSAL_SCHEMA, _handle_submit_proposal, "📮"),
+    ("propose_learning", PROPOSE_LEARNING_SCHEMA, _handle_propose_learning, "🧠"),
+    ("search_history", SEARCH_HISTORY_SCHEMA, _handle_search_history, "🗂"),
 )
 
 

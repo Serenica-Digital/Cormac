@@ -30,11 +30,19 @@ export type AgentCapability =
   | 'submit_contract' // the validating contract publish gate
   | 'read_contract' // the active contract document
   | 'read_records' // search + fetch records, sensitive fields redacted
-  | 'submit_proposal'; // hold a proposed change set for human review
+  | 'submit_proposal' // hold a proposed change set for human review
+  | 'propose_learning' // stage a typed learned fact for human review
+  | 'read_history'; // search past messages/decisions, redacted and bounded
 
 const AGENT_CAPABILITIES: Record<AgentKind, ReadonlySet<AgentCapability>> = {
   authoring: new Set<AgentCapability>(['read_workbook', 'submit_contract']),
-  operations: new Set<AgentCapability>(['read_contract', 'read_records', 'submit_proposal']),
+  operations: new Set<AgentCapability>([
+    'read_contract',
+    'read_records',
+    'submit_proposal',
+    'propose_learning',
+    'read_history',
+  ]),
 };
 
 export function agentCan(agent: AgentKind, capability: AgentCapability): boolean {

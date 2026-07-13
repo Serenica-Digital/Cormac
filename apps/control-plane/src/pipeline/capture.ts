@@ -3,7 +3,7 @@ import { safeParseProposal } from '@cormac/contract';
 import { ProblemError } from '../shared.js';
 import type { AppContext } from '../app.js';
 import type { RequestContext } from '../types.js';
-import { compileWorkspaceContext } from './context.js';
+import { compileWorkspaceContextFromDb } from './context.js';
 import {
   getActiveContract,
   getProposalBySourceMessage,
@@ -61,9 +61,10 @@ export async function captureUpdate(
     content: text,
   });
 
-  // Compile the workspace context once per capture and deliver it as the run's
-  // cached prefix, so the agent does not fetch the contract per run.
-  const context = compileWorkspaceContext(contract);
+  // Compile the workspace context (contract + approved learned knowledge) once
+  // per capture and deliver it as the run's cached prefix, so the agent does
+  // not fetch the contract per run.
+  const context = await compileWorkspaceContextFromDb(db, workspaceId, contract);
 
   const outcome = await runtime.runCaptureTask({
     taskId: sourceMessageId,

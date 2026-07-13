@@ -31,6 +31,14 @@ event (row 13). Contract drafts pass the same validating publish gate as a
 human's (row 16). The runtime executes no shell and holds typed,
 schema-validated tools only (hardened in PR #72; posture, not a rowed test).
 
+The same gate governs what the agent learns (row 29 — Verified). The
+runtime's own memory stays off; the agent may only STAGE a typed vocabulary
+fact (a record alias or an enum synonym — never free text) for review, and
+the fact reaches the model's context only after a human approves it. Both
+decisions are audited. This is the "authenticated memorization" mitigation
+the external red-team literature recommends against memory-poisoning
+attacks.
+
 ## What the model sees (row 17 — Verified)
 
 Data minimization is a contract property: any field a tenant marks
